@@ -16,26 +16,15 @@ const Index = () => {
     getTasksByStatus, 
     fetchTasks, 
     isLoading, 
-    error, 
-    setupTaskSubscription 
+    error,
+    tasks, // Add tasks to the dependencies to update counters
   } = useTaskStore();
   
-  useEffect(() => {
-    // Fetch tasks on component mount
-    fetchTasks();
-    
-    // Setup real-time subscription
-    const unsubscribe = setupTaskSubscription();
-    
-    return () => {
-      // Cleanup subscription on unmount
-      unsubscribe();
-    };
-  }, [fetchTasks, setupTaskSubscription]);
-  
+  // Calculate task counts
   const todoTasks = getTasksByStatus(TaskStatus.TODO);
   const inProgressTasks = getTasksByStatus(TaskStatus.IN_PROGRESS);
   const doneTasks = getTasksByStatus(TaskStatus.DONE);
+  const totalTasks = todoTasks.length + inProgressTasks.length + doneTasks.length;
   
   // Display error if there is one
   if (error) {
@@ -75,7 +64,7 @@ const Index = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
+            {isLoading && tasks.length === 0 ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
               </div>
@@ -95,7 +84,7 @@ const Index = () => {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Total</span>
-                  <span className="font-medium">{todoTasks.length + inProgressTasks.length + doneTasks.length}</span>
+                  <span className="font-medium">{totalTasks}</span>
                 </div>
               </div>
             )}
@@ -107,7 +96,7 @@ const Index = () => {
             <CardTitle className="text-lg">Recent Activity</CardTitle>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
+            {isLoading && tasks.length === 0 ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
               </div>

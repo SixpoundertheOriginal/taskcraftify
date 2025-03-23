@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { 
   Button,
@@ -16,29 +16,51 @@ import {
   Badge,
   Calendar,
 } from '@/components/ui';
-import { CreateTaskDTO, TaskPriority, TaskStatus } from '@/types/task';
+import { CreateTaskDTO, Task, TaskPriority, TaskStatus, UpdateTaskDTO } from '@/types/task';
 import { getPriorityLabel, getStatusLabel } from '@/lib/utils';
 import { CalendarIcon, Loader2, Plus, Tag, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
-import { useTaskStore } from '@/store/useTaskStore';
+import { useTaskStore } from '@/store/taskStore/taskStore';
 
 interface TaskFormContentProps {
   onSuccess?: () => void;
+  taskToEdit?: Task;
 }
 
-export function TaskFormContent({ onSuccess }: TaskFormContentProps) {
-  const { addTask, isSubmitting, error } = useTaskStore();
+export function TaskFormContent({ onSuccess, taskToEdit }: TaskFormContentProps) {
+  const { addTask, updateTask, isSubmitting, error } = useTaskStore();
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+  const isEditing = !!taskToEdit;
   
-  const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm<CreateTaskDTO>({
+  const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm<CreateTaskDTO | UpdateTaskDTO>({
     defaultValues: {
       status: TaskStatus.TODO,
       priority: TaskPriority.MEDIUM
     }
   });
+  
+  // Initialize form with task data if editing
+  useEffect(() => {
+    if (taskToEdit) {
+      reset({
+        title: taskToEdit.title,
+        description: taskToEdit.description,
+        status: taskToEdit.status,
+        priority: taskToEdit.priority,
+      });
+      
+      if (taskToEdit.tags) {
+        setTags(taskToEdit.tags);
+      }
+      
+      if (taskToEdit.dueDate) {
+        setDueDate(new Date(taskToEdit.dueDate));
+      }
+    }
+  }, [taskToEdit, reset]);
   
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
@@ -67,19 +89,40 @@ export function TaskFormContent({ onSuccess }: TaskFormContentProps) {
     setValue('priority', value as TaskPriority);
   };
   
-  const onSubmit = async (data: Omit<CreateTaskDTO, 'tags' | 'dueDate'>) => {
+  const onSubmit = async (data: Omit<CreateTaskDTO | UpdateTaskDTO, 'tags' | 'dueDate'>) => {
     try {
-      const taskData: CreateTaskDTO = {
-        ...data,
-        dueDate,
-        tags,
-      };
-      
-      await addTask(taskData);
-      toast({
-        title: "Task created",
-        description: "Your task has been created successfully.",
-      });
+      if (isEditing && taskToEdit) {
+        // Update existing task
+        const taskData: UpdateTaskDTO = {
+          id: taskToEdit.id,
+          ...data,
+          dueDate,
+          tags,
+        };
+        
+        const success = await updateTask(taskData);
+        if (success) {
+          toast({
+            title: "Task updated",
+            description: "Your task has been updated successfully.",
+          });
+        } else {
+          throw new Error("Failed to update task");
+        }
+      } else {
+        // Create new task
+        const taskData = {
+          ...data,
+          dueDate,
+          tags,
+        } as CreateTaskDTO;
+        
+        await addTask(taskData);
+        toast({
+          title: "Task created",
+          description: "Your task has been created successfully.",
+        });
+      }
       
       // Reset form
       reset();
@@ -88,7 +131,7 @@ export function TaskFormContent({ onSuccess }: TaskFormContentProps) {
       onSuccess?.();
     } catch (err) {
       toast({
-        title: "Failed to create task",
+        title: isEditing ? "Failed to update task" : "Failed to create task",
         description: error?.message || "An unexpected error occurred.",
         variant: "destructive"
       });
@@ -128,7 +171,7 @@ export function TaskFormContent({ onSuccess }: TaskFormContentProps) {
             Status <span className="text-destructive">*</span>
           </label>
           <Select 
-            defaultValue={TaskStatus.TODO} 
+            defaultValue={taskToEdit?.status || TaskStatus.TODO} 
             onValueChange={handleStatusChange}
           >
             <SelectTrigger id="status">
@@ -153,7 +196,7 @@ export function TaskFormContent({ onSuccess }: TaskFormContentProps) {
             Priority <span className="text-destructive">*</span>
           </label>
           <Select 
-            defaultValue={TaskPriority.MEDIUM}
+            defaultValue={taskToEdit?.priority || TaskPriority.MEDIUM}
             onValueChange={handlePriorityChange}
           >
             <SelectTrigger id="priority">
@@ -243,10 +286,10 @@ export function TaskFormContent({ onSuccess }: TaskFormContentProps) {
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Creating...
+              {isEditing ? 'Updating...' : 'Creating...'}
             </>
           ) : (
-            'Create Task'
+            isEditing ? 'Update Task' : 'Create Task'
           )}
         </Button>
       </div>
