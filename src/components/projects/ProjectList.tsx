@@ -1,3 +1,4 @@
+
 import { useProjectStore, useTaskStore } from '@/store';
 import { Task } from '@/types/task';
 import { 
@@ -125,11 +126,17 @@ export function ProjectList() {
     setIsRefreshing(true);
     
     try {
-      console.log("Manual refresh initiated");
+      console.log('----------------------------------------');
+      console.log('MANUAL REFRESH INITIATED FROM PROJECT LIST UI');
+      console.log('Timestamp:', new Date().toISOString());
+      console.log('----------------------------------------');
+      
       // First, force a complete refetch of all tasks
+      console.log('1. Initiating fetchTasks()...');
       await fetchTasks();
       
       // Then explicitly refresh the counts
+      console.log('2. Initiating refreshTaskCounts()...');
       setTimeout(() => {
         refreshTaskCounts();
       }, 300);

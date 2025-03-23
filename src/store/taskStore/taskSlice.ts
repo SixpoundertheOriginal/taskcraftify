@@ -150,23 +150,42 @@ export const createTaskSlice: StateCreator<TaskSlice, [], [], TaskSlice> = (set,
   refreshTaskCounts: () => {
     // Force a complete refresh by re-fetching all tasks
     const refreshTasks = async () => {
-      console.log('Manually refreshing task counts...');
+      console.log('----------------------------------------');
+      console.log('DETAILED TASK COUNT REFRESH DIAGNOSTICS:');
+      console.log('----------------------------------------');
       
       try {
+        console.log('1. Fetching all tasks from database...');
         const result = await TaskService.fetchTasks();
         if (result.error) {
           throw result.error;
         }
         
         const tasks = result.data || [];
-        console.log(`Re-fetched ${tasks.length} tasks for counting`);
+        console.log(`2. Successfully fetched ${tasks.length} tasks for counting`);
         
         // Log raw task data to inspect projectId values
-        console.log('Raw task data:', tasks);
+        console.log('3. RAW TASK DATA FROM DATABASE:');
+        tasks.forEach((task, index) => {
+          console.log(`Task ${index + 1}:`, {
+            id: task.id,
+            title: task.title,
+            status: task.status,
+            projectId: task.projectId === undefined ? 'undefined' : 
+                       task.projectId === null ? 'null' : 
+                       task.projectId === '' ? 'empty string' : task.projectId,
+            rawProjectId: task.projectId, // Raw value for comparison
+          });
+        });
         
-        // Analyze task distribution by project
+        // Analyze task distribution by project (using more detailed approach)
+        console.log('4. TASK DISTRIBUTION BY PROJECT:');
         const tasksByProject: Record<string, Task[]> = {};
         
+        // Initialize with empty arrays for all projects and "none"
+        tasksByProject["none"] = [];
+        
+        // Group tasks by project
         tasks.forEach(task => {
           const projectId = task.projectId || 'none';
           if (!tasksByProject[projectId]) {
@@ -175,16 +194,31 @@ export const createTaskSlice: StateCreator<TaskSlice, [], [], TaskSlice> = (set,
           tasksByProject[projectId].push(task);
         });
         
-        // Log detailed count information
+        // Log count information
+        console.log('5. PROJECT TASK COUNTS:');
         Object.entries(tasksByProject).forEach(([projectId, projectTasks]) => {
-          console.log(`Project ${projectId}: ${projectTasks.length} tasks`);
+          console.log(`Project "${projectId}": ${projectTasks.length} tasks`);
           if (projectTasks.length > 0) {
-            console.log(`Sample task from project ${projectId}:`, projectTasks[0]);
+            console.log(`  Sample task from project "${projectId}":`, {
+              id: projectTasks[0].id,
+              title: projectTasks[0].title,
+              projectId: projectTasks[0].projectId,
+              projectIdType: typeof projectTasks[0].projectId
+            });
           }
         });
         
+        // Log current state before update
+        console.log('6. CURRENT STATE BEFORE UPDATE:');
+        console.log('Current task count in store:', get().tasks.length);
+        
         // Force a state update by creating a new tasks array
+        console.log('7. UPDATING STORE STATE WITH NEW TASK DATA');
         set({ tasks: [...tasks] });
+        
+        console.log('----------------------------------------');
+        console.log('TASK COUNT REFRESH COMPLETED');
+        console.log('----------------------------------------');
         
         toast({
           title: "Task counts refreshed",
