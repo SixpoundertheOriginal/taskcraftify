@@ -15,16 +15,16 @@ export function ViewToggle({ activeView, onViewChange }: ViewToggleProps) {
   return (
     <ToggleGroup type="single" value={activeView} onValueChange={(value: string) => {
       if (value) onViewChange(value as ViewMode);
-    }}>
+    }} className="border rounded-md p-0.5 bg-muted/30">
       <ToggleGroupItem value="list" aria-label="List view" className={cn(
-        "rounded-md h-8 w-8 p-0", 
-        activeView === "list" ? "bg-muted text-primary" : ""
+        "rounded-md h-8 w-8 p-0 transition-all duration-150", 
+        activeView === "list" ? "bg-background text-primary shadow-sm" : "hover:bg-muted/70"
       )}>
         <List className="h-4 w-4" />
       </ToggleGroupItem>
       <ToggleGroupItem value="kanban" aria-label="Kanban view" className={cn(
-        "rounded-md h-8 w-8 p-0",
-        activeView === "kanban" ? "bg-muted text-primary" : ""
+        "rounded-md h-8 w-8 p-0 transition-all duration-150",
+        activeView === "kanban" ? "bg-background text-primary shadow-sm" : "hover:bg-muted/70"
       )}>
         <KanbanSquare className="h-4 w-4" />
       </ToggleGroupItem>

@@ -23,8 +23,8 @@ export function KanbanColumn({ id, title, tasks, status }: KanbanColumnProps) {
   
   // Animation for the column when a task is being dragged over it
   const columnClass = cn(
-    "flex flex-col h-full rounded-lg border bg-card transition-colors",
-    isOver ? "border-primary/60 bg-accent/30" : "border-border/40"
+    "flex flex-col h-full rounded-lg border bg-card transition-all duration-200",
+    isOver ? "border-primary/60 bg-accent/30 scale-[1.02] shadow-md" : "border-border/40"
   );
   
   const handleAddTask = () => {
@@ -33,7 +33,7 @@ export function KanbanColumn({ id, title, tasks, status }: KanbanColumnProps) {
   
   return (
     <div ref={setNodeRef} className={columnClass}>
-      <div className="p-3 border-b flex items-center justify-between bg-muted/30">
+      <div className="p-3 border-b flex items-center justify-between bg-muted/30 rounded-t-lg">
         <div className="flex items-center gap-2">
           <h3 className="font-medium text-sm">{title}</h3>
           <span className="inline-flex items-center justify-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
@@ -43,7 +43,7 @@ export function KanbanColumn({ id, title, tasks, status }: KanbanColumnProps) {
         <Button 
           variant="ghost" 
           size="icon" 
-          className="h-7 w-7"
+          className="h-7 w-7 rounded-full hover:bg-primary/10 transition-colors"
           onClick={handleAddTask}
         >
           <Plus className="h-4 w-4" />
@@ -74,7 +74,7 @@ export function KanbanColumn({ id, title, tasks, status }: KanbanColumnProps) {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="mt-2"
+                className="mt-2 hover:bg-primary/10"
                 onClick={handleAddTask}
               >
                 <Plus className="h-4 w-4 mr-1" />

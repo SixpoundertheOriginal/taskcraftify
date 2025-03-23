@@ -1,18 +1,15 @@
 
 import { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
-import { TaskList, KanbanBoard, ViewToggle } from '@/components/tasks';
-import { Button } from '@/components/ui';
+import { TaskList, KanbanBoard, ViewToggle, FloatingActionButton } from '@/components/tasks';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { useTaskStore } from '@/store/taskStore/taskStore';
 import { TaskStatus } from '@/types/task';
-import { Plus, Loader2 } from 'lucide-react';
-import { TaskForm } from '@/components/tasks';
+import { Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui';
 import { ViewMode } from '@/components/tasks/ViewToggle';
 
 const Index = () => {
-  const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [activeView, setActiveView] = useState<ViewMode>('list');
   const { 
     getTasksByStatus, 
@@ -67,17 +64,8 @@ const Index = () => {
       <section className="mb-10 grid grid-cols-1 md:grid-cols-3 gap-6 animate-slide-up">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex justify-between items-center">
-              <span>Tasks Overview</span>
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                className="h-8 gap-1"
-                onClick={() => setIsTaskFormOpen(true)}
-              >
-                <Plus className="h-4 w-4" />
-                Add
-              </Button>
+            <CardTitle className="text-lg">
+              Tasks Overview
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -156,7 +144,8 @@ const Index = () => {
         )}
       </section>
       
-      <TaskForm open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen} />
+      {/* Floating Action Button */}
+      <FloatingActionButton />
     </Layout>
   );
 };

@@ -5,3 +5,4 @@ export * from './TaskFormContent';
 export * from './TaskList';
 export * from './KanbanBoard';
 export * from './ViewToggle';
+export * from './FloatingActionButton';

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -114,6 +115,32 @@ export function TaskCard({ task, isDragging = false }: TaskCardProps) {
     setIsEditModalOpen(true);
   };
 
+  const handleToggleStatus = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    const newStatus = task.status === TaskStatus.DONE 
+      ? TaskStatus.TODO 
+      : TaskStatus.DONE;
+    
+    await handleStatusChange(newStatus);
+  };
+
+  // Get status color for the left border
+  const getStatusBorderColor = () => {
+    switch (task.status) {
+      case TaskStatus.TODO:
+        return 'border-l-blue-500';
+      case TaskStatus.IN_PROGRESS:
+        return 'border-l-amber-500';
+      case TaskStatus.DONE:
+        return 'border-l-green-500';
+      case TaskStatus.ARCHIVED:
+        return 'border-l-purple-500';
+      default:
+        return 'border-l-gray-300';
+    }
+  };
+
   return (
     <>
       <Card 
@@ -123,6 +150,8 @@ export function TaskCard({ task, isDragging = false }: TaskCardProps) {
         {...listeners}
         className={cn(
           "group w-full transition-all duration-200 border border-border/40 shadow-sm hover:shadow-md hover:border-border/80",
+          "rounded-md overflow-hidden animate-in fade-in-50 border-l-4",
+          getStatusBorderColor(),
           {
             "opacity-70 cursor-grabbing": isCurrentlyDragging,
             "opacity-70": isUpdating || isDeleting,
@@ -135,92 +164,109 @@ export function TaskCard({ task, isDragging = false }: TaskCardProps) {
         onClick={handleCardClick}
       >
         <CardContent className="p-4">
-          <div className="flex justify-between items-start mb-2">
-            <h3 className="font-medium text-base text-balance">{task.title}</h3>
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 flex-shrink-0" onClick={(e) => handleToggleStatus(e)}>
+              <Checkbox 
+                className="h-5 w-5 transition-all"
+                checked={task.status === TaskStatus.DONE}
+                onCheckedChange={() => {}}
+              />
+            </div>
             
-            {(isUpdating || isDeleting) ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity task-dropdown"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                    <span className="sr-only">Task actions</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="task-dropdown">
-                  <DropdownMenuItem onClick={(e) => {
-                    e.stopPropagation();
-                    handleStatusChange(TaskStatus.TODO);
-                  }}>
-                    Mark as To Do
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={(e) => {
-                    e.stopPropagation();
-                    handleStatusChange(TaskStatus.IN_PROGRESS);
-                  }}>
-                    Mark as In Progress
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={(e) => {
-                    e.stopPropagation();
-                    handleStatusChange(TaskStatus.DONE);
-                  }}>
-                    Mark as Done
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={(e) => {
-                    e.stopPropagation();
-                    handleStatusChange(TaskStatus.ARCHIVED);
-                  }}>
-                    Archive
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete();
-                  }} className="text-destructive">
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </div>
-          
-          {task.description && (
-            <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{task.description}</p>
-          )}
-          
-          <div className="flex flex-wrap gap-2 mb-3">
-            <Badge variant="outline" className={getStatusColor(task.status)}>
-              <CheckCircle className="mr-1 h-3 w-3" />
-              {getStatusLabel(task.status)}
-            </Badge>
-            
-            <Badge variant="outline" className={getPriorityColor(task.priority)}>
-              {getPriorityLabel(task.priority)}
-            </Badge>
-          </div>
-          
-          <div className="flex justify-between items-center text-xs text-muted-foreground">
-            {task.dueDate && (
-              <div className={`flex items-center ${isOverdue(task.dueDate) ? 'text-destructive' : ''}`}>
-                <Clock className="h-3 w-3 mr-1" />
-                {formatDate(task.dueDate)}
+            <div className="flex-grow space-y-3">
+              <div className="flex justify-between items-start">
+                <h3 className={cn(
+                  "font-medium text-base text-balance transition-all", 
+                  task.status === TaskStatus.DONE && "line-through text-muted-foreground"
+                )}>
+                  {task.title}
+                </h3>
+                
+                {(isUpdating || isDeleting) ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity task-dropdown"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Task actions</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="task-dropdown">
+                      <DropdownMenuItem onClick={(e) => {
+                        e.stopPropagation();
+                        handleStatusChange(TaskStatus.TODO);
+                      }}>
+                        Mark as To Do
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={(e) => {
+                        e.stopPropagation();
+                        handleStatusChange(TaskStatus.IN_PROGRESS);
+                      }}>
+                        Mark as In Progress
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={(e) => {
+                        e.stopPropagation();
+                        handleStatusChange(TaskStatus.DONE);
+                      }}>
+                        Mark as Done
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={(e) => {
+                        e.stopPropagation();
+                        handleStatusChange(TaskStatus.ARCHIVED);
+                      }}>
+                        Archive
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete();
+                      }} className="text-destructive">
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
-            )}
-            
-            {task.tags && task.tags.length > 0 && (
-              <div className="flex items-center">
-                <Tag className="h-3 w-3 mr-1" />
-                {task.tags.slice(0, 2).map(tag => (
-                  <span key={tag} className="ml-1">#{tag}</span>
-                ))}
-                {task.tags.length > 2 && <span>+{task.tags.length - 2}</span>}
+              
+              {task.description && (
+                <p className="text-sm text-muted-foreground line-clamp-2">{task.description}</p>
+              )}
+              
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="outline" className={getStatusColor(task.status)}>
+                  <CheckCircle className="mr-1 h-3 w-3" />
+                  {getStatusLabel(task.status)}
+                </Badge>
+                
+                <Badge variant="outline" className={getPriorityColor(task.priority)}>
+                  {getPriorityLabel(task.priority)}
+                </Badge>
               </div>
-            )}
+              
+              <div className="flex justify-between items-center text-xs text-muted-foreground">
+                {task.dueDate && (
+                  <div className={`flex items-center ${isOverdue(task.dueDate) ? 'text-destructive' : ''}`}>
+                    <Clock className="h-3 w-3 mr-1" />
+                    {formatDate(task.dueDate)}
+                  </div>
+                )}
+                
+                {task.tags && task.tags.length > 0 && (
+                  <div className="flex items-center">
+                    <Tag className="h-3 w-3 mr-1" />
+                    {task.tags.slice(0, 2).map(tag => (
+                      <span key={tag} className="ml-1">#{tag}</span>
+                    ))}
+                    {task.tags.length > 2 && <span>+{task.tags.length - 2}</span>}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
