@@ -22,13 +22,17 @@ export const createSubscriptionSlice: StateCreator<
       set({ projects });
       
       // Get the taskStore to refresh counts
-      // Note: We use setTimeout because we can't directly import the store here
       setTimeout(() => {
-        // Using the global store accessor is not type-safe, instead we'll
-        // use an event-based approach to communicate between stores
-        const taskStore = useTaskStore.getState();
-        if (taskStore.refreshTaskCounts) {
-          taskStore.refreshTaskCounts();
+        try {
+          const taskStore = useTaskStore.getState();
+          console.log("Triggering task count refresh after project update");
+          if (taskStore && taskStore.refreshTaskCounts) {
+            taskStore.refreshTaskCounts();
+          } else {
+            console.error("Could not access task store or refreshTaskCounts function");
+          }
+        } catch (error) {
+          console.error("Error refreshing task counts:", error);
         }
       }, 100);
     });

@@ -1,4 +1,3 @@
-
 import { useProjectStore, useTaskStore } from '@/store';
 import { Task } from '@/types/task';
 import { 
@@ -46,7 +45,7 @@ export function ProjectList() {
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { projects, selectedProjectId, selectProject, deleteProject } = useProjectStore();
-  const { filters, setFilters, tasks, refreshTaskCounts } = useTaskStore();
+  const { filters, setFilters, tasks, refreshTaskCounts, fetchTasks } = useTaskStore();
   
   useEffect(() => {
     console.log(`ProjectList: Rendering with ${tasks.length} tasks`);
@@ -55,11 +54,15 @@ export function ProjectList() {
   // Count tasks by project using useMemo to avoid recalculation on every render
   const taskCounts = useMemo(() => {
     console.log(`Computing task counts for ${tasks.length} tasks`);
-    return tasks.reduce((acc: Record<string, number>, task: Task) => {
+    const counts: Record<string, number> = {};
+    
+    tasks.forEach((task: Task) => {
       const projectId = task.projectId || 'none';
-      acc[projectId] = (acc[projectId] || 0) + 1;
-      return acc;
-    }, {});
+      counts[projectId] = (counts[projectId] || 0) + 1;
+    });
+    
+    console.log('Task counts by project (from useMemo):', counts);
+    return counts;
   }, [tasks]);
   
   // Get total task count
@@ -102,6 +105,11 @@ export function ProjectList() {
       if (selectedProjectId === projectToDelete) {
         handleSelectProject(null);
       }
+      
+      // Force task counts refresh after deleting a project
+      setTimeout(() => {
+        refreshTaskCounts();
+      }, 500);
     } catch (error) {
       toast({
         title: "Failed to delete project",
@@ -113,10 +121,34 @@ export function ProjectList() {
     }
   };
   
-  const handleRefreshCounts = () => {
+  const handleRefreshCounts = async () => {
     setIsRefreshing(true);
-    refreshTaskCounts();
-    setTimeout(() => setIsRefreshing(false), 1000); // Visual feedback
+    
+    try {
+      console.log("Manual refresh initiated");
+      // First, force a complete refetch of all tasks
+      await fetchTasks();
+      
+      // Then explicitly refresh the counts
+      setTimeout(() => {
+        refreshTaskCounts();
+      }, 300);
+      
+      toast({
+        title: "Task counts refreshed",
+        description: "Project counters have been updated with the latest data.",
+      });
+    } catch (error) {
+      console.error("Error during manual refresh:", error);
+      toast({
+        title: "Refresh failed",
+        description: "There was a problem refreshing the task counts.",
+        variant: "destructive"
+      });
+    } finally {
+      // Keep the spinning indicator for a moment so user sees feedback
+      setTimeout(() => setIsRefreshing(false), 1000);
+    }
   };
   
   return (

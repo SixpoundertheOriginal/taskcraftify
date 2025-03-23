@@ -30,7 +30,17 @@ export const createTaskSlice: StateCreator<TaskSlice, [], [], TaskSlice> = (set,
         throw result.error;
       }
       
-      console.log(`Fetched ${result.data?.length || 0} tasks`);
+      console.log(`Fetched ${result.data?.length || 0} tasks:`, result.data);
+      
+      // Group tasks by projectId
+      const tasksByProject: Record<string, number> = {};
+      result.data?.forEach(task => {
+        const projectId = task.projectId || 'none';
+        tasksByProject[projectId] = (tasksByProject[projectId] || 0) + 1;
+      });
+      
+      console.log('Task counts by project:', tasksByProject);
+      
       set({ tasks: result.data || [], isLoading: false });
     } catch (error) {
       console.error('Error fetching tasks:', error);
@@ -45,7 +55,9 @@ export const createTaskSlice: StateCreator<TaskSlice, [], [], TaskSlice> = (set,
     set({ isLoading: true, error: null });
     
     try {
+      console.log('Creating task with data:', task);
       const result = await TaskService.createTask(task);
+      
       if (result.error) {
         throw result.error;
       }
@@ -53,6 +65,9 @@ export const createTaskSlice: StateCreator<TaskSlice, [], [], TaskSlice> = (set,
       if (!result.data) {
         throw new Error('No task returned from creation');
       }
+      
+      console.log('Task created successfully:', result.data);
+      console.log('Task projectId:', result.data.projectId);
       
       set((state) => ({ 
         tasks: [...state.tasks, result.data!],
@@ -74,7 +89,9 @@ export const createTaskSlice: StateCreator<TaskSlice, [], [], TaskSlice> = (set,
     set({ isLoading: true, error: null });
     
     try {
+      console.log('Updating task with data:', task);
       const result = await TaskService.updateTask(task);
+      
       if (result.error) {
         throw result.error;
       }
@@ -82,6 +99,9 @@ export const createTaskSlice: StateCreator<TaskSlice, [], [], TaskSlice> = (set,
       if (!result.data) {
         throw new Error('No task returned from update');
       }
+      
+      console.log('Task updated successfully:', result.data);
+      console.log('Updated task projectId:', result.data.projectId);
       
       set((state) => ({
         tasks: state.tasks.map((t) => (t.id === task.id ? result.data! : t)),
@@ -128,17 +148,59 @@ export const createTaskSlice: StateCreator<TaskSlice, [], [], TaskSlice> = (set,
   },
   
   refreshTaskCounts: () => {
-    // This function doesn't need to do anything special
-    // It's just a trigger to force a re-render with the latest task data
-    const tasks = get().tasks;
-    console.log(`Refreshing task counts. Current task count: ${tasks.length}`);
+    // Force a complete refresh by re-fetching all tasks
+    const refreshTasks = async () => {
+      console.log('Manually refreshing task counts...');
+      
+      try {
+        const result = await TaskService.fetchTasks();
+        if (result.error) {
+          throw result.error;
+        }
+        
+        const tasks = result.data || [];
+        console.log(`Re-fetched ${tasks.length} tasks for counting`);
+        
+        // Log raw task data to inspect projectId values
+        console.log('Raw task data:', tasks);
+        
+        // Analyze task distribution by project
+        const tasksByProject: Record<string, Task[]> = {};
+        
+        tasks.forEach(task => {
+          const projectId = task.projectId || 'none';
+          if (!tasksByProject[projectId]) {
+            tasksByProject[projectId] = [];
+          }
+          tasksByProject[projectId].push(task);
+        });
+        
+        // Log detailed count information
+        Object.entries(tasksByProject).forEach(([projectId, projectTasks]) => {
+          console.log(`Project ${projectId}: ${projectTasks.length} tasks`);
+          if (projectTasks.length > 0) {
+            console.log(`Sample task from project ${projectId}:`, projectTasks[0]);
+          }
+        });
+        
+        // Force a state update by creating a new tasks array
+        set({ tasks: [...tasks] });
+        
+        toast({
+          title: "Task counts refreshed",
+          description: `Updated counts for ${tasks.length} tasks`,
+        });
+      } catch (error) {
+        console.error('Error refreshing task counts:', error);
+        toast({
+          title: "Failed to refresh counts",
+          description: error instanceof Error ? error.message : "An unexpected error occurred",
+          variant: "destructive"
+        });
+      }
+    };
     
-    // Force a state update by creating a new tasks array with the same items
-    set({ tasks: [...tasks] });
-    
-    toast({
-      title: "Task counts refreshed",
-      description: `Updated counts for ${tasks.length} tasks`,
-    });
+    // Execute the refresh
+    refreshTasks();
   }
 });
