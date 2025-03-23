@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
-import { TaskList } from '@/components/tasks';
+import { TaskList, KanbanBoard, ViewToggle } from '@/components/tasks';
 import { Button } from '@/components/ui';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { useTaskStore } from '@/store/taskStore/taskStore';
@@ -9,9 +9,11 @@ import { TaskStatus } from '@/types/task';
 import { Plus, Loader2 } from 'lucide-react';
 import { TaskForm } from '@/components/tasks';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui';
+import { ViewMode } from '@/components/tasks/ViewToggle';
 
 const Index = () => {
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
+  const [activeView, setActiveView] = useState<ViewMode>('list');
   const { 
     getTasksByStatus, 
     fetchTasks, 
@@ -25,6 +27,21 @@ const Index = () => {
   const inProgressTasks = getTasksByStatus(TaskStatus.IN_PROGRESS);
   const doneTasks = getTasksByStatus(TaskStatus.DONE);
   const totalTasks = todoTasks.length + inProgressTasks.length + doneTasks.length;
+  
+  // Handle view change
+  const handleViewChange = (view: ViewMode) => {
+    setActiveView(view);
+    // Save view preference to localStorage
+    localStorage.setItem('taskcraft-view', view);
+  };
+  
+  // Load saved view preference on mount
+  useEffect(() => {
+    const savedView = localStorage.getItem('taskcraft-view') as ViewMode | null;
+    if (savedView) {
+      setActiveView(savedView);
+    }
+  }, []);
   
   // Display error if there is one
   if (error) {
@@ -127,8 +144,16 @@ const Index = () => {
       </section>
       
       <section className="mb-6 animate-slide-up">
-        <h2 className="text-2xl font-medium mb-6">Your Tasks</h2>
-        <TaskList />
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-medium">Your Tasks</h2>
+          <ViewToggle activeView={activeView} onViewChange={handleViewChange} />
+        </div>
+        
+        {activeView === 'list' ? (
+          <TaskList />
+        ) : (
+          <KanbanBoard />
+        )}
       </section>
       
       <TaskForm open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen} />

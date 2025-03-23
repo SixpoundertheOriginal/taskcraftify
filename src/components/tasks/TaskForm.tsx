@@ -10,15 +10,16 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { TaskFormContent } from './TaskFormContent';
-import { Task } from '@/types/task';
+import { Task, TaskStatus } from '@/types/task';
 
 interface TaskFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   taskToEdit?: Task;
+  initialStatus?: TaskStatus;
 }
 
-export function TaskForm({ open, onOpenChange, taskToEdit }: TaskFormProps) {
+export function TaskForm({ open, onOpenChange, taskToEdit, initialStatus }: TaskFormProps) {
   const handleClose = () => {
     onOpenChange(false);
   };
@@ -42,7 +43,11 @@ export function TaskForm({ open, onOpenChange, taskToEdit }: TaskFormProps) {
           </DialogDescription>
         </DialogHeader>
         
-        <TaskFormContent onSuccess={handleSuccess} taskToEdit={taskToEdit} />
+        <TaskFormContent 
+          onSuccess={handleSuccess} 
+          taskToEdit={taskToEdit}
+          initialStatus={initialStatus} 
+        />
         
         <DialogFooter>
           <DialogClose asChild>

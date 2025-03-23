@@ -22,17 +22,45 @@ import {
 import { useTaskStore } from '@/store/taskStore/taskStore';
 import { toast } from '@/hooks/use-toast';
 import { TaskForm } from './TaskForm';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { cn } from '@/lib/utils';
 
 interface TaskCardProps {
   task: Task;
+  isDragging?: boolean;
 }
 
-export function TaskCard({ task }: TaskCardProps) {
+export function TaskCard({ task, isDragging = false }: TaskCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const { updateTask, deleteTask, setTaskStatus } = useTaskStore();
+  
+  // Setup sortable hook for drag and drop
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging: isSortableDragging,
+  } = useSortable({ 
+    id: task.id,
+    data: {
+      task
+    }
+  });
+  
+  // Combine local isDragging prop with sortable isDragging
+  const isCurrentlyDragging = isDragging || isSortableDragging;
+  
+  // Apply styles for the dragged item
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
   
   const handleStatusChange = async (status: TaskStatus) => {
     try {
@@ -79,7 +107,8 @@ export function TaskCard({ task }: TaskCardProps) {
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Don't open the edit modal if clicking on the dropdown or its children
-    if ((e.target as HTMLElement).closest('.task-dropdown')) {
+    // or if we're currently dragging
+    if ((e.target as HTMLElement).closest('.task-dropdown') || isCurrentlyDragging) {
       return;
     }
     setIsEditModalOpen(true);
@@ -88,9 +117,19 @@ export function TaskCard({ task }: TaskCardProps) {
   return (
     <>
       <Card 
-        className={`group w-full transition-all duration-200 border border-border/40 shadow-sm hover:shadow-md hover:border-border/80 ${
-          isUpdating || isDeleting ? 'opacity-70' : 'cursor-pointer'
-        }`}
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+        {...listeners}
+        className={cn(
+          "group w-full transition-all duration-200 border border-border/40 shadow-sm hover:shadow-md hover:border-border/80",
+          {
+            "opacity-70 cursor-grabbing": isCurrentlyDragging,
+            "opacity-70": isUpdating || isDeleting,
+            "cursor-grab active:cursor-grabbing": !isUpdating && !isDeleting && !isCurrentlyDragging,
+            "cursor-pointer": !isCurrentlyDragging
+          }
+        )}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         onClick={handleCardClick}
@@ -132,6 +171,12 @@ export function TaskCard({ task }: TaskCardProps) {
                     handleStatusChange(TaskStatus.DONE);
                   }}>
                     Mark as Done
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={(e) => {
+                    e.stopPropagation();
+                    handleStatusChange(TaskStatus.ARCHIVED);
+                  }}>
+                    Archive
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={(e) => {
                     e.stopPropagation();
