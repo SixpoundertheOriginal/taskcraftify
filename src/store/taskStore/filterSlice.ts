@@ -1,5 +1,5 @@
 
-import { TaskFilters, TaskStatus } from '@/types/task';
+import { TaskFilters, TaskStatus, Task } from '@/types/task';
 import { StateCreator } from 'zustand';
 import { TaskStore } from './taskStore';
 
@@ -7,8 +7,8 @@ export interface FilterSlice {
   filters: TaskFilters;
   setFilters: (filters: TaskFilters) => void;
   clearFilters: () => void;
-  getFilteredTasks: () => ReturnType<TaskStore["tasks"]>;
-  getTasksByStatus: (status: TaskStatus) => ReturnType<TaskStore["tasks"]>;
+  getFilteredTasks: () => Task[];
+  getTasksByStatus: (status: TaskStatus) => Task[];
 }
 
 export const createFilterSlice: StateCreator<TaskStore, [], [], FilterSlice> = (set, get) => ({
