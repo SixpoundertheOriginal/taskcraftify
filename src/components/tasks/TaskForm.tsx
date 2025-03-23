@@ -31,7 +31,7 @@ export function TaskForm({ open, onOpenChange, taskToEdit }: TaskFormProps) {
   
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px] animate-fade-in">
+      <DialogContent className="sm:max-w-[500px] animate-fade-in transition-colors">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit Task' : 'Create New Task'}</DialogTitle>
           <DialogDescription>

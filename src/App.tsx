@@ -8,6 +8,7 @@ import Index from '@/pages/Index';
 import Auth from '@/pages/Auth';
 import NotFound from '@/pages/NotFound';
 import { useTaskStore } from '@/store/useTaskStore';
+import { ThemeProvider } from '@/providers/ThemeProvider';
 
 function App() {
   const { fetchTasks, setupTaskSubscription } = useTaskStore();
@@ -25,23 +26,25 @@ function App() {
   }, [fetchTasks, setupTaskSubscription]);
   
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/auth" element={<Auth />} />
-          <Route 
-            path="/" 
-            element={
-              <ProtectedRoute>
-                <Index />
-              </ProtectedRoute>
-            } 
-          />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Router>
-      <Toaster />
-    </AuthProvider>
+    <ThemeProvider defaultTheme="system" storageKey="taskcraft-theme">
+      <AuthProvider>
+        <Router>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route 
+              path="/" 
+              element={
+                <ProtectedRoute>
+                  <Index />
+                </ProtectedRoute>
+              } 
+            />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Router>
+        <Toaster />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

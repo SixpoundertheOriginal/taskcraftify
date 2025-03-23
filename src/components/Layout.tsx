@@ -8,15 +8,15 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background transition-colors">
       <Header />
       <main className="flex-1 w-full animate-fade-in">
         <div className="container py-6 md:py-10">
           {children}
         </div>
       </main>
-      <footer className="py-4 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div className="container flex items-center justify-between">
+      <footer className="py-4 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 transition-colors">
+        <div className="container flex flex-col md:flex-row items-center justify-between gap-2">
           <p className="text-sm text-muted-foreground">
             TaskCraft © {new Date().getFullYear()}
           </p>

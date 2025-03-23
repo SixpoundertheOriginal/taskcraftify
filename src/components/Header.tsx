@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { TaskForm } from '@/components/tasks';
+import { ThemeToggle } from './ThemeToggle';
 
 export function Header() {
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
@@ -15,7 +16,8 @@ export function Header() {
             TaskCraft
           </a>
         </div>
-        <div className="ml-auto flex items-center">
+        <div className="ml-auto flex items-center gap-2">
+          <ThemeToggle />
           <Button onClick={() => setIsTaskFormOpen(true)} className="gap-1">
             <Plus className="h-4 w-4" />
             New Task

@@ -92,6 +92,22 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  /* Theme transition for common elements */
+  button, 
+  a, 
+  input, 
+  select, 
+  textarea,
+  .card,
+  .dialog,
+  .dropdown-menu {
+    transition: background-color 0.3s ease, 
+                color 0.3s ease, 
+                border-color 0.3s ease, 
+                box-shadow 0.3s ease;
   }
 }
 
