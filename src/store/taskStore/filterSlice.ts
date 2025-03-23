@@ -7,8 +7,8 @@ export interface FilterSlice {
   filters: TaskFilters;
   setFilters: (filters: TaskFilters) => void;
   clearFilters: () => void;
-  getFilteredTasks: () => ReturnType<TaskStore["getFilteredTasks"]>;
-  getTasksByStatus: (status: TaskStatus) => ReturnType<TaskStore["getTasksByStatus"]>;
+  getFilteredTasks: () => ReturnType<TaskStore["tasks"]>;
+  getTasksByStatus: (status: TaskStatus) => ReturnType<TaskStore["tasks"]>;
 }
 
 export const createFilterSlice: StateCreator<TaskStore, [], [], FilterSlice> = (set, get) => ({
