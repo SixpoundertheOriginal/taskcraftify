@@ -19,7 +19,7 @@ interface KanbanColumnProps {
 
 export function KanbanColumn({ id, title, tasks, status }: KanbanColumnProps) {
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
-  const { setActiveId, isOver } = useDroppable({ id });
+  const { isOver, setNodeRef } = useDroppable({ id });
   
   // Animation for the column when a task is being dragged over it
   const columnClass = cn(
@@ -32,7 +32,7 @@ export function KanbanColumn({ id, title, tasks, status }: KanbanColumnProps) {
   };
   
   return (
-    <div className={columnClass}>
+    <div ref={setNodeRef} className={columnClass}>
       <div className="p-3 border-b flex items-center justify-between bg-muted/30">
         <div className="flex items-center gap-2">
           <h3 className="font-medium text-sm">{title}</h3>

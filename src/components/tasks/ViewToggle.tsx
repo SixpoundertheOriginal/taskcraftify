@@ -1,6 +1,6 @@
 
 import { Button } from '@/components/ui/button';
-import { Toggle, ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
 import { KanbanSquare, List } from 'lucide-react';
 

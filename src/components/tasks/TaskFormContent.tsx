@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { 
@@ -26,9 +25,10 @@ import { useTaskStore } from '@/store/taskStore/taskStore';
 interface TaskFormContentProps {
   onSuccess?: () => void;
   taskToEdit?: Task;
+  initialStatus?: TaskStatus;
 }
 
-export function TaskFormContent({ onSuccess, taskToEdit }: TaskFormContentProps) {
+export function TaskFormContent({ onSuccess, taskToEdit, initialStatus }: TaskFormContentProps) {
   const { addTask, updateTask, isSubmitting, error } = useTaskStore();
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
@@ -37,7 +37,7 @@ export function TaskFormContent({ onSuccess, taskToEdit }: TaskFormContentProps)
   
   const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm<CreateTaskDTO | UpdateTaskDTO>({
     defaultValues: {
-      status: TaskStatus.TODO,
+      status: initialStatus || TaskStatus.TODO,
       priority: TaskPriority.MEDIUM
     }
   });
@@ -59,8 +59,13 @@ export function TaskFormContent({ onSuccess, taskToEdit }: TaskFormContentProps)
       if (taskToEdit.dueDate) {
         setDueDate(new Date(taskToEdit.dueDate));
       }
+    } else if (initialStatus) {
+      reset({
+        status: initialStatus,
+        priority: TaskPriority.MEDIUM
+      });
     }
-  }, [taskToEdit, reset]);
+  }, [taskToEdit, initialStatus, reset]);
   
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
