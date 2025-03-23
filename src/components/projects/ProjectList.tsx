@@ -16,7 +16,7 @@ import {
   Trash2,
   FileQuestion
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ProjectDialog } from './ProjectDialog';
 import {
   DropdownMenu,
@@ -44,12 +44,23 @@ export function ProjectList() {
   const { projects, selectedProjectId, selectProject, deleteProject } = useProjectStore();
   const { filters, setFilters, tasks } = useTaskStore();
   
-  // Count tasks by project
-  const taskCounts = tasks.reduce((acc: Record<string, number>, task: Task) => {
-    const projectId = task.projectId || 'none';
-    acc[projectId] = (acc[projectId] || 0) + 1;
-    return acc;
-  }, {});
+  // Count tasks by project using useMemo to avoid recalculation on every render
+  const taskCounts = useMemo(() => {
+    return tasks.reduce((acc: Record<string, number>, task: Task) => {
+      const projectId = task.projectId || 'none';
+      acc[projectId] = (acc[projectId] || 0) + 1;
+      return acc;
+    }, {});
+  }, [tasks]);
+  
+  // Get total task count
+  const totalTaskCount = useMemo(() => tasks.length, [tasks]);
+  
+  // Get tasks with no project
+  const noProjectTaskCount = useMemo(() => 
+    tasks.filter(task => !task.projectId).length, 
+    [tasks]
+  );
   
   const handleSelectProject = (projectId: string | null) => {
     selectProject(projectId);
@@ -99,7 +110,7 @@ export function ProjectList() {
           >
             <Layers className="w-4 h-4" />
             <span>All Projects</span>
-            <SidebarMenuBadge>{tasks.length}</SidebarMenuBadge>
+            <SidebarMenuBadge>{totalTaskCount}</SidebarMenuBadge>
           </SidebarMenuButton>
         </SidebarMenuItem>
         
@@ -110,7 +121,7 @@ export function ProjectList() {
           >
             <FileQuestion className="w-4 h-4" />
             <span>No Project</span>
-            <SidebarMenuBadge>{taskCounts['none'] || 0}</SidebarMenuBadge>
+            <SidebarMenuBadge>{noProjectTaskCount}</SidebarMenuBadge>
           </SidebarMenuButton>
         </SidebarMenuItem>
         
