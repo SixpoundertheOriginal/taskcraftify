@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -39,7 +38,7 @@ interface TaskFormContentProps {
 }
 
 export function TaskFormContent({ onSuccess, taskToEdit, initialStatus }: TaskFormContentProps) {
-  const { addTask, updateTask, isLoading, error } = useTaskStore();
+  const { createTask, updateTask, isLoading, error } = useTaskStore();
   const { projects, selectedProjectId } = useProjectStore();
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>(taskToEdit?.tags || []);
@@ -105,7 +104,7 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus }: TaskFo
         });
       } else {
         // Create new task
-        await addTask(taskData);
+        await createTask(taskData);
         toast({
           title: "Task created",
           description: "Your task has been created successfully.",
@@ -120,7 +119,7 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus }: TaskFo
     } catch (err) {
       toast({
         title: taskToEdit ? "Failed to update task" : "Failed to create task",
-        description: error?.message || "An unexpected error occurred.",
+        description: error ? (typeof error === 'string' ? error : "An unexpected error occurred.") : "An unexpected error occurred.",
         variant: "destructive"
       });
     }

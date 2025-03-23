@@ -9,9 +9,10 @@ export interface TaskSlice {
   isLoading: boolean;
   error: string | null;
   fetchTasks: () => Promise<void>;
-  createTask: (task: Omit<Task, 'id' | 'created_at' | 'updated_at'>) => Promise<Task>;
-  updateTask: (id: string, task: Partial<Task>) => Promise<Task>;
+  createTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Task>;
+  updateTask: (task: Partial<Task> & { id: string }) => Promise<Task>;
   deleteTask: (id: string) => Promise<void>;
+  setTaskStatus: (id: string, status: Task['status']) => Promise<Task>;
   refreshTaskCounts: () => void;
 }
 
@@ -24,9 +25,13 @@ export const createTaskSlice: StateCreator<TaskSlice, [], [], TaskSlice> = (set,
     set({ isLoading: true, error: null });
     
     try {
-      const tasks = await TaskService.getTasks();
-      console.log(`Fetched ${tasks.length} tasks`);
-      set({ tasks, isLoading: false });
+      const result = await TaskService.fetchTasks();
+      if (result.error) {
+        throw result.error;
+      }
+      
+      console.log(`Fetched ${result.data?.length || 0} tasks`);
+      set({ tasks: result.data || [], isLoading: false });
     } catch (error) {
       console.error('Error fetching tasks:', error);
       set({ 
@@ -40,12 +45,21 @@ export const createTaskSlice: StateCreator<TaskSlice, [], [], TaskSlice> = (set,
     set({ isLoading: true, error: null });
     
     try {
-      const newTask = await TaskService.createTask(task);
+      const result = await TaskService.createTask(task);
+      if (result.error) {
+        throw result.error;
+      }
+      
+      if (!result.data) {
+        throw new Error('No task returned from creation');
+      }
+      
       set((state) => ({ 
-        tasks: [...state.tasks, newTask],
+        tasks: [...state.tasks, result.data!],
         isLoading: false
       }));
-      return newTask;
+      
+      return result.data;
     } catch (error) {
       console.error('Error creating task:', error);
       set({ 
@@ -56,18 +70,25 @@ export const createTaskSlice: StateCreator<TaskSlice, [], [], TaskSlice> = (set,
     }
   },
   
-  updateTask: async (id, task) => {
+  updateTask: async (task) => {
     set({ isLoading: true, error: null });
     
     try {
-      const updatedTask = await TaskService.updateTask(id, task);
+      const result = await TaskService.updateTask(task);
+      if (result.error) {
+        throw result.error;
+      }
+      
+      if (!result.data) {
+        throw new Error('No task returned from update');
+      }
       
       set((state) => ({
-        tasks: state.tasks.map((t) => (t.id === id ? updatedTask : t)),
+        tasks: state.tasks.map((t) => (t.id === task.id ? result.data! : t)),
         isLoading: false
       }));
       
-      return updatedTask;
+      return result.data;
     } catch (error) {
       console.error('Error updating task:', error);
       set({ 
@@ -78,11 +99,19 @@ export const createTaskSlice: StateCreator<TaskSlice, [], [], TaskSlice> = (set,
     }
   },
   
+  setTaskStatus: async (id, status) => {
+    // This is a convenience method that calls updateTask with just the status change
+    return get().updateTask({ id, status });
+  },
+  
   deleteTask: async (id) => {
     set({ isLoading: true, error: null });
     
     try {
-      await TaskService.deleteTask(id);
+      const result = await TaskService.deleteTask(id);
+      if (result.error) {
+        throw result.error;
+      }
       
       set((state) => ({
         tasks: state.tasks.filter((task) => task.id !== id),
@@ -101,7 +130,6 @@ export const createTaskSlice: StateCreator<TaskSlice, [], [], TaskSlice> = (set,
   refreshTaskCounts: () => {
     // This function doesn't need to do anything special
     // It's just a trigger to force a re-render with the latest task data
-    // The actual counts are calculated in the ProjectList component
     const tasks = get().tasks;
     console.log(`Refreshing task counts. Current task count: ${tasks.length}`);
     

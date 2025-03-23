@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -41,7 +40,7 @@ export function TaskCard({ task, isDragging = false }: TaskCardProps) {
   const handleStatusChange = async (status: TaskStatus) => {
     try {
       setIsUpdating(true);
-      await setTaskStatus(task.id, status);
+      await updateTask({ id: task.id, status });
     } catch (error) {
       console.error('Error updating task status:', error);
     } finally {

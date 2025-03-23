@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { 
@@ -35,7 +34,7 @@ interface TaskFormProps {
 }
 
 export function TaskForm({ open, onOpenChange }: TaskFormProps) {
-  const { addTask, isLoading, error } = useTaskStore();
+  const { createTask, isLoading, error } = useTaskStore();
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
@@ -68,7 +67,7 @@ export function TaskForm({ open, onOpenChange }: TaskFormProps) {
         tags,
       };
       
-      await addTask(taskData);
+      await createTask(taskData);
       toast({
         title: "Task created",
         description: "Your task has been created successfully.",
@@ -82,7 +81,7 @@ export function TaskForm({ open, onOpenChange }: TaskFormProps) {
     } catch (err) {
       toast({
         title: "Failed to create task",
-        description: error?.message || "An unexpected error occurred.",
+        description: error ? (typeof error === 'string' ? error : "An unexpected error occurred.") : "An unexpected error occurred.",
         variant: "destructive"
       });
     }

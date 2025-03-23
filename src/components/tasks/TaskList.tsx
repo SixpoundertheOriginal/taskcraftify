@@ -126,7 +126,7 @@ export function TaskList() {
       <Alert variant="destructive" className="mb-6">
         <AlertTitle>Error loading tasks</AlertTitle>
         <AlertDescription>
-          {error.message || 'There was an error loading your tasks. Please try again.'}
+          {typeof error === 'string' ? error : 'There was an error loading your tasks. Please try again.'}
         </AlertDescription>
       </Alert>
     );
