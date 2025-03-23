@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { TaskForm } from '@/components/TaskForm';
+import { TaskForm } from '@/components/tasks';
 
 export function Header() {
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
