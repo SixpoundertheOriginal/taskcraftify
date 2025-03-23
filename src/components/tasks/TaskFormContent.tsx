@@ -1,71 +1,65 @@
-import { useState, useEffect } from 'react';
+
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { 
-  Button,
-  Input,
-  Textarea,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-  Badge,
-  Calendar,
-} from '@/components/ui';
-import { CreateTaskDTO, Task, TaskPriority, TaskStatus, UpdateTaskDTO } from '@/types/task';
-import { getPriorityLabel, getStatusLabel } from '@/lib/utils';
-import { CalendarIcon, Loader2, Plus, Tag, X } from 'lucide-react';
+} from '@/components/ui/select';
+import { Calendar as CalendarIcon, Loader2, Plus, Tag, X } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import { CreateTaskDTO, TaskPriority, TaskStatus, Task } from '@/types/task';
+import { getPriorityLabel, getStatusLabel } from '@/lib/utils';
+import { useTaskStore, useProjectStore } from '@/store';
 import { toast } from '@/hooks/use-toast';
-import { useTaskStore } from '@/store/taskStore/taskStore';
+import { ProjectSelector } from '../projects/ProjectSelector';
+import { 
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator
+} from '@/components/ui/command';
+import { Check, ChevronDown, Layers } from 'lucide-react';
 
 interface TaskFormContentProps {
-  onSuccess?: () => void;
+  onSuccess: () => void;
   taskToEdit?: Task;
   initialStatus?: TaskStatus;
 }
 
 export function TaskFormContent({ onSuccess, taskToEdit, initialStatus }: TaskFormContentProps) {
-  const { addTask, updateTask, isSubmitting, error } = useTaskStore();
+  const { addTask, updateTask, isLoading, error } = useTaskStore();
+  const { projects, selectedProjectId } = useProjectStore();
   const [tagInput, setTagInput] = useState('');
-  const [tags, setTags] = useState<string[]>([]);
-  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
-  const isEditing = !!taskToEdit;
+  const [tags, setTags] = useState<string[]>(taskToEdit?.tags || []);
+  const [dueDate, setDueDate] = useState<Date | undefined>(taskToEdit?.dueDate);
+  const [projectId, setProjectId] = useState<string | undefined>(taskToEdit?.projectId || selectedProjectId || undefined);
+  const [projectSelectorOpen, setProjectSelectorOpen] = useState(false);
   
-  const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm<CreateTaskDTO | UpdateTaskDTO>({
-    defaultValues: {
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateTaskDTO>({
+    defaultValues: taskToEdit ? {
+      title: taskToEdit.title,
+      description: taskToEdit.description,
+      status: taskToEdit.status,
+      priority: taskToEdit.priority,
+    } : {
+      title: '',
+      description: '',
       status: initialStatus || TaskStatus.TODO,
-      priority: TaskPriority.MEDIUM
+      priority: TaskPriority.MEDIUM,
     }
   });
-  
-  // Initialize form with task data if editing
-  useEffect(() => {
-    if (taskToEdit) {
-      reset({
-        title: taskToEdit.title,
-        description: taskToEdit.description,
-        status: taskToEdit.status,
-        priority: taskToEdit.priority,
-      });
-      
-      if (taskToEdit.tags) {
-        setTags(taskToEdit.tags);
-      }
-      
-      if (taskToEdit.dueDate) {
-        setDueDate(new Date(taskToEdit.dueDate));
-      }
-    } else if (initialStatus) {
-      reset({
-        status: initialStatus,
-        priority: TaskPriority.MEDIUM
-      });
-    }
-  }, [taskToEdit, initialStatus, reset]);
   
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
@@ -84,44 +78,33 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus }: TaskFo
       handleAddTag();
     }
   };
-
-  // Update the hidden fields when select values change
-  const handleStatusChange = (value: string) => {
-    setValue('status', value as TaskStatus);
-  };
-
-  const handlePriorityChange = (value: string) => {
-    setValue('priority', value as TaskPriority);
+  
+  const handleProjectSelect = (id: string | undefined) => {
+    setProjectId(id === 'none' ? undefined : id);
+    setProjectSelectorOpen(false);
   };
   
-  const onSubmit = async (data: Omit<CreateTaskDTO | UpdateTaskDTO, 'tags' | 'dueDate'>) => {
+  const onSubmit = async (data: CreateTaskDTO) => {
     try {
-      if (isEditing && taskToEdit) {
+      const taskData: CreateTaskDTO = {
+        ...data,
+        dueDate,
+        tags,
+        projectId: projectId === 'none' ? undefined : projectId
+      };
+      
+      if (taskToEdit) {
         // Update existing task
-        const taskData: UpdateTaskDTO = {
+        await updateTask({
           id: taskToEdit.id,
-          ...data,
-          dueDate,
-          tags,
-        };
-        
-        const success = await updateTask(taskData);
-        if (success) {
-          toast({
-            title: "Task updated",
-            description: "Your task has been updated successfully.",
-          });
-        } else {
-          throw new Error("Failed to update task");
-        }
+          ...taskData
+        });
+        toast({
+          title: "Task updated",
+          description: "Your task has been updated successfully.",
+        });
       } else {
         // Create new task
-        const taskData = {
-          ...data,
-          dueDate,
-          tags,
-        } as CreateTaskDTO;
-        
         await addTask(taskData);
         toast({
           title: "Task created",
@@ -133,16 +116,18 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus }: TaskFo
       reset();
       setTags([]);
       setDueDate(undefined);
-      onSuccess?.();
+      onSuccess();
     } catch (err) {
       toast({
-        title: isEditing ? "Failed to update task" : "Failed to create task",
+        title: taskToEdit ? "Failed to update task" : "Failed to create task",
         description: error?.message || "An unexpected error occurred.",
         variant: "destructive"
       });
     }
   };
   
+  const currentProject = projectId ? projects.find(p => p.id === projectId) : null;
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
       <div className="space-y-2">
@@ -175,10 +160,7 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus }: TaskFo
           <label htmlFor="status" className="text-sm font-medium">
             Status <span className="text-destructive">*</span>
           </label>
-          <Select 
-            defaultValue={taskToEdit?.status || TaskStatus.TODO} 
-            onValueChange={handleStatusChange}
-          >
+          <Select defaultValue={taskToEdit?.status || initialStatus || TaskStatus.TODO} {...register('status', { required: true })}>
             <SelectTrigger id="status">
               <SelectValue placeholder="Select status" />
             </SelectTrigger>
@@ -190,20 +172,13 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus }: TaskFo
               ))}
             </SelectContent>
           </Select>
-          <input 
-            type="hidden" 
-            {...register('status', { required: true })} 
-          />
         </div>
         
         <div className="space-y-2">
           <label htmlFor="priority" className="text-sm font-medium">
             Priority <span className="text-destructive">*</span>
           </label>
-          <Select 
-            defaultValue={taskToEdit?.priority || TaskPriority.MEDIUM}
-            onValueChange={handlePriorityChange}
-          >
+          <Select defaultValue={taskToEdit?.priority || TaskPriority.MEDIUM} {...register('priority', { required: true })}>
             <SelectTrigger id="priority">
               <SelectValue placeholder="Select priority" />
             </SelectTrigger>
@@ -215,11 +190,77 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus }: TaskFo
               ))}
             </SelectContent>
           </Select>
-          <input 
-            type="hidden" 
-            {...register('priority', { required: true })} 
-          />
         </div>
+      </div>
+      
+      <div className="space-y-2">
+        <label htmlFor="project" className="text-sm font-medium">Project</label>
+        <Popover open={projectSelectorOpen} onOpenChange={setProjectSelectorOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={projectSelectorOpen}
+              className="w-full justify-between"
+              id="project"
+            >
+              {projectId && currentProject ? (
+                <div className="flex items-center gap-2">
+                  <div 
+                    className="w-3 h-3 rounded-full" 
+                    style={{ backgroundColor: currentProject.color }}
+                  />
+                  <span>{currentProject.name}</span>
+                </div>
+              ) : projectId === 'none' ? (
+                <span>No Project</span>
+              ) : (
+                <span className="text-muted-foreground">Select project</span>
+              )}
+              <ChevronDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-full p-0">
+            <Command>
+              <CommandInput placeholder="Search projects..." className="h-9" />
+              <CommandList>
+                <CommandEmpty>No projects found.</CommandEmpty>
+                
+                <CommandGroup>
+                  <CommandItem 
+                    onSelect={() => handleProjectSelect('none')}
+                    className="flex items-center gap-2"
+                  >
+                    <span>No Project</span>
+                    {projectId === 'none' && <Check className="ml-auto h-4 w-4" />}
+                  </CommandItem>
+                </CommandGroup>
+                
+                {projects.length > 0 && (
+                  <>
+                    <CommandSeparator />
+                    <CommandGroup heading="Your Projects">
+                      {projects.map((project) => (
+                        <CommandItem
+                          key={project.id}
+                          onSelect={() => handleProjectSelect(project.id)}
+                          className="flex items-center gap-2"
+                        >
+                          <div 
+                            className="w-3 h-3 rounded-full" 
+                            style={{ backgroundColor: project.color }}
+                          />
+                          <span>{project.name}</span>
+                          {projectId === project.id && <Check className="ml-auto h-4 w-4" />}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </>
+                )}
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
       </div>
       
       <div className="space-y-2">
@@ -230,19 +271,18 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus }: TaskFo
               variant="outline"
               className="w-full justify-start text-left font-normal"
               id="dueDate"
-              type="button"
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
               {dueDate ? format(dueDate, 'PPP') : <span className="text-muted-foreground">Select due date</span>}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
+          <PopoverContent className="w-auto p-0">
             <Calendar
               mode="single"
               selected={dueDate}
               onSelect={setDueDate}
               initialFocus
-              className="rounded-md border pointer-events-auto"
+              className="rounded-md border"
             />
           </PopoverContent>
         </Popover>
@@ -275,7 +315,6 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus }: TaskFo
                   size="icon"
                   className="h-4 w-4 p-0 hover:bg-transparent"
                   onClick={() => handleRemoveTag(tag)}
-                  type="button"
                 >
                   <X className="h-3 w-3" />
                   <span className="sr-only">Remove tag</span>
@@ -286,15 +325,15 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus }: TaskFo
         )}
       </div>
       
-      <div className="flex justify-end pt-2">
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? (
+      <div className="flex justify-end pt-4">
+        <Button type="submit" disabled={isLoading}>
+          {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {isEditing ? 'Updating...' : 'Creating...'}
+              {taskToEdit ? 'Updating...' : 'Creating...'}
             </>
           ) : (
-            isEditing ? 'Update Task' : 'Create Task'
+            taskToEdit ? 'Update Task' : 'Create Task'
           )}
         </Button>
       </div>

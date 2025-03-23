@@ -7,23 +7,27 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import Index from '@/pages/Index';
 import Auth from '@/pages/Auth';
 import NotFound from '@/pages/NotFound';
-import { useTaskStore } from '@/store/useTaskStore';
+import { useTaskStore, useProjectStore } from '@/store';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 
 function App() {
   const { fetchTasks, setupTaskSubscription } = useTaskStore();
+  const { fetchProjects, setupProjectSubscription } = useProjectStore();
   
   useEffect(() => {
     // Initial fetch
     fetchTasks().catch(console.error);
+    fetchProjects().catch(console.error);
     
-    // Setup real-time subscription
-    const unsubscribe = setupTaskSubscription();
+    // Setup real-time subscriptions
+    const unsubscribeTasks = setupTaskSubscription();
+    const unsubscribeProjects = setupProjectSubscription();
     
     return () => {
-      unsubscribe();
+      unsubscribeTasks();
+      unsubscribeProjects();
     };
-  }, [fetchTasks, setupTaskSubscription]);
+  }, [fetchTasks, setupTaskSubscription, fetchProjects, setupProjectSubscription]);
   
   return (
     <ThemeProvider defaultTheme="system" storageKey="taskcraft-theme">

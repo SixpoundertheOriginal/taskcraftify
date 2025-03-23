@@ -1,10 +1,10 @@
-
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { 
   TaskPriority, 
   TaskStatus 
 } from "@/types/task";
+import { Project } from '@/types/project';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -104,4 +104,20 @@ export function debounce<T extends (...args: any[]) => any>(
     if (timeout) clearTimeout(timeout);
     timeout = setTimeout(() => func(...args), wait);
   };
+}
+
+export function getProjectColor(project: Project | undefined, opacity: number = 1): string {
+  if (!project) return 'transparent';
+  
+  // If the color is a hex value, convert to rgba
+  if (project.color.startsWith('#')) {
+    const hex = project.color.slice(1);
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    
+    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+  }
+  
+  return project.color;
 }

@@ -24,6 +24,7 @@ export interface Task {
   createdAt: Date;
   updatedAt: Date;
   tags?: string[];
+  projectId?: string;
 }
 
 export interface CreateTaskDTO {
@@ -33,6 +34,7 @@ export interface CreateTaskDTO {
   priority: TaskPriority;
   dueDate?: Date;
   tags?: string[];
+  projectId?: string;
 }
 
 export interface UpdateTaskDTO {
@@ -43,6 +45,7 @@ export interface UpdateTaskDTO {
   priority?: TaskPriority;
   dueDate?: Date | null;
   tags?: string[];
+  projectId?: string | null;
 }
 
 export interface TaskFilters {
@@ -52,6 +55,7 @@ export interface TaskFilters {
   searchQuery?: string;
   dueDateFrom?: Date;
   dueDateTo?: Date;
+  projectId?: string;
 }
 
 export interface APITask {
@@ -65,6 +69,7 @@ export interface APITask {
   created_at: string;
   updated_at: string;
   tags: string[] | null;
+  project_id: string | null;
 }
 
 // Convert API task to app task
@@ -79,6 +84,7 @@ export function mapApiTaskToTask(apiTask: APITask): Task {
     createdAt: new Date(apiTask.created_at),
     updatedAt: new Date(apiTask.updated_at),
     tags: apiTask.tags || undefined,
+    projectId: apiTask.project_id || undefined,
   };
 }
 
@@ -90,6 +96,7 @@ export function mapTaskToApiTask(task: CreateTaskDTO | UpdateTaskDTO, userId?: s
     status: task.status,
     priority: task.priority,
     tags: task.tags || null,
+    project_id: task.projectId || null,
   };
 
   if (userId) {

@@ -26,6 +26,15 @@ export const createFilterSlice: StateCreator<TaskStore, [], [], FilterSlice> = (
     const { tasks, filters } = get();
     
     return tasks.filter(task => {
+      // Project filter
+      if (filters.projectId !== undefined) {
+        if (filters.projectId === 'none') {
+          if (task.projectId) return false;
+        } else if (filters.projectId && task.projectId !== filters.projectId) {
+          return false;
+        }
+      }
+      
       // Status filter
       if (filters.status && filters.status.length > 0) {
         if (!filters.status.includes(task.status)) return false;
