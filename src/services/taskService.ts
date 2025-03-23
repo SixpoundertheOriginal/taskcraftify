@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Task, 
@@ -216,7 +217,8 @@ export const TaskService = {
         throw new Error(`Error getting total task count: ${totalError.message}`);
       }
       
-      const totalCount = totalData?.count || 0;
+      // Fix: Access the count property correctly
+      const totalCount = totalData || 0;
       console.log(`1. Total tasks in database: ${totalCount}`);
       
       // Get count of tasks with no project
@@ -229,7 +231,8 @@ export const TaskService = {
         throw new Error(`Error getting no-project task count: ${noProjectError.message}`);
       }
       
-      const noProjectCount = noProjectData?.count || 0;
+      // Fix: Access the count property correctly
+      const noProjectCount = noProjectData || 0;
       console.log(`2. Tasks with no project: ${noProjectCount}`);
       
       // Get counts by project
