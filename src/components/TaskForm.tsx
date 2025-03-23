@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Calendar as CalendarIcon, Plus, Tag, X } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, Plus, Tag, X } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
@@ -35,7 +35,7 @@ interface TaskFormProps {
 }
 
 export function TaskForm({ open, onOpenChange }: TaskFormProps) {
-  const { addTask } = useTaskStore();
+  const { addTask, isLoading, error } = useTaskStore();
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
@@ -60,24 +60,32 @@ export function TaskForm({ open, onOpenChange }: TaskFormProps) {
     }
   };
   
-  const onSubmit = (data: CreateTaskDTO) => {
-    const taskData: CreateTaskDTO = {
-      ...data,
-      dueDate,
-      tags,
-    };
-    
-    addTask(taskData);
-    toast({
-      title: "Task created",
-      description: "Your task has been created successfully.",
-    });
-    
-    // Reset form
-    reset();
-    setTags([]);
-    setDueDate(undefined);
-    onOpenChange(false);
+  const onSubmit = async (data: CreateTaskDTO) => {
+    try {
+      const taskData: CreateTaskDTO = {
+        ...data,
+        dueDate,
+        tags,
+      };
+      
+      await addTask(taskData);
+      toast({
+        title: "Task created",
+        description: "Your task has been created successfully.",
+      });
+      
+      // Reset form
+      reset();
+      setTags([]);
+      setDueDate(undefined);
+      onOpenChange(false);
+    } catch (err) {
+      toast({
+        title: "Failed to create task",
+        description: error?.message || "An unexpected error occurred.",
+        variant: "destructive"
+      });
+    }
   };
   
   const handleClose = () => {
@@ -225,7 +233,16 @@ export function TaskForm({ open, onOpenChange }: TaskFormProps) {
             <DialogClose asChild>
               <Button type="button" variant="outline">Cancel</Button>
             </DialogClose>
-            <Button type="submit">Create Task</Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create Task'
+              )}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

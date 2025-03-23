@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { CheckCircle, Clock, MoreHorizontal, Tag } from 'lucide-react';
+import { CheckCircle, Clock, Loader2, MoreHorizontal, Tag } from 'lucide-react';
 import { Task, TaskStatus } from '@/types/task';
 import { 
   formatDate, 
@@ -27,19 +27,36 @@ interface TaskCardProps {
 
 export function TaskCard({ task }: TaskCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { updateTask, deleteTask, setTaskStatus } = useTaskStore();
   
-  const handleStatusChange = (status: TaskStatus) => {
-    setTaskStatus(task.id, status);
+  const handleStatusChange = async (status: TaskStatus) => {
+    try {
+      setIsUpdating(true);
+      await setTaskStatus(task.id, status);
+    } catch (error) {
+      console.error('Error updating task status:', error);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
-  const handleDelete = () => {
-    deleteTask(task.id);
+  const handleDelete = async () => {
+    try {
+      setIsDeleting(true);
+      await deleteTask(task.id);
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      setIsDeleting(false);
+    }
   };
 
   return (
     <Card 
-      className="group w-full transition-all duration-200 border border-border/40 shadow-sm hover:shadow-md hover:border-border/80"
+      className={`group w-full transition-all duration-200 border border-border/40 shadow-sm hover:shadow-md hover:border-border/80 ${
+        isUpdating || isDeleting ? 'opacity-70' : ''
+      }`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -47,28 +64,32 @@ export function TaskCard({ task }: TaskCardProps) {
         <div className="flex justify-between items-start mb-2">
           <h3 className="font-medium text-base text-balance">{task.title}</h3>
           
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">Task actions</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleStatusChange(TaskStatus.TODO)}>
-                Mark as To Do
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleStatusChange(TaskStatus.IN_PROGRESS)}>
-                Mark as In Progress
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleStatusChange(TaskStatus.DONE)}>
-                Mark as Done
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleDelete} className="text-destructive">
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {(isUpdating || isDeleting) ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span className="sr-only">Task actions</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleStatusChange(TaskStatus.TODO)}>
+                  Mark as To Do
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleStatusChange(TaskStatus.IN_PROGRESS)}>
+                  Mark as In Progress
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleStatusChange(TaskStatus.DONE)}>
+                  Mark as Done
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleDelete} className="text-destructive">
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
         
         {task.description && (

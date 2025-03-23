@@ -1,27 +1,48 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Toaster } from '@/components/ui/toaster';
+import { AuthProvider } from '@/auth/AuthContext';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import Index from '@/pages/Index';
+import Auth from '@/pages/Auth';
+import NotFound from '@/pages/NotFound';
+import { useTaskStore } from '@/store/useTaskStore';
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
+function App() {
+  const { fetchTasks, setupTaskSubscription } = useTaskStore();
+  
+  useEffect(() => {
+    // Initial fetch
+    fetchTasks().catch(console.error);
+    
+    // Setup real-time subscription
+    const unsubscribe = setupTaskSubscription();
+    
+    return () => {
+      unsubscribe();
+    };
+  }, [fetchTasks, setupTaskSubscription]);
+  
+  return (
+    <AuthProvider>
+      <Router>
         <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/auth" element={<Auth />} />
+          <Route 
+            path="/" 
+            element={
+              <ProtectedRoute>
+                <Index />
+              </ProtectedRoute>
+            } 
+          />
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+      </Router>
+      <Toaster />
+    </AuthProvider>
+  );
+}
 
 export default App;
