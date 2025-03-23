@@ -26,9 +26,10 @@ import { useProjectStore } from '@/store';
 
 interface TaskCardProps {
   task: Task;
+  isDragging?: boolean;
 }
 
-export function TaskCard({ task }: TaskCardProps) {
+export function TaskCard({ task, isDragging = false }: TaskCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -66,19 +67,13 @@ export function TaskCard({ task }: TaskCardProps) {
     await handleStatusChange(newStatus);
   };
 
-  const getBorderColor = () => {
-    if (task.projectId && project) {
-      return `border-l-[3px] border-l-[${project.color}]`;
-    }
-    return '';
-  };
-
   return (
     <Card 
       className={cn(
         "group w-full transition-all duration-200 border border-border/40 shadow-sm hover:shadow-md hover:border-border/80",
         project ? `border-l-4` : '',
         isUpdating || isDeleting ? 'opacity-70' : '',
+        isDragging ? 'opacity-80 rotate-1 scale-105 shadow-md z-50' : ''
       )}
       style={project ? { borderLeftColor: project.color } : {}}
       onMouseEnter={() => setIsHovered(true)}

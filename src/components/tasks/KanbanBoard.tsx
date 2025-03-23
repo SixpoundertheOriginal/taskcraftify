@@ -14,7 +14,7 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { CheckCircle, Loader2 } from 'lucide-react';
-import { useTaskStore } from '@/store/taskStore/taskStore';
+import { useTaskStore } from '@/store';
 import { Task, TaskStatus } from '@/types/task';
 import { KanbanColumn } from './KanbanColumn';
 import { TaskCard } from './TaskCard';
