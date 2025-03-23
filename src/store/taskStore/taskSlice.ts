@@ -1,4 +1,3 @@
-
 import { StateCreator } from 'zustand';
 import { TaskService } from '@/services/taskService';
 import { Task } from '@/types/task';
@@ -14,6 +13,7 @@ export interface TaskSlice {
   deleteTask: (id: string) => Promise<void>;
   setTaskStatus: (id: string, status: Task['status']) => Promise<Task>;
   refreshTaskCounts: () => void;
+  diagnosticDatabaseQuery: () => Promise<void>;
 }
 
 export const createTaskSlice: StateCreator<TaskSlice, [], [], TaskSlice> = (set, get) => ({
@@ -236,5 +236,48 @@ export const createTaskSlice: StateCreator<TaskSlice, [], [], TaskSlice> = (set,
     
     // Execute the refresh
     refreshTasks();
+  },
+  
+  diagnosticDatabaseQuery: async () => {
+    set({ isLoading: true, error: null });
+    
+    try {
+      const result = await TaskService.directQueryTaskCounts();
+      if (result.error) {
+        throw result.error;
+      }
+      
+      if (result.data) {
+        const { totalCount, noProjectCount, projectCounts } = result.data;
+        
+        toast({
+          title: "Database Query Results",
+          description: `Total: ${totalCount}, No Project: ${noProjectCount}`,
+        });
+        
+        // After diagnostics, refresh the UI with the latest data
+        const tasksResult = await TaskService.fetchTasks();
+        if (tasksResult.error) {
+          throw tasksResult.error;
+        }
+        
+        set({ 
+          tasks: tasksResult.data || [], 
+          isLoading: false 
+        });
+      }
+    } catch (error) {
+      console.error('Error in diagnostic database query:', error);
+      set({ 
+        error: error instanceof Error ? error.message : 'Failed to query database', 
+        isLoading: false 
+      });
+      
+      toast({
+        title: "Database Query Failed",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive"
+      });
+    }
   }
 });

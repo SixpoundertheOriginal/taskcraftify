@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Task, 
@@ -196,5 +195,97 @@ export const TaskService = {
       console.log("Removing tasks subscription");
       supabase.removeChannel(channel);
     };
+  },
+
+  async directQueryTaskCounts(): Promise<ServiceResult<{
+    totalCount: number;
+    noProjectCount: number;
+    projectCounts: Record<string, number>;
+  }>> {
+    try {
+      console.log('----------------------------------------');
+      console.log('DIRECT DATABASE QUERY FOR TASK COUNTS:');
+      console.log('----------------------------------------');
+      
+      // Get total count of tasks
+      const { data: totalData, error: totalError } = await supabase
+        .from('tasks')
+        .select('count', { count: 'exact', head: true });
+        
+      if (totalError) {
+        throw new Error(`Error getting total task count: ${totalError.message}`);
+      }
+      
+      const totalCount = totalData?.count || 0;
+      console.log(`1. Total tasks in database: ${totalCount}`);
+      
+      // Get count of tasks with no project
+      const { data: noProjectData, error: noProjectError } = await supabase
+        .from('tasks')
+        .select('count', { count: 'exact', head: true })
+        .is('project_id', null);
+        
+      if (noProjectError) {
+        throw new Error(`Error getting no-project task count: ${noProjectError.message}`);
+      }
+      
+      const noProjectCount = noProjectData?.count || 0;
+      console.log(`2. Tasks with no project: ${noProjectCount}`);
+      
+      // Get counts by project
+      const { data: projectData, error: projectError } = await supabase
+        .from('tasks')
+        .select('project_id');
+        
+      if (projectError) {
+        throw new Error(`Error getting project task counts: ${projectError.message}`);
+      }
+      
+      // Count tasks by project ID
+      const projectCounts: Record<string, number> = {};
+      projectData?.forEach(row => {
+        const projectId = row.project_id || 'null';
+        projectCounts[projectId] = (projectCounts[projectId] || 0) + 1;
+      });
+      
+      console.log('3. Tasks by project_id:');
+      Object.entries(projectCounts).forEach(([projectId, count]) => {
+        console.log(`   Project "${projectId}": ${count} tasks`);
+      });
+      
+      // Debug: Fetch and log raw task data
+      const { data: rawTasks, error: rawError } = await supabase
+        .from('tasks')
+        .select('id, title, project_id')
+        .limit(20);
+        
+      if (rawError) {
+        console.error('Error fetching raw task data:', rawError);
+      } else {
+        console.log('4. Sample of raw task data from database:');
+        rawTasks?.forEach((task, index) => {
+          console.log(`   Task ${index + 1}: id=${task.id}, title=${task.title}, project_id=${task.project_id === null ? 'null' : task.project_id}`);
+        });
+      }
+      
+      console.log('----------------------------------------');
+      console.log('DATABASE QUERY COMPLETED');
+      console.log('----------------------------------------');
+      
+      return {
+        data: {
+          totalCount,
+          noProjectCount,
+          projectCounts
+        },
+        error: null
+      };
+    } catch (error) {
+      console.error('Error in direct database query:', error);
+      return {
+        data: null,
+        error: error instanceof Error ? error : new Error('Unknown error occurred')
+      };
+    }
   }
 };

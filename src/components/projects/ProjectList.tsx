@@ -1,4 +1,3 @@
-
 import { useProjectStore, useTaskStore } from '@/store';
 import { Task } from '@/types/task';
 import { 
@@ -16,7 +15,8 @@ import {
   Pencil, 
   Trash2,
   FileQuestion,
-  RefreshCw
+  RefreshCw,
+  Database
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { ProjectDialog } from './ProjectDialog';
@@ -46,13 +46,12 @@ export function ProjectList() {
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { projects, selectedProjectId, selectProject, deleteProject } = useProjectStore();
-  const { filters, setFilters, tasks, refreshTaskCounts, fetchTasks } = useTaskStore();
+  const { filters, setFilters, tasks, refreshTaskCounts, fetchTasks, diagnosticDatabaseQuery } = useTaskStore();
   
   useEffect(() => {
     console.log(`ProjectList: Rendering with ${tasks.length} tasks`);
   }, [tasks.length]);
   
-  // Count tasks by project using useMemo to avoid recalculation on every render
   const taskCounts = useMemo(() => {
     console.log(`Computing task counts for ${tasks.length} tasks`);
     const counts: Record<string, number> = {};
@@ -66,14 +65,12 @@ export function ProjectList() {
     return counts;
   }, [tasks]);
   
-  // Get total task count
   const totalTaskCount = useMemo(() => {
     const count = tasks.length;
     console.log(`Total task count: ${count}`);
     return count;
   }, [tasks]);
   
-  // Get tasks with no project
   const noProjectTaskCount = useMemo(() => {
     const count = tasks.filter(task => !task.projectId).length;
     console.log(`No project task count: ${count}`);
@@ -107,7 +104,6 @@ export function ProjectList() {
         handleSelectProject(null);
       }
       
-      // Force task counts refresh after deleting a project
       setTimeout(() => {
         refreshTaskCounts();
       }, 500);
@@ -131,12 +127,8 @@ export function ProjectList() {
       console.log('Timestamp:', new Date().toISOString());
       console.log('----------------------------------------');
       
-      // First, force a complete refetch of all tasks
-      console.log('1. Initiating fetchTasks()...');
       await fetchTasks();
       
-      // Then explicitly refresh the counts
-      console.log('2. Initiating refreshTaskCounts()...');
       setTimeout(() => {
         refreshTaskCounts();
       }, 300);
@@ -153,7 +145,33 @@ export function ProjectList() {
         variant: "destructive"
       });
     } finally {
-      // Keep the spinning indicator for a moment so user sees feedback
+      setTimeout(() => setIsRefreshing(false), 1000);
+    }
+  };
+  
+  const handleDiagnosticQuery = async () => {
+    setIsRefreshing(true);
+    
+    try {
+      console.log('----------------------------------------');
+      console.log('DIRECT DATABASE DIAGNOSTIC INITIATED');
+      console.log('Timestamp:', new Date().toISOString());
+      console.log('----------------------------------------');
+      
+      await diagnosticDatabaseQuery();
+      
+      toast({
+        title: "Database diagnostic completed",
+        description: "Check the console for detailed information.",
+      });
+    } catch (error) {
+      console.error("Error during database diagnostic:", error);
+      toast({
+        title: "Diagnostic failed",
+        description: "There was a problem querying the database.",
+        variant: "destructive"
+      });
+    } finally {
       setTimeout(() => setIsRefreshing(false), 1000);
     }
   };
@@ -162,16 +180,29 @@ export function ProjectList() {
     <>
       <div className="flex justify-between items-center mb-2">
         <h4 className="text-sm font-medium">Projects</h4>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="h-6 w-6" 
-          onClick={handleRefreshCounts}
-          disabled={isRefreshing}
-        >
-          <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-          <span className="sr-only">Refresh Counts</span>
-        </Button>
+        <div className="flex gap-1">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-6 w-6" 
+            onClick={handleDiagnosticQuery}
+            disabled={isRefreshing}
+            title="Run Database Diagnostic"
+          >
+            <Database className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span className="sr-only">Database Diagnostic</span>
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-6 w-6" 
+            onClick={handleRefreshCounts}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span className="sr-only">Refresh Counts</span>
+          </Button>
+        </div>
       </div>
       
       <SidebarMenu>
