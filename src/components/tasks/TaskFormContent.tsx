@@ -21,7 +21,7 @@ import { getPriorityLabel, getStatusLabel } from '@/lib/utils';
 import { CalendarIcon, Loader2, Plus, Tag, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
-import { useTaskStore } from '@/store/taskStore/taskStore';
+import { useTaskStore } from '@/store/useTaskStore';
 
 interface TaskFormContentProps {
   onSuccess?: () => void;
@@ -33,7 +33,12 @@ export function TaskFormContent({ onSuccess }: TaskFormContentProps) {
   const [tags, setTags] = useState<string[]>([]);
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateTaskDTO>();
+  const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm<CreateTaskDTO>({
+    defaultValues: {
+      status: TaskStatus.TODO,
+      priority: TaskPriority.MEDIUM
+    }
+  });
   
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
@@ -51,6 +56,15 @@ export function TaskFormContent({ onSuccess }: TaskFormContentProps) {
       e.preventDefault();
       handleAddTag();
     }
+  };
+
+  // Update the hidden fields when select values change
+  const handleStatusChange = (value: string) => {
+    setValue('status', value as TaskStatus);
+  };
+
+  const handlePriorityChange = (value: string) => {
+    setValue('priority', value as TaskPriority);
   };
   
   const onSubmit = async (data: Omit<CreateTaskDTO, 'tags' | 'dueDate'>) => {
@@ -113,7 +127,10 @@ export function TaskFormContent({ onSuccess }: TaskFormContentProps) {
           <label htmlFor="status" className="text-sm font-medium">
             Status <span className="text-destructive">*</span>
           </label>
-          <Select defaultValue={TaskStatus.TODO}>
+          <Select 
+            defaultValue={TaskStatus.TODO} 
+            onValueChange={handleStatusChange}
+          >
             <SelectTrigger id="status">
               <SelectValue placeholder="Select status" />
             </SelectTrigger>
@@ -125,14 +142,20 @@ export function TaskFormContent({ onSuccess }: TaskFormContentProps) {
               ))}
             </SelectContent>
           </Select>
-          <input type="hidden" {...register('status', { required: true })} />
+          <input 
+            type="hidden" 
+            {...register('status', { required: true })} 
+          />
         </div>
         
         <div className="space-y-2">
           <label htmlFor="priority" className="text-sm font-medium">
             Priority <span className="text-destructive">*</span>
           </label>
-          <Select defaultValue={TaskPriority.MEDIUM}>
+          <Select 
+            defaultValue={TaskPriority.MEDIUM}
+            onValueChange={handlePriorityChange}
+          >
             <SelectTrigger id="priority">
               <SelectValue placeholder="Select priority" />
             </SelectTrigger>
@@ -144,7 +167,10 @@ export function TaskFormContent({ onSuccess }: TaskFormContentProps) {
               ))}
             </SelectContent>
           </Select>
-          <input type="hidden" {...register('priority', { required: true })} />
+          <input 
+            type="hidden" 
+            {...register('priority', { required: true })} 
+          />
         </div>
       </div>
       
@@ -156,18 +182,19 @@ export function TaskFormContent({ onSuccess }: TaskFormContentProps) {
               variant="outline"
               className="w-full justify-start text-left font-normal"
               id="dueDate"
+              type="button"
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
               {dueDate ? format(dueDate, 'PPP') : <span className="text-muted-foreground">Select due date</span>}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
+          <PopoverContent className="w-auto p-0" align="start">
             <Calendar
               mode="single"
               selected={dueDate}
               onSelect={setDueDate}
               initialFocus
-              className="rounded-md border"
+              className="rounded-md border pointer-events-auto"
             />
           </PopoverContent>
         </Popover>
@@ -200,6 +227,7 @@ export function TaskFormContent({ onSuccess }: TaskFormContentProps) {
                   size="icon"
                   className="h-4 w-4 p-0 hover:bg-transparent"
                   onClick={() => handleRemoveTag(tag)}
+                  type="button"
                 >
                   <X className="h-3 w-3" />
                   <span className="sr-only">Remove tag</span>

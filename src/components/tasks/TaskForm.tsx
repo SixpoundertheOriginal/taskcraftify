@@ -21,6 +21,10 @@ export function TaskForm({ open, onOpenChange }: TaskFormProps) {
     onOpenChange(false);
   };
   
+  const handleSuccess = () => {
+    onOpenChange(false);
+  };
+  
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px] animate-fade-in">
@@ -31,7 +35,7 @@ export function TaskForm({ open, onOpenChange }: TaskFormProps) {
           </DialogDescription>
         </DialogHeader>
         
-        <TaskFormContent onSuccess={handleClose} />
+        <TaskFormContent onSuccess={handleSuccess} />
         
         <DialogFooter>
           <DialogClose asChild>
