@@ -9,8 +9,12 @@ export interface SubscriptionSlice {
 
 export const createSubscriptionSlice: StateCreator<TaskStore, [], [], SubscriptionSlice> = (set) => ({
   setupTaskSubscription: () => {
-    return TaskService.subscribeToTasks((tasks) => {
+    console.log("Setting up task subscription");
+    const unsubscribe = TaskService.subscribeToTasks((tasks) => {
+      console.log("Task subscription updated with", tasks.length, "tasks");
       set({ tasks });
     });
+    
+    return unsubscribe;
   },
 });

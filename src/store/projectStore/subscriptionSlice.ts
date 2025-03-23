@@ -14,8 +14,10 @@ export const createSubscriptionSlice: StateCreator<
   SubscriptionSlice
 > = (set, get) => ({
   setupProjectSubscription: () => {
+    console.log("Setting up project subscription");
     // Initialize subscription to real-time updates
     const unsubscribe = ProjectService.subscribeToProjects((projects) => {
+      console.log("Project subscription updated with", projects.length, "projects");
       set({ projects });
     });
     

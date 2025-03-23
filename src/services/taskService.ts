@@ -38,8 +38,11 @@ export const TaskService = {
         return { data: null, error: new Error(error.message) };
       }
 
+      const mappedTasks = (data as APITask[]).map(mapApiTaskToTask);
+      console.log(`Fetched ${mappedTasks.length} tasks`);
+      
       return { 
-        data: (data as APITask[]).map(mapApiTaskToTask), 
+        data: mappedTasks, 
         error: null 
       };
     } catch (error) {
@@ -163,11 +166,14 @@ export const TaskService = {
   },
 
   subscribeToTasks(callback: (tasks: Task[]) => void): (() => void) {
+    console.log("Setting up realtime subscription to tasks table");
+    
     const channel = supabase
-      .channel('public:tasks')
+      .channel('tasks-channel')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'tasks' }, 
-        async () => {
+        async (payload) => {
+          console.log("Realtime task update detected:", payload.eventType);
           // When any change happens, refresh the task list
           try {
             const result = await this.fetchTasks();
@@ -181,10 +187,13 @@ export const TaskService = {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`Tasks subscription status: ${status}`);
+      });
 
     // Return unsubscribe function
     return () => {
+      console.log("Removing tasks subscription");
       supabase.removeChannel(channel);
     };
   }

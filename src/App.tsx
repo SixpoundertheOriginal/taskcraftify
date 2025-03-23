@@ -15,15 +15,29 @@ function App() {
   const { fetchProjects, setupProjectSubscription } = useProjectStore();
   
   useEffect(() => {
+    console.log("App mounted - setting up data fetching and subscriptions");
+    
     // Initial fetch
-    fetchTasks().catch(console.error);
-    fetchProjects().catch(console.error);
+    const loadData = async () => {
+      try {
+        console.log("Fetching initial tasks data");
+        await fetchTasks();
+        console.log("Fetching initial projects data");
+        await fetchProjects();
+      } catch (error) {
+        console.error("Error fetching initial data:", error);
+      }
+    };
+    
+    loadData();
     
     // Setup real-time subscriptions
+    console.log("Setting up real-time subscriptions");
     const unsubscribeTasks = setupTaskSubscription();
     const unsubscribeProjects = setupProjectSubscription();
     
     return () => {
+      console.log("App unmounting - cleaning up subscriptions");
       unsubscribeTasks();
       unsubscribeProjects();
     };

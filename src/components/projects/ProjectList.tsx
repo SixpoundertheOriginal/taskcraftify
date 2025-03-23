@@ -1,4 +1,3 @@
-
 import { useProjectStore, useTaskStore } from '@/store';
 import { Task } from '@/types/task';
 import { 
@@ -16,7 +15,7 @@ import {
   Trash2,
   FileQuestion
 } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { ProjectDialog } from './ProjectDialog';
 import {
   DropdownMenu,
@@ -42,10 +41,28 @@ export function ProjectList() {
   const [projectToEdit, setProjectToEdit] = useState<string | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
   const { projects, selectedProjectId, selectProject, deleteProject } = useProjectStore();
-  const { filters, setFilters, tasks } = useTaskStore();
+  const { filters, setFilters, tasks, fetchTasks } = useTaskStore();
   
-  // Count tasks by project using useMemo to avoid recalculation on every render
+  useEffect(() => {
+    console.log(`ProjectList: Rendering with ${tasks.length} tasks`);
+    fetchTasks().catch(console.error);
+  }, []);
+  
+  useEffect(() => {
+    console.log(`ProjectList: Tasks updated, now ${tasks.length} tasks`);
+    console.log('Tasks without project:', tasks.filter(task => !task.projectId).length);
+    
+    const projectDistribution = tasks.reduce((acc: Record<string, number>, task) => {
+      const key = task.projectId || 'none';
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
+    
+    console.log('Project distribution:', projectDistribution);
+  }, [tasks]);
+  
   const taskCounts = useMemo(() => {
+    console.log(`Computing task counts for ${tasks.length} tasks`);
     return tasks.reduce((acc: Record<string, number>, task: Task) => {
       const projectId = task.projectId || 'none';
       acc[projectId] = (acc[projectId] || 0) + 1;
@@ -53,14 +70,17 @@ export function ProjectList() {
     }, {});
   }, [tasks]);
   
-  // Get total task count
-  const totalTaskCount = useMemo(() => tasks.length, [tasks]);
+  const totalTaskCount = useMemo(() => {
+    const count = tasks.length;
+    console.log(`Total task count: ${count}`);
+    return count;
+  }, [tasks]);
   
-  // Get tasks with no project
-  const noProjectTaskCount = useMemo(() => 
-    tasks.filter(task => !task.projectId).length, 
-    [tasks]
-  );
+  const noProjectTaskCount = useMemo(() => {
+    const count = tasks.filter(task => !task.projectId).length;
+    console.log(`No project task count: ${count}`);
+    return count;
+  }, [tasks]);
   
   const handleSelectProject = (projectId: string | null) => {
     selectProject(projectId);
@@ -85,7 +105,6 @@ export function ProjectList() {
         description: "The project has been successfully deleted.",
       });
       
-      // If the deleted project was selected, reset to all projects
       if (selectedProjectId === projectToDelete) {
         handleSelectProject(null);
       }
@@ -177,13 +196,11 @@ export function ProjectList() {
         </SidebarMenuItem>
       </SidebarMenu>
       
-      {/* Project Creation Dialog */}
       <ProjectDialog 
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
       />
       
-      {/* Project Edit Dialog */}
       {projectToEdit && (
         <ProjectDialog 
           open={Boolean(projectToEdit)}
@@ -194,7 +211,6 @@ export function ProjectList() {
         />
       )}
       
-      {/* Project Delete Confirmation */}
       <AlertDialog 
         open={Boolean(projectToDelete)} 
         onOpenChange={(open) => {
