@@ -1,251 +1,116 @@
 
-import { Task, TaskStatus, TaskPriority, CreateTaskDTO, UpdateTaskDTO } from '@/types/task';
-import { TaskService } from '@/services/taskService';
 import { StateCreator } from 'zustand';
-import { TaskStore } from './taskStore';
+import { TaskService } from '@/services/taskService';
+import { Task } from '@/types/task';
+import { toast } from '@/hooks/use-toast';
 
 export interface TaskSlice {
   tasks: Task[];
   isLoading: boolean;
-  isSubmitting: boolean;
-  error: Error | null;
-  
-  // Actions
+  error: string | null;
   fetchTasks: () => Promise<void>;
-  addTask: (task: CreateTaskDTO) => Promise<string | null>;
-  updateTask: (taskUpdate: UpdateTaskDTO) => Promise<boolean>;
-  deleteTask: (id: string) => Promise<boolean>;
-  setTaskStatus: (id: string, status: TaskStatus) => Promise<boolean>;
-  setTaskPriority: (id: string, priority: TaskPriority) => Promise<boolean>;
-  
-  // Selectors
-  getTaskById: (id: string) => Task | undefined;
+  createTask: (task: Omit<Task, 'id' | 'created_at' | 'updated_at'>) => Promise<Task>;
+  updateTask: (id: string, task: Partial<Task>) => Promise<Task>;
+  deleteTask: (id: string) => Promise<void>;
+  refreshTaskCounts: () => void;
 }
 
-export const createTaskSlice: StateCreator<TaskStore, [], [], TaskSlice> = (set, get) => ({
+export const createTaskSlice: StateCreator<TaskSlice, [], [], TaskSlice> = (set, get) => ({
   tasks: [],
   isLoading: false,
-  isSubmitting: false,
   error: null,
   
   fetchTasks: async () => {
+    set({ isLoading: true, error: null });
+    
     try {
-      set({ isLoading: true, error: null });
-      const result = await TaskService.fetchTasks();
-      
-      if (result.error) {
-        set({ error: result.error, isLoading: false });
-        return;
-      }
-      
-      set({ tasks: result.data || [], isLoading: false });
+      const tasks = await TaskService.getTasks();
+      console.log(`Fetched ${tasks.length} tasks`);
+      set({ tasks, isLoading: false });
     } catch (error) {
-      console.error('Error in fetchTasks:', error);
+      console.error('Error fetching tasks:', error);
       set({ 
-        error: error instanceof Error ? error : new Error('Failed to fetch tasks'), 
+        error: error instanceof Error ? error.message : 'Failed to fetch tasks', 
         isLoading: false 
       });
     }
   },
   
-  addTask: async (taskData: CreateTaskDTO) => {
+  createTask: async (task) => {
+    set({ isLoading: true, error: null });
+    
     try {
-      set({ isSubmitting: true, error: null });
-      
-      // Optimistic update
-      const tempId = `temp-${Date.now()}`;
-      const tempTask: Task = {
-        id: tempId,
-        ...taskData,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      
-      set(state => ({
-        tasks: [tempTask, ...state.tasks],
+      const newTask = await TaskService.createTask(task);
+      set((state) => ({ 
+        tasks: [...state.tasks, newTask],
+        isLoading: false
       }));
-      
-      // Actual API call
-      const result = await TaskService.createTask(taskData);
-      
-      if (result.error) {
-        // Revert optimistic update
-        set(state => ({
-          tasks: state.tasks.filter(t => t.id !== tempId),
-          error: result.error,
-          isSubmitting: false
-        }));
-        return null;
-      }
-      
-      if (!result.data) {
-        // Handle unexpected case where no data is returned but no error either
-        set(state => ({
-          tasks: state.tasks.filter(t => t.id !== tempId),
-          error: new Error('Failed to create task: No data returned'),
-          isSubmitting: false
-        }));
-        return null;
-      }
-      
-      // Replace temp task with actual task
-      set(state => ({
-        tasks: state.tasks.map(t => t.id === tempId ? result.data! : t),
-        isSubmitting: false
-      }));
-      
-      return result.data.id;
+      return newTask;
     } catch (error) {
-      console.error('Error in addTask:', error);
-      
-      // Remove temp task on error
-      set(state => ({
-        tasks: state.tasks.filter(t => !t.id.startsWith('temp-')),
-        error: error instanceof Error ? error : new Error('Failed to add task'),
-        isSubmitting: false
-      }));
-      
-      return null;
+      console.error('Error creating task:', error);
+      set({ 
+        error: error instanceof Error ? error.message : 'Failed to create task', 
+        isLoading: false 
+      });
+      throw error;
     }
   },
   
-  updateTask: async (taskUpdate: UpdateTaskDTO) => {
+  updateTask: async (id, task) => {
+    set({ isLoading: true, error: null });
+    
     try {
-      set({ isSubmitting: true, error: null });
+      const updatedTask = await TaskService.updateTask(id, task);
       
-      // Store the original task for potential rollback
-      const originalTask = get().tasks.find(task => task.id === taskUpdate.id);
-      if (!originalTask) {
-        set({ 
-          error: new Error('Task not found'), 
-          isSubmitting: false 
-        });
-        return false;
-      }
-      
-      // Optimistic update
-      set(state => ({
-        tasks: state.tasks.map(task => 
-          task.id === taskUpdate.id
-            ? { 
-                ...task, 
-                ...taskUpdate, 
-                updatedAt: new Date() 
-              }
-            : task
-        )
+      set((state) => ({
+        tasks: state.tasks.map((t) => (t.id === id ? updatedTask : t)),
+        isLoading: false
       }));
       
-      // Actual API call
-      const result = await TaskService.updateTask(taskUpdate);
-      
-      if (result.error) {
-        // Revert optimistic update on error
-        set(state => ({
-          tasks: state.tasks.map(task => 
-            task.id === taskUpdate.id ? originalTask : task
-          ),
-          error: result.error,
-          isSubmitting: false
-        }));
-        return false;
-      }
-      
-      set({ isSubmitting: false });
-      return true;
+      return updatedTask;
     } catch (error) {
-      console.error('Error in updateTask:', error);
-      
-      // Get the original task state and revert
-      const originalTask = get().tasks.find(task => task.id === taskUpdate.id);
-      
-      // Revert optimistic update on error
-      if (originalTask) {
-        set(state => ({
-          tasks: state.tasks.map(task => 
-            task.id === taskUpdate.id ? originalTask : task
-          ),
-          error: error instanceof Error ? error : new Error('Failed to update task'),
-          isSubmitting: false
-        }));
-      } else {
-        set({ 
-          error: error instanceof Error ? error : new Error('Failed to update task'), 
-          isSubmitting: false 
-        });
-      }
-      
-      return false;
+      console.error('Error updating task:', error);
+      set({ 
+        error: error instanceof Error ? error.message : 'Failed to update task', 
+        isLoading: false 
+      });
+      throw error;
     }
   },
   
-  deleteTask: async (id: string) => {
+  deleteTask: async (id) => {
+    set({ isLoading: true, error: null });
+    
     try {
-      set({ isSubmitting: true, error: null });
+      await TaskService.deleteTask(id);
       
-      // Store the task being deleted for potential rollback
-      const deletedTask = get().tasks.find(t => t.id === id);
-      if (!deletedTask) {
-        set({ 
-          error: new Error('Task not found'), 
-          isSubmitting: false 
-        });
-        return false;
-      }
-      
-      // Optimistic delete
-      set(state => ({
-        tasks: state.tasks.filter(task => task.id !== id)
+      set((state) => ({
+        tasks: state.tasks.filter((task) => task.id !== id),
+        isLoading: false
       }));
-      
-      // Actual API call
-      const result = await TaskService.deleteTask(id);
-      
-      if (result.error) {
-        // Revert optimistic delete on error
-        set(state => ({
-          tasks: [...state.tasks, deletedTask],
-          error: result.error,
-          isSubmitting: false
-        }));
-        return false;
-      }
-      
-      set({ isSubmitting: false });
-      return true;
     } catch (error) {
-      console.error('Error in deleteTask:', error);
-      
-      // Get the original task and revert
-      const deletedTask = get().tasks.find(t => t.id === id);
-      
-      // Revert optimistic delete on error
-      if (deletedTask) {
-        set(state => ({
-          tasks: [...state.tasks, deletedTask],
-          error: error instanceof Error ? error : new Error('Failed to delete task'),
-          isSubmitting: false
-        }));
-      } else {
-        set({ 
-          error: error instanceof Error ? error : new Error('Failed to delete task'), 
-          isSubmitting: false 
-        });
-      }
-      
-      return false;
+      console.error('Error deleting task:', error);
+      set({ 
+        error: error instanceof Error ? error.message : 'Failed to delete task', 
+        isLoading: false 
+      });
+      throw error;
     }
   },
   
-  setTaskStatus: async (id: string, status: TaskStatus) => {
-    return await get().updateTask({ id, status });
-  },
-  
-  setTaskPriority: async (id: string, priority: TaskPriority) => {
-    return await get().updateTask({ id, priority });
-  },
-  
-  getTaskById: (id: string) => {
-    return get().tasks.find(task => task.id === id);
-  },
+  refreshTaskCounts: () => {
+    // This function doesn't need to do anything special
+    // It's just a trigger to force a re-render with the latest task data
+    // The actual counts are calculated in the ProjectList component
+    const tasks = get().tasks;
+    console.log(`Refreshing task counts. Current task count: ${tasks.length}`);
+    
+    // Force a state update by creating a new tasks array with the same items
+    set({ tasks: [...tasks] });
+    
+    toast({
+      title: "Task counts refreshed",
+      description: `Updated counts for ${tasks.length} tasks`,
+    });
+  }
 });

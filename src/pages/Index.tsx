@@ -12,12 +12,9 @@ import {
   SidebarGroupLabel, 
   SidebarGroupContent,
   SidebarInset,
-  SidebarFooter,
-  SidebarGroupAction
+  SidebarFooter
 } from '@/components/ui/sidebar';
-import { Settings } from 'lucide-react';
 import { ProjectSelector, ProjectList } from '@/components/projects';
-import { Button } from '@/components/ui/button';
 
 export default function Index() {
   const [activeView, setActiveView] = useState<ViewMode>('list');
@@ -40,12 +37,6 @@ export default function Index() {
             <SidebarGroup>
               <SidebarGroupLabel>
                 Projects
-                <SidebarGroupAction asChild>
-                  <Button variant="ghost" size="icon" className="h-5 w-5">
-                    <Settings className="h-4 w-4" />
-                    <span className="sr-only">Project Settings</span>
-                  </Button>
-                </SidebarGroupAction>
               </SidebarGroupLabel>
               <SidebarGroupContent className="space-y-1">
                 <ProjectList />

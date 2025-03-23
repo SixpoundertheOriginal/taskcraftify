@@ -11,7 +11,7 @@ import { useTaskStore, useProjectStore } from '@/store';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 
 function App() {
-  const { fetchTasks, setupTaskSubscription } = useTaskStore();
+  const { fetchTasks, setupTaskSubscription, refreshTaskCounts } = useTaskStore();
   const { fetchProjects, setupProjectSubscription } = useProjectStore();
   
   useEffect(() => {
@@ -24,6 +24,9 @@ function App() {
         await fetchTasks();
         console.log("Fetching initial projects data");
         await fetchProjects();
+        
+        // Ensure counts are updated after initial data load
+        refreshTaskCounts();
       } catch (error) {
         console.error("Error fetching initial data:", error);
       }
@@ -41,7 +44,7 @@ function App() {
       unsubscribeTasks();
       unsubscribeProjects();
     };
-  }, [fetchTasks, setupTaskSubscription, fetchProjects, setupProjectSubscription]);
+  }, [fetchTasks, setupTaskSubscription, fetchProjects, setupProjectSubscription, refreshTaskCounts]);
   
   return (
     <ThemeProvider defaultTheme="system" storageKey="taskcraft-theme">

@@ -1,3 +1,4 @@
+
 import { useProjectStore, useTaskStore } from '@/store';
 import { Task } from '@/types/task';
 import { 
@@ -5,7 +6,8 @@ import {
   SidebarMenuItem, 
   SidebarMenuButton,
   SidebarMenuAction,
-  SidebarMenuBadge
+  SidebarMenuBadge,
+  SidebarGroupAction
 } from '@/components/ui/sidebar';
 import { 
   Layers, 
@@ -13,7 +15,8 @@ import {
   MoreHorizontal, 
   Pencil, 
   Trash2,
-  FileQuestion
+  FileQuestion,
+  RefreshCw
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { ProjectDialog } from './ProjectDialog';
@@ -35,32 +38,21 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 
 export function ProjectList() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState<string | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { projects, selectedProjectId, selectProject, deleteProject } = useProjectStore();
-  const { filters, setFilters, tasks, fetchTasks } = useTaskStore();
+  const { filters, setFilters, tasks, refreshTaskCounts } = useTaskStore();
   
   useEffect(() => {
     console.log(`ProjectList: Rendering with ${tasks.length} tasks`);
-    fetchTasks().catch(console.error);
-  }, []);
+  }, [tasks.length]);
   
-  useEffect(() => {
-    console.log(`ProjectList: Tasks updated, now ${tasks.length} tasks`);
-    console.log('Tasks without project:', tasks.filter(task => !task.projectId).length);
-    
-    const projectDistribution = tasks.reduce((acc: Record<string, number>, task) => {
-      const key = task.projectId || 'none';
-      acc[key] = (acc[key] || 0) + 1;
-      return acc;
-    }, {});
-    
-    console.log('Project distribution:', projectDistribution);
-  }, [tasks]);
-  
+  // Count tasks by project using useMemo to avoid recalculation on every render
   const taskCounts = useMemo(() => {
     console.log(`Computing task counts for ${tasks.length} tasks`);
     return tasks.reduce((acc: Record<string, number>, task: Task) => {
@@ -70,12 +62,14 @@ export function ProjectList() {
     }, {});
   }, [tasks]);
   
+  // Get total task count
   const totalTaskCount = useMemo(() => {
     const count = tasks.length;
     console.log(`Total task count: ${count}`);
     return count;
   }, [tasks]);
   
+  // Get tasks with no project
   const noProjectTaskCount = useMemo(() => {
     const count = tasks.filter(task => !task.projectId).length;
     console.log(`No project task count: ${count}`);
@@ -119,8 +113,28 @@ export function ProjectList() {
     }
   };
   
+  const handleRefreshCounts = () => {
+    setIsRefreshing(true);
+    refreshTaskCounts();
+    setTimeout(() => setIsRefreshing(false), 1000); // Visual feedback
+  };
+  
   return (
     <>
+      <div className="flex justify-between items-center mb-2">
+        <h4 className="text-sm font-medium">Projects</h4>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-6 w-6" 
+          onClick={handleRefreshCounts}
+          disabled={isRefreshing}
+        >
+          <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <span className="sr-only">Refresh Counts</span>
+        </Button>
+      </div>
+      
       <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton 
