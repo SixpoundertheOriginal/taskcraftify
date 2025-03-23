@@ -8,6 +8,15 @@ import {
   mapTaskToApiTask,
   APITask
 } from '@/types/task';
+import { Database } from '@/integrations/supabase/types';
+
+// Define the specific types from the database for type-safety
+type TaskPriorityDB = Database['public']['Enums']['task_priority'];
+type TaskStatusDB = Database['public']['Enums']['task_status'];
+
+// Type for Supabase task insert
+type TaskInsert = Database['public']['Tables']['tasks']['Insert'];
+type TaskUpdate = Database['public']['Tables']['tasks']['Update'];
 
 export const TaskService = {
   async fetchTasks(): Promise<Task[]> {
@@ -37,11 +46,20 @@ export const TaskService = {
       throw new Error('User not authenticated');
     }
 
-    const apiTask = mapTaskToApiTask(taskData, userId);
+    // Convert the task data to a properly typed insert object
+    const taskInsert: TaskInsert = {
+      title: taskData.title,
+      description: taskData.description || null,
+      status: taskData.status as TaskStatusDB,
+      priority: taskData.priority as TaskPriorityDB,
+      due_date: taskData.dueDate ? taskData.dueDate.toISOString() : null,
+      tags: taskData.tags || null,
+      user_id: userId
+    };
     
     const { data, error } = await supabase
       .from('tasks')
-      .insert(apiTask)
+      .insert(taskInsert)
       .select()
       .single();
 
@@ -54,11 +72,22 @@ export const TaskService = {
   },
 
   async updateTask(taskUpdate: UpdateTaskDTO): Promise<Task> {
-    const apiTask = mapTaskToApiTask(taskUpdate);
+    // Create a properly typed update object
+    const taskUpdateData: TaskUpdate = {
+      id: taskUpdate.id
+    };
+    
+    // Only add properties that are defined in the update DTO
+    if (taskUpdate.title !== undefined) taskUpdateData.title = taskUpdate.title;
+    if (taskUpdate.description !== undefined) taskUpdateData.description = taskUpdate.description || null;
+    if (taskUpdate.status !== undefined) taskUpdateData.status = taskUpdate.status as TaskStatusDB;
+    if (taskUpdate.priority !== undefined) taskUpdateData.priority = taskUpdate.priority as TaskPriorityDB;
+    if (taskUpdate.dueDate !== undefined) taskUpdateData.due_date = taskUpdate.dueDate ? taskUpdate.dueDate.toISOString() : null;
+    if (taskUpdate.tags !== undefined) taskUpdateData.tags = taskUpdate.tags || null;
     
     const { data, error } = await supabase
       .from('tasks')
-      .update(apiTask)
+      .update(taskUpdateData)
       .eq('id', taskUpdate.id)
       .select()
       .single();
