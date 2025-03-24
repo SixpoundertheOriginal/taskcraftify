@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Task, 
@@ -38,8 +37,21 @@ export const TaskService = {
         return { data: null, error: new Error(error.message) };
       }
 
+      // Debug the raw API data before mapping
+      console.log('Raw API task data before mapping:', data);
+      
       const mappedTasks = (data as APITask[]).map(mapApiTaskToTask);
       console.log(`Fetched ${mappedTasks.length} tasks`);
+      
+      // Debug the mapped tasks to verify projectId handling
+      console.log('Mapped tasks with projectId values:', 
+        mappedTasks.map(t => ({ 
+          id: t.id, 
+          title: t.title, 
+          projectId: t.projectId === undefined ? 'undefined' : 
+                    t.projectId === null ? 'null' : t.projectId
+        }))
+      );
       
       return { 
         data: mappedTasks, 
@@ -267,7 +279,8 @@ export const TaskService = {
       } else {
         console.log('4. Sample of raw task data from database:');
         rawTasks?.forEach((task, index) => {
-          console.log(`   Task ${index + 1}: id=${task.id}, title=${task.title}, project_id=${task.project_id === null ? 'null' : task.project_id}`);
+          // Explicitly log the type of project_id for debugging
+          console.log(`   Task ${index + 1}: id=${task.id}, title=${task.title}, project_id=${task.project_id === null ? 'null' : task.project_id}, type=${typeof task.project_id}`);
         });
       }
       

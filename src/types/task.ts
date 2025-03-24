@@ -24,7 +24,7 @@ export interface Task {
   createdAt: Date;
   updatedAt: Date;
   tags?: string[];
-  projectId?: string;
+  projectId?: string | null;
 }
 
 export interface CreateTaskDTO {
@@ -34,7 +34,7 @@ export interface CreateTaskDTO {
   priority: TaskPriority;
   dueDate?: Date;
   tags?: string[];
-  projectId?: string;
+  projectId?: string | null;
 }
 
 export interface UpdateTaskDTO {
@@ -55,7 +55,7 @@ export interface TaskFilters {
   searchQuery?: string;
   dueDateFrom?: Date;
   dueDateTo?: Date;
-  projectId?: string;
+  projectId?: string | null;
 }
 
 export interface APITask {
@@ -84,7 +84,8 @@ export function mapApiTaskToTask(apiTask: APITask): Task {
     createdAt: new Date(apiTask.created_at),
     updatedAt: new Date(apiTask.updated_at),
     tags: apiTask.tags || undefined,
-    projectId: apiTask.project_id || undefined,
+    // FIX: Properly handle null project_id values
+    projectId: apiTask.project_id,
   };
 }
 
@@ -96,7 +97,7 @@ export function mapTaskToApiTask(task: CreateTaskDTO | UpdateTaskDTO, userId?: s
     status: task.status,
     priority: task.priority,
     tags: task.tags || null,
-    project_id: task.projectId || null,
+    project_id: task.projectId ?? null,
   };
 
   if (userId) {
@@ -114,4 +115,18 @@ export function mapTaskToApiTask(task: CreateTaskDTO | UpdateTaskDTO, userId?: s
   }
 
   return apiTask;
+}
+
+// Utility function for accurate project task counting
+export function countTasksByProject(tasks: Task[], projectId: string | null | undefined): number {
+  if (projectId === undefined) {
+    // Count all tasks
+    return tasks.length;
+  } else if (projectId === 'none' || projectId === null) {
+    // Count tasks with no project (null or undefined projectId)
+    return tasks.filter(task => task.projectId === null || task.projectId === undefined).length;
+  } else {
+    // Count tasks for a specific project
+    return tasks.filter(task => task.projectId === projectId).length;
+  }
 }

@@ -1,5 +1,6 @@
+
 import { useProjectStore, useTaskStore } from '@/store';
-import { Task } from '@/types/task';
+import { Task, countTasksByProject } from '@/types/task';
 import { 
   SidebarMenu, 
   SidebarMenuItem, 
@@ -56,6 +57,14 @@ export function ProjectList() {
     console.log(`Computing task counts for ${tasks.length} tasks`);
     const counts: Record<string, number> = {};
     
+    // Log task projectIds for debugging
+    console.log('All task projectIds:', tasks.map(t => ({ 
+      id: t.id, 
+      title: t.title, 
+      projectId: t.projectId === undefined ? 'undefined' : 
+                t.projectId === null ? 'null' : t.projectId
+    })));
+    
     tasks.forEach((task: Task) => {
       const projectId = task.projectId || 'none';
       counts[projectId] = (counts[projectId] || 0) + 1;
@@ -66,13 +75,15 @@ export function ProjectList() {
   }, [tasks]);
   
   const totalTaskCount = useMemo(() => {
-    const count = tasks.length;
+    // Use our new utility function for counting
+    const count = countTasksByProject(tasks, undefined);
     console.log(`Total task count: ${count}`);
     return count;
   }, [tasks]);
   
   const noProjectTaskCount = useMemo(() => {
-    const count = tasks.filter(task => !task.projectId).length;
+    // Use our new utility function for counting tasks with no project
+    const count = countTasksByProject(tasks, null);
     console.log(`No project task count: ${count}`);
     return count;
   }, [tasks]);
