@@ -209,31 +209,31 @@ export const TaskService = {
       console.log('----------------------------------------');
       
       // Get total count of tasks
-      const { data: totalData, error: totalError } = await supabase
+      const { count: totalCount, error: totalError } = await supabase
         .from('tasks')
-        .select('count', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true });
         
       if (totalError) {
         throw new Error(`Error getting total task count: ${totalError.message}`);
       }
       
-      // Fix: Access the count property correctly
-      const totalCount = totalData || 0;
-      console.log(`1. Total tasks in database: ${totalCount}`);
+      // Fix: Type-safe access for count which is now a number
+      const totalTaskCount = totalCount || 0;
+      console.log(`1. Total tasks in database: ${totalTaskCount}`);
       
       // Get count of tasks with no project
-      const { data: noProjectData, error: noProjectError } = await supabase
+      const { count: noProjectCount, error: noProjectError } = await supabase
         .from('tasks')
-        .select('count', { count: 'exact', head: true })
+        .select('*', { count: 'exact', head: true })
         .is('project_id', null);
         
       if (noProjectError) {
         throw new Error(`Error getting no-project task count: ${noProjectError.message}`);
       }
       
-      // Fix: Access the count property correctly
-      const noProjectCount = noProjectData || 0;
-      console.log(`2. Tasks with no project: ${noProjectCount}`);
+      // Fix: Type-safe access for count
+      const noProjectTaskCount = noProjectCount || 0;
+      console.log(`2. Tasks with no project: ${noProjectTaskCount}`);
       
       // Get counts by project
       const { data: projectData, error: projectError } = await supabase
@@ -277,8 +277,8 @@ export const TaskService = {
       
       return {
         data: {
-          totalCount,
-          noProjectCount,
+          totalCount: totalTaskCount,
+          noProjectCount: noProjectTaskCount,
           projectCounts
         },
         error: null
