@@ -1,4 +1,3 @@
-
 export enum TaskPriority {
   LOW = "LOW",
   MEDIUM = "MEDIUM",
@@ -117,16 +116,29 @@ export function mapTaskToApiTask(task: CreateTaskDTO | UpdateTaskDTO, userId?: s
   return apiTask;
 }
 
-// Utility function for accurate project task counting
+/**
+ * Utility function for accurate project task counting with improved null/undefined handling
+ * 
+ * @param tasks - Array of tasks to count
+ * @param projectId - Project identifier to filter by, with special handling for specific values:
+ *   - undefined: Count all tasks regardless of project
+ *   - null or 'none': Count tasks with no project (projectId === null)
+ *   - string value: Count tasks for that specific project ID
+ * 
+ * @returns The number of tasks matching the criteria
+ */
 export function countTasksByProject(tasks: Task[], projectId: string | null | undefined): number {
+  // Case 1: Count all tasks (used for "All Projects" view)
   if (projectId === undefined) {
-    // Count all tasks
     return tasks.length;
-  } else if (projectId === 'none' || projectId === null) {
-    // Count tasks with no project (null or undefined projectId)
-    return tasks.filter(task => task.projectId === null || task.projectId === undefined).length;
-  } else {
-    // Count tasks for a specific project
-    return tasks.filter(task => task.projectId === projectId).length;
   }
+  
+  // Case 2: Count tasks with no project (null projectId)
+  // This handles both when we pass null or the special string 'none'
+  if (projectId === null || projectId === 'none') {
+    return tasks.filter(task => task.projectId === null).length;
+  }
+  
+  // Case 3: Count tasks for a specific project
+  return tasks.filter(task => task.projectId === projectId).length;
 }

@@ -37,19 +37,29 @@ export const TaskService = {
         return { data: null, error: new Error(error.message) };
       }
 
-      // Debug the raw API data before mapping
-      console.log('Raw API task data before mapping:', data);
+      // Enhanced debugging: Log raw API data with explicit type information
+      console.log('Raw API task data before mapping:', 
+        data?.map((task: any) => ({
+          id: task.id,
+          title: task.title,
+          project_id: task.project_id,
+          project_id_type: typeof task.project_id,
+          project_id_value: task.project_id === null ? 'null' : task.project_id
+        }))
+      );
       
       const mappedTasks = (data as APITask[]).map(mapApiTaskToTask);
       console.log(`Fetched ${mappedTasks.length} tasks`);
       
-      // Debug the mapped tasks to verify projectId handling
+      // Enhanced debugging: Log mapped tasks with better type information
       console.log('Mapped tasks with projectId values:', 
         mappedTasks.map(t => ({ 
           id: t.id, 
           title: t.title, 
           projectId: t.projectId === undefined ? 'undefined' : 
-                    t.projectId === null ? 'null' : t.projectId
+                    t.projectId === null ? 'null' : t.projectId,
+          projectIdType: typeof t.projectId,
+          projectIdValue: JSON.stringify(t.projectId)
         }))
       );
       
@@ -279,8 +289,10 @@ export const TaskService = {
       } else {
         console.log('4. Sample of raw task data from database:');
         rawTasks?.forEach((task, index) => {
-          // Explicitly log the type of project_id for debugging
-          console.log(`   Task ${index + 1}: id=${task.id}, title=${task.title}, project_id=${task.project_id === null ? 'null' : task.project_id}, type=${typeof task.project_id}`);
+          // More explicit type logging
+          console.log(`   Task ${index + 1}: id=${task.id}, title=${task.title}, project_id=${
+            task.project_id === null ? 'null' : task.project_id
+          }, type=${typeof task.project_id}, JSON=${JSON.stringify(task.project_id)}`);
         });
       }
       
