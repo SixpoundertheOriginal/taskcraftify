@@ -174,6 +174,21 @@ export function ProjectList() {
       
       await diagnosticDatabaseQuery();
       
+      // Test countTasksByProject with various values
+      console.log('----------------------------------------');
+      console.log('TESTING countTasksByProject FUNCTION:');
+      console.log('----------------------------------------');
+      console.log(`All tasks (undefined): ${countTasksByProject(tasks, undefined)}`);
+      console.log(`Null project (null): ${countTasksByProject(tasks, null)}`);
+      console.log(`No project ('none'): ${countTasksByProject(tasks, 'none')}`);
+      
+      if (projects.length > 0) {
+        const sampleProjectId = projects[0].id;
+        console.log(`Project ${sampleProjectId}: ${countTasksByProject(tasks, sampleProjectId)}`);
+      }
+      
+      console.log('----------------------------------------');
+      
       toast({
         title: "Database diagnostic completed",
         description: "Check the console for detailed information.",
