@@ -19,7 +19,6 @@ import {
   Trash,
   ListChecks,
   MessageSquare,
-  GripVertical,
 } from 'lucide-react';
 import { Task, TaskStatus, TaskPriority, countCompletedSubtasks } from '@/types/task';
 import { 
@@ -42,31 +41,19 @@ import {
 } from "@/components/ui/hover-card";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { TaskForm } from './TaskForm';
-import { useDraggable } from '@dnd-kit/core';
 
 interface TaskCardProps {
   task: Task;
-  isDragging?: boolean;
   isCompact?: boolean; // For optionally showing a more compact view
 }
 
-function TaskCardComponent({ task, isDragging = false, isCompact = false }: TaskCardProps) {
+function TaskCardComponent({ task, isCompact = false }: TaskCardProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const { updateTask, deleteTask } = useTaskStore();
   const { projects } = useProjectStore();
   const isMobile = useIsMobile();
-  
-  // Setup draggable functionality
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id: task.id,
-    data: { task },
-  });
-  
-  const dragStyle = transform ? {
-    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-  } : undefined;
   
   const project = task.projectId ? projects.find(p => p.id === task.projectId) : null;
   
@@ -130,8 +117,7 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
       !e.target.closest('[role="combobox"]') && 
       !e.target.closest('[data-radix-popper-content-wrapper]') &&
       !e.target.closest('[role="tab"]') &&
-      !e.target.closest('label') &&
-      !e.target.closest('[data-drag-handle]')
+      !e.target.closest('label')
     ) {
       setIsTaskModalOpen(true);
     }
@@ -145,16 +131,11 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
   return (
     <>
       <Card 
-        ref={setNodeRef}
-        style={{
-          ...dragStyle,
-          ...(project ? { borderLeftColor: project.color } : {}),
-        }}
+        style={project ? { borderLeftColor: project.color } : {}}
         className={cn(
           "group w-full transition-all duration-200 border border-border/40 shadow-sm hover:shadow-md hover:border-border/80 cursor-pointer",
           project ? `border-l-4` : '',
-          (isUpdating || isDeleting) ? 'opacity-70' : '',
-          isDragging ? 'opacity-80 rotate-1 scale-105 shadow-md z-50' : ''
+          (isUpdating || isDeleting) ? 'opacity-70' : ''
         )}
         onClick={handleCardClick}
         tabIndex={0}
@@ -167,18 +148,6 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
         }}
       >
         <CardContent className="p-4 relative">
-          {/* Drag handle */}
-          <div 
-            className="absolute top-2 -left-1 w-6 h-10 flex items-center justify-center opacity-0 group-hover:opacity-40 hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
-            {...attributes}
-            {...listeners}
-            data-drag-handle="true"
-            aria-label="Drag task"
-            title="Drag to reorder"
-          >
-            <GripVertical className="h-5 w-5" />
-          </div>
-
           <div className="flex items-start gap-3">
             <button
               onClick={handleCheckboxClick}

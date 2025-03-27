@@ -1,7 +1,6 @@
 
 import { useTaskStore } from '@/store/taskStore/taskStore';
 import { Task, TaskStatus } from '@/types/task';
-import { useDroppable } from '@dnd-kit/core';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { TaskCard } from './TaskCard';
@@ -16,18 +15,14 @@ interface KanbanColumnProps {
   tasks: Task[];
   status: TaskStatus;
   className?: string;
-  activeId?: string | null;
 }
 
-export function KanbanColumn({ id, title, tasks, status, className, activeId }: KanbanColumnProps) {
+export function KanbanColumn({ id, title, tasks, status, className }: KanbanColumnProps) {
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
-  const { isOver, setNodeRef } = useDroppable({ id });
   const isMobile = useIsMobile();
   
-  // Enhanced animation for the column when a task is being dragged over it
   const columnClass = cn(
     "flex flex-col h-full rounded-lg border bg-card transition-all duration-200",
-    isOver && "border-primary border-dashed bg-accent/30 scale-[1.02] shadow-md",
     className
   );
   
@@ -37,7 +32,6 @@ export function KanbanColumn({ id, title, tasks, status, className, activeId }: 
   
   return (
     <div 
-      ref={setNodeRef} 
       className={columnClass}
       aria-label={`${title} column`}
       role="region"
@@ -63,8 +57,7 @@ export function KanbanColumn({ id, title, tasks, status, className, activeId }: 
       
       <div className={cn(
         "p-3 flex-1 overflow-y-auto",
-        isMobile ? "max-h-[calc(100vh-12rem)]" : "max-h-[calc(100vh-14rem)]",
-        isOver && "bg-accent/10" // Subtle background change when dragging over
+        isMobile ? "max-h-[calc(100vh-12rem)]" : "max-h-[calc(100vh-14rem)]"
       )}>
         {tasks.length > 0 ? (
           <div 
@@ -75,7 +68,6 @@ export function KanbanColumn({ id, title, tasks, status, className, activeId }: 
               <TaskCard 
                 key={task.id} 
                 task={task} 
-                isDragging={activeId === task.id}
                 isCompact={true} // More compact view for Kanban
               />
             ))}
@@ -83,9 +75,7 @@ export function KanbanColumn({ id, title, tasks, status, className, activeId }: 
         ) : (
           <div className="flex flex-col items-center justify-center h-32 text-center">
             <p className="text-sm text-muted-foreground">
-              {isOver 
-                ? "Drop task here" 
-                : "No tasks in this column"}
+              No tasks in this column
             </p>
             <Button 
               variant="ghost" 
