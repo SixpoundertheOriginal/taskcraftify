@@ -1,3 +1,4 @@
+
 export enum TaskPriority {
   LOW = "LOW",
   MEDIUM = "MEDIUM",
@@ -39,7 +40,7 @@ export interface ActivityItem {
   description: string;
   createdAt: Date;
   createdBy: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, any> | null;
 }
 
 export interface Task {

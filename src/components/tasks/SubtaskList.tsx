@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { countCompletedSubtasks } from '@/types/task';
+import { countCompletedSubtasks, Task } from '@/types/task';
 import { cn } from '@/lib/utils';
 
 interface SubtaskListProps {
@@ -21,7 +21,16 @@ export function SubtaskList({ taskId }: SubtaskListProps) {
   
   const task = tasks.find(t => t.id === taskId);
   const subtasks = task?.subtasks || [];
-  const { completed, total } = countCompletedSubtasks(task || { subtasks: [] });
+  // Use a default Task object with empty arrays when task is undefined
+  const { completed, total } = countCompletedSubtasks(task || { 
+    id: '', 
+    title: '', 
+    status: 'TODO' as const,
+    priority: 'MEDIUM' as const,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    subtasks: [] 
+  });
   
   // Fetch subtasks on initial render
   useEffect(() => {

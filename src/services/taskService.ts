@@ -13,7 +13,8 @@ import {
   Comment,
   CreateCommentDTO,
   UpdateCommentDTO,
-  ActivityItem
+  ActivityItem,
+  APIActivity
 } from '@/types/task';
 import { Database } from '@/integrations/supabase/types';
 
@@ -703,7 +704,7 @@ export const TaskService = {
         description: item.description,
         createdAt: new Date(item.created_at),
         createdBy: item.created_by,
-        metadata: item.metadata
+        metadata: item.metadata as Record<string, any> | null
       }));
 
       return { data: activities, error: null };
@@ -725,7 +726,7 @@ export const TaskService = {
     taskId: string;
     type: ActivityItem['type'];
     description: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, any> | null;
   }): Promise<ServiceResult<ActivityItem>> {
     try {
       const { data: userData, error: userError } = await supabase.auth.getUser();
@@ -764,7 +765,7 @@ export const TaskService = {
         description: data.description,
         createdAt: new Date(data.created_at),
         createdBy: data.created_by,
-        metadata: data.metadata
+        metadata: data.metadata as Record<string, any> | null
       };
 
       return { data: activity, error: null };
