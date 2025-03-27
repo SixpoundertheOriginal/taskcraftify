@@ -1,4 +1,3 @@
-
 import { useState, useCallback, memo, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -70,6 +69,11 @@ import {
 import { SubtaskList } from './SubtaskList';
 import { CommentList } from './CommentList';
 import { ActivityHistory } from './ActivityHistory';
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
 interface TaskCardProps {
   task: Task;
@@ -213,6 +217,68 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
     }
   }, [isExpanded]);
 
+  // Only apply strikethrough if task is marked as done
+  const titleClassName = cn(
+    "font-medium text-base text-balance mr-2",
+    task.status === TaskStatus.DONE && "line-through text-muted-foreground"
+  );
+
+  // Improved hover control area that doesn't interfere with content
+  const controlButtons = (
+    <div className="flex items-center gap-1 z-10 ml-auto shrink-0">
+      <CollapsibleTrigger asChild onClick={(e) => e.stopPropagation()}>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="h-6 w-6 p-0 rounded-full opacity-70 hover:opacity-100"
+          aria-label={isExpanded ? "Collapse task" : "Expand task"}
+        >
+          {isExpanded ? (
+            <ChevronUp className="h-4 w-4" />
+          ) : (
+            <ChevronDown className="h-4 w-4" />
+          )}
+        </Button>
+      </CollapsibleTrigger>
+      
+      {(isUpdating || isDeleting) ? (
+        <Loader2 className="h-4 w-4 animate-spin ml-1" />
+      ) : (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-6 w-6 rounded-full opacity-70 hover:opacity-100"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MoreHorizontal className="h-4 w-4" />
+              <span className="sr-only">Task actions</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-[180px]">
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(TaskStatus.TODO); }}>
+              Mark as To Do
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(TaskStatus.IN_PROGRESS); }}>
+              Mark as In Progress
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(TaskStatus.DONE); }}>
+              Mark as Done
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(TaskStatus.ARCHIVED); }}>
+              Archive
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDelete(); }} className="text-destructive">
+              <Trash className="h-4 w-4 mr-2" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+    </div>
+  );
+
   return (
     <Card 
       className={cn(
@@ -241,70 +307,15 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
               )}
             </button>
             
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               {!isEditing ? (
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <h3 className={cn(
-                      "font-medium text-base text-balance mr-2",
-                      task.status === TaskStatus.DONE && "line-through text-muted-foreground"
-                    )}>
+                <div className="flex justify-between items-start w-full">
+                  <div className="flex-1 min-w-0">
+                    <h3 className={titleClassName}>
                       {task.title}
                     </h3>
                   </div>
-                  
-                  <div className="flex items-center gap-1">
-                    <CollapsibleTrigger asChild onClick={(e) => e.stopPropagation()}>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-6 w-6 p-0 rounded-full"
-                        aria-label={isExpanded ? "Collapse task" : "Expand task"}
-                      >
-                        {isExpanded ? (
-                          <ChevronUp className="h-4 w-4" />
-                        ) : (
-                          <ChevronDown className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </CollapsibleTrigger>
-                    
-                    {(isUpdating || isDeleting) ? (
-                      <Loader2 className="h-4 w-4 animate-spin ml-1" />
-                    ) : (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-6 w-6 rounded-full"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Task actions</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-[180px]">
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(TaskStatus.TODO); }}>
-                            Mark as To Do
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(TaskStatus.IN_PROGRESS); }}>
-                            Mark as In Progress
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(TaskStatus.DONE); }}>
-                            Mark as Done
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(TaskStatus.ARCHIVED); }}>
-                            Archive
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDelete(); }} className="text-destructive">
-                            <Trash className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                  </div>
+                  {controlButtons}
                 </div>
               ) : (
                 <Form {...form}>
@@ -642,41 +653,55 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
               
               {!isExpanded && !isEditing && (
                 <div className="flex justify-between items-center text-xs text-muted-foreground mt-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     {task.dueDate && (
                       <div className={cn(
                         "flex items-center",
                         isOverdue(task.dueDate) ? 'text-destructive' : ''
                       )}>
-                        <Clock className="h-3 w-3 mr-1" />
+                        <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
                         {formatDate(task.dueDate)}
                       </div>
                     )}
                     
                     {subtaskCounts.total > 0 && (
                       <div className="flex items-center">
-                        <ListChecks className="h-3 w-3 mr-1" />
+                        <ListChecks className="h-3 w-3 mr-1 flex-shrink-0" />
                         <span>{subtaskCounts.completed}/{subtaskCounts.total}</span>
                       </div>
                     )}
                   </div>
                   
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                     {task.comments && task.comments.length > 0 && (
                       <div className="flex items-center">
-                        <MessageSquare className="h-3 w-3 mr-1" />
+                        <MessageSquare className="h-3 w-3 mr-1 flex-shrink-0" />
                         <span>{task.comments.length}</span>
                       </div>
                     )}
                     
                     {task.tags && task.tags.length > 0 && !isCompact && (
-                      <div className="flex items-center">
-                        <Tag className="h-3 w-3 mr-1" />
-                        {task.tags.slice(0, 2).map(tag => (
-                          <span key={tag} className="ml-1">#{tag}</span>
-                        ))}
-                        {task.tags.length > 2 && <span>+{task.tags.length - 2}</span>}
-                      </div>
+                      <HoverCard>
+                        <HoverCardTrigger asChild>
+                          <div className="flex items-center cursor-help">
+                            <Tag className="h-3 w-3 mr-1 flex-shrink-0" />
+                            <span className="truncate max-w-[80px]">
+                              {task.tags.length > 1 
+                                ? `${task.tags[0]} +${task.tags.length - 1}` 
+                                : task.tags[0]}
+                            </span>
+                          </div>
+                        </HoverCardTrigger>
+                        <HoverCardContent className="w-auto p-2">
+                          <div className="flex flex-wrap gap-1">
+                            {task.tags.map(tag => (
+                              <Badge key={tag} variant="secondary" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        </HoverCardContent>
+                      </HoverCard>
                     )}
                   </div>
                 </div>
