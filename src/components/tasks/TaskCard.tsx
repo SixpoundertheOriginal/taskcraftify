@@ -120,7 +120,8 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
     }
   }, [task.id, deleteTask]);
 
-  const handleCheckboxClick = useCallback(async () => {
+  const handleCheckboxClick = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation();
     let newStatus = TaskStatus.DONE;
     if (task.status === TaskStatus.DONE) {
       newStatus = TaskStatus.TODO;
@@ -129,17 +130,38 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
   }, [task.status, handleStatusChange]);
 
   const toggleExpanded = useCallback(() => {
-    setIsExpanded(prev => !prev);
-  }, []);
+    if (!isEditing) {
+      setIsExpanded(prev => !prev);
+    }
+  }, [isEditing]);
 
-  const toggleEditMode = useCallback(() => {
+  const handleCardClick = useCallback((e: React.MouseEvent) => {
+    if (
+      !isEditing && 
+      e.target instanceof Element && 
+      !e.target.closest('button') && 
+      !e.target.closest('select') && 
+      !e.target.closest('input') && 
+      !e.target.closest('textarea') &&
+      !e.target.closest('[role="combobox"]') && 
+      !e.target.closest('[data-radix-popper-content-wrapper]')
+    ) {
+      toggleExpanded();
+    }
+  }, [toggleExpanded, isEditing]);
+
+  const toggleEditMode = useCallback((e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
     if (isEditing) {
       resetForm();
     }
     setIsEditing(prev => !prev);
   }, [isEditing, resetForm]);
 
-  const handleSaveChanges = useCallback(async () => {
+  const handleSaveChanges = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation();
     try {
       setIsUpdating(true);
       await onSubmit();
@@ -160,16 +182,23 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
     }
   }, [onSubmit]);
 
+  const stopPropagation = useCallback((e: React.MouseEvent) => {
+    if (isEditing) {
+      e.stopPropagation();
+    }
+  }, [isEditing]);
+
   return (
     <Card 
       className={cn(
-        "group w-full transition-all duration-200 border border-border/40 shadow-sm hover:shadow-md hover:border-border/80",
+        "group w-full transition-all duration-200 border border-border/40 shadow-sm hover:shadow-md hover:border-border/80 cursor-pointer",
         project ? `border-l-4` : '',
         isUpdating || isDeleting ? 'opacity-70' : '',
         isDragging ? 'opacity-80 rotate-1 scale-105 shadow-md z-50' : '',
         isExpanded ? 'shadow-md' : ''
       )}
       style={project ? { borderLeftColor: project.color } : {}}
+      onClick={handleCardClick}
     >
       <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
         <CardContent className="p-4">
@@ -200,7 +229,7 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
                   </div>
                   
                   <div className="flex items-center gap-1">
-                    <CollapsibleTrigger asChild>
+                    <CollapsibleTrigger asChild onClick={(e) => e.stopPropagation()}>
                       <Button 
                         variant="ghost" 
                         size="sm" 
@@ -220,25 +249,30 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
                     ) : (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6 rounded-full"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <MoreHorizontal className="h-4 w-4" />
                             <span className="sr-only">Task actions</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-[180px]">
-                          <DropdownMenuItem onClick={() => handleStatusChange(TaskStatus.TODO)}>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(TaskStatus.TODO); }}>
                             Mark as To Do
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleStatusChange(TaskStatus.IN_PROGRESS)}>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(TaskStatus.IN_PROGRESS); }}>
                             Mark as In Progress
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleStatusChange(TaskStatus.DONE)}>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(TaskStatus.DONE); }}>
                             Mark as Done
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleStatusChange(TaskStatus.ARCHIVED)}>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(TaskStatus.ARCHIVED); }}>
                             Archive
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={handleDelete} className="text-destructive">
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDelete(); }} className="text-destructive">
                             <Trash className="h-4 w-4 mr-2" />
                             Delete
                           </DropdownMenuItem>
@@ -249,7 +283,7 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
                 </div>
               ) : (
                 <Form {...form}>
-                  <form className="space-y-2">
+                  <form className="space-y-2" onClick={stopPropagation}>
                     <FormField
                       control={form.control}
                       name="title"
@@ -287,7 +321,7 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
                   </>
                 ) : (
                   <Form {...form}>
-                    <form className="w-full flex flex-wrap gap-2">
+                    <form className="w-full flex flex-wrap gap-2" onClick={stopPropagation}>
                       <FormField
                         control={form.control}
                         name="status"
@@ -380,7 +414,7 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
                   </>
                 ) : (
                   <Form {...form}>
-                    <form className="space-y-3 pb-3 border-b border-border/40 mb-3">
+                    <form className="space-y-3 pb-3 border-b border-border/40 mb-3" onClick={stopPropagation}>
                       <FormField
                         control={form.control}
                         name="description"
@@ -469,7 +503,7 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
                         variant="outline" 
                         size="sm" 
                         className="h-7"
-                        onClick={toggleEditMode}
+                        onClick={(e) => { e.stopPropagation(); toggleEditMode(e); }}
                       >
                         <Edit className="h-3.5 w-3.5 mr-1" />
                         Edit
@@ -494,7 +528,7 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
                           variant="outline" 
                           size="sm" 
                           className="h-7"
-                          onClick={toggleEditMode}
+                          onClick={(e) => { e.stopPropagation(); toggleEditMode(e); }}
                           disabled={isUpdating}
                         >
                           <X className="h-3.5 w-3.5 mr-1" />
@@ -508,7 +542,7 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
                         variant="outline" 
                         size="sm" 
                         className="h-7 text-destructive hover:text-destructive"
-                        onClick={handleDelete}
+                        onClick={(e) => { e.stopPropagation(); handleDelete(); }}
                       >
                         <Trash className="h-3.5 w-3.5 mr-1" />
                         Delete
