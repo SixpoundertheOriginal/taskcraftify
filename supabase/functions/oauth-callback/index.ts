@@ -60,38 +60,25 @@ serve(async (req: Request) => {
     console.log(`Using token URL: ${token_url}`);
 
     // Create form data parameters for token exchange
-    let formParams;
-    let headers = {
+    const formParams = new URLSearchParams();
+    formParams.append("client_id", client_id);
+    formParams.append("client_secret", client_secret);
+    formParams.append("code", code);
+    formParams.append("redirect_uri", redirect_uri);
+    formParams.append("grant_type", "authorization_code");
+    
+    if (provider === "microsoft") {
+      // Microsoft may need scope explicitly in the token request too
+      formParams.append("scope", scope);
+    }
+    
+    const headers = {
       "Content-Type": "application/x-www-form-urlencoded",
     };
     
-    if (provider === "microsoft") {
-      // Fix: Ensure params are properly formatted for Microsoft OAuth
-      // This is critical - Microsoft requires parameters in specific format
-      console.log("Preparing Microsoft token exchange request");
-      
-      formParams = new URLSearchParams();
-      formParams.append("client_id", client_id);
-      formParams.append("client_secret", client_secret);
-      formParams.append("code", code);
-      formParams.append("redirect_uri", redirect_uri);
-      formParams.append("grant_type", "authorization_code");
-      formParams.append("scope", scope);
-      
-      // Log the parameters for debugging
-      console.log("Microsoft token exchange parameters:", Object.fromEntries(formParams.entries()));
-    } else {
-      // Google and other providers
-      formParams = new URLSearchParams();
-      formParams.append("code", code);
-      formParams.append("client_id", client_id);
-      formParams.append("client_secret", client_secret);
-      formParams.append("redirect_uri", redirect_uri);
-      formParams.append("grant_type", "authorization_code");
-    }
+    // Log detailed request information for debugging
+    console.log(`Token request params for ${provider}:`, Object.fromEntries(formParams.entries()));
 
-    console.log("Form parameters prepared for token exchange");
-    
     // Exchange code for access token
     const tokenResponse = await fetch(token_url, {
       method: "POST",

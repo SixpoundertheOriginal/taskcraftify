@@ -44,14 +44,12 @@ export type IntegrationActions = {
 };
 
 export const createIntegrationSlice = (set: any, get: any) => ({
-  // State
   integrations: [],
   calendarEvents: [],
   emailSettings: null,
   isLoading: false,
   error: null,
 
-  // Integration Actions
   fetchIntegrations: async () => {
     set({ isLoading: true, error: null });
     try {
@@ -156,7 +154,6 @@ export const createIntegrationSlice = (set: any, get: any) => ({
     }
   },
   
-  // Calendar Event Actions
   fetchCalendarEvents: async () => {
     set({ isLoading: true, error: null });
     try {
@@ -301,7 +298,6 @@ export const createIntegrationSlice = (set: any, get: any) => ({
     }
   },
   
-  // Email Settings Actions
   fetchEmailSettings: async () => {
     set({ isLoading: true, error: null });
     try {
@@ -376,13 +372,15 @@ export const createIntegrationSlice = (set: any, get: any) => ({
     }
   },
   
-  // OAuth Flow
   startOAuthFlow: (provider: string) => {
     try {
       const redirectURL = window.location.origin + '/auth/callback';
+      console.log(`Starting OAuth flow for ${provider} with redirect URL: ${redirectURL}`);
       const oauthURL = IntegrationService.generateOAuthUrl(provider, redirectURL);
+      console.log(`Generated OAuth URL: ${oauthURL}`);
       window.location.href = oauthURL;
     } catch (error: any) {
+      console.error(`Failed to start OAuth flow for ${provider}:`, error);
       set({ error: error.message || 'Failed to start OAuth flow' });
     }
   },
@@ -399,6 +397,7 @@ export const createIntegrationSlice = (set: any, get: any) => ({
         throw new Error('No authentication token available');
       }
       
+      console.log(`Calling OAuth callback edge function for ${provider}`);
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || ''}/oauth-callback`, {
         method: 'POST',
         headers: {
