@@ -33,7 +33,7 @@ import {
   Grip,
   Info
 } from 'lucide-react';
-import { useState as useZustandState } from 'zustand';
+// Remove the incorrect import from zustand
 import { useMemo, useCallback } from 'react';
 import { ProjectDialog } from './ProjectDialog';
 import {
