@@ -1,9 +1,9 @@
 
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { IntegrationSlice, createIntegrationSlice } from './integrationSlice';
+import { IntegrationState, createIntegrationSlice } from './integrationSlice';
 
-export type IntegrationStore = IntegrationSlice;
+export type IntegrationStore = IntegrationState;
 
 export const useIntegrationStore = create<IntegrationStore>()(
   devtools(
