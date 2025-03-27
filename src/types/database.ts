@@ -22,6 +22,7 @@ export interface Database {
           created_at: string
           updated_at: string
           tags: string[] | null
+          project_id: string | null
         }
         Insert: {
           id?: string
@@ -34,6 +35,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
           tags?: string[] | null
+          project_id?: string | null
         }
         Update: {
           id?: string
@@ -46,6 +48,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
           tags?: string[] | null
+          project_id?: string | null
         }
       }
       profiles: {
@@ -70,6 +73,141 @@ export interface Database {
           first_name?: string | null
           last_name?: string | null
           avatar_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      integrations: {
+        Row: {
+          id: string
+          user_id: string
+          provider: string
+          provider_user_id: string | null
+          access_token: string | null
+          refresh_token: string | null
+          token_expires_at: string | null
+          scopes: string[] | null
+          settings: Json | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          provider: string
+          provider_user_id?: string | null
+          access_token?: string | null
+          refresh_token?: string | null
+          token_expires_at?: string | null
+          scopes?: string[] | null
+          settings?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          provider?: string
+          provider_user_id?: string | null
+          access_token?: string | null
+          refresh_token?: string | null
+          token_expires_at?: string | null
+          scopes?: string[] | null
+          settings?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      calendar_events: {
+        Row: {
+          id: string
+          user_id: string
+          integration_id: string | null
+          external_event_id: string | null
+          task_id: string | null
+          title: string
+          description: string | null
+          start_time: string | null
+          end_time: string | null
+          all_day: boolean | null
+          location: string | null
+          status: string | null
+          calendar_id: string | null
+          recurrence: string[] | null
+          last_synced_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          integration_id?: string | null
+          external_event_id?: string | null
+          task_id?: string | null
+          title: string
+          description?: string | null
+          start_time?: string | null
+          end_time?: string | null
+          all_day?: boolean | null
+          location?: string | null
+          status?: string | null
+          calendar_id?: string | null
+          recurrence?: string[] | null
+          last_synced_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          integration_id?: string | null
+          external_event_id?: string | null
+          task_id?: string | null
+          title?: string
+          description?: string | null
+          start_time?: string | null
+          end_time?: string | null
+          all_day?: boolean | null
+          location?: string | null
+          status?: string | null
+          calendar_id?: string | null
+          recurrence?: string[] | null
+          last_synced_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      email_settings: {
+        Row: {
+          id: string
+          user_id: string
+          email_address: string | null
+          forward_address: string | null
+          notification_preferences: Json | null
+          daily_summary: boolean | null
+          summary_time: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          email_address?: string | null
+          forward_address?: string | null
+          notification_preferences?: Json | null
+          daily_summary?: boolean | null
+          summary_time?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          email_address?: string | null
+          forward_address?: string | null
+          notification_preferences?: Json | null
+          daily_summary?: boolean | null
+          summary_time?: string | null
           created_at?: string
           updated_at?: string
         }

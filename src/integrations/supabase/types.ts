@@ -47,6 +47,81 @@ export type Database = {
           },
         ]
       }
+      calendar_events: {
+        Row: {
+          all_day: boolean | null
+          calendar_id: string | null
+          created_at: string
+          description: string | null
+          end_time: string | null
+          external_event_id: string | null
+          id: string
+          integration_id: string | null
+          last_synced_at: string | null
+          location: string | null
+          recurrence: string[] | null
+          start_time: string | null
+          status: string | null
+          task_id: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          all_day?: boolean | null
+          calendar_id?: string | null
+          created_at?: string
+          description?: string | null
+          end_time?: string | null
+          external_event_id?: string | null
+          id?: string
+          integration_id?: string | null
+          last_synced_at?: string | null
+          location?: string | null
+          recurrence?: string[] | null
+          start_time?: string | null
+          status?: string | null
+          task_id?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          all_day?: boolean | null
+          calendar_id?: string | null
+          created_at?: string
+          description?: string | null
+          end_time?: string | null
+          external_event_id?: string | null
+          id?: string
+          integration_id?: string | null
+          last_synced_at?: string | null
+          location?: string | null
+          recurrence?: string[] | null
+          start_time?: string | null
+          status?: string | null
+          task_id?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_events_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_events_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comments: {
         Row: {
           content: string
@@ -84,6 +159,84 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      email_settings: {
+        Row: {
+          created_at: string
+          daily_summary: boolean | null
+          email_address: string | null
+          forward_address: string | null
+          id: string
+          notification_preferences: Json | null
+          summary_time: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          daily_summary?: boolean | null
+          email_address?: string | null
+          forward_address?: string | null
+          id?: string
+          notification_preferences?: Json | null
+          summary_time?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          daily_summary?: boolean | null
+          email_address?: string | null
+          forward_address?: string | null
+          id?: string
+          notification_preferences?: Json | null
+          summary_time?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      integrations: {
+        Row: {
+          access_token: string | null
+          created_at: string
+          id: string
+          provider: string
+          provider_user_id: string | null
+          refresh_token: string | null
+          scopes: string[] | null
+          settings: Json | null
+          token_expires_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          created_at?: string
+          id?: string
+          provider: string
+          provider_user_id?: string | null
+          refresh_token?: string | null
+          scopes?: string[] | null
+          settings?: Json | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          created_at?: string
+          id?: string
+          provider?: string
+          provider_user_id?: string | null
+          refresh_token?: string | null
+          scopes?: string[] | null
+          settings?: Json | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
