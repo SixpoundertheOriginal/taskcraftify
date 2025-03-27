@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { countCompletedSubtasks, Task } from '@/types/task';
+import { countCompletedSubtasks, Task, TaskStatus, TaskPriority } from '@/types/task';
 import { cn } from '@/lib/utils';
 
 interface SubtaskListProps {
@@ -25,8 +25,8 @@ export function SubtaskList({ taskId }: SubtaskListProps) {
   const { completed, total } = countCompletedSubtasks(task || { 
     id: '', 
     title: '', 
-    status: 'TODO' as const,
-    priority: 'MEDIUM' as const,
+    status: TaskStatus.TODO,
+    priority: TaskPriority.MEDIUM,
     createdAt: new Date(),
     updatedAt: new Date(),
     subtasks: [] 

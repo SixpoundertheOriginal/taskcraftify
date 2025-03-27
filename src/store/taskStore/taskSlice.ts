@@ -150,6 +150,37 @@ export const createTaskSlice: StateCreator<TaskSlice, [], [], TaskSlice> = (set,
     }
   },
   
+  deleteTask: async (id) => {
+    set({ isLoading: true, error: null });
+    
+    try {
+      console.log('Deleting task with ID:', id);
+      const result = await TaskService.deleteTask(id);
+      
+      if (result.error) {
+        throw result.error;
+      }
+      
+      // Remove the deleted task from the state
+      set((state) => ({
+        tasks: state.tasks.filter((t) => t.id !== id),
+        isLoading: false
+      }));
+      
+      toast({
+        title: "Task deleted",
+        description: "Task has been successfully deleted"
+      });
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      set({ 
+        error: error instanceof Error ? error.message : 'Failed to delete task', 
+        isLoading: false 
+      });
+      throw error;
+    }
+  },
+  
   setTaskStatus: async (id, status) => {
     // This is a convenience method that calls updateTask with just the status change
     return get().updateTask({ id, status });
