@@ -74,6 +74,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface TaskCardProps {
   task: Task;
@@ -89,6 +90,7 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
   const [activeTab, setActiveTab] = useState("details");
   const { updateTask, deleteTask } = useTaskStore();
   const { projects } = useProjectStore();
+  const isMobile = useIsMobile();
   
   const project = task.projectId ? projects.find(p => p.id === task.projectId) : null;
   
@@ -210,20 +212,17 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
     }
   }, [isEditing]);
 
-  // Reset tab to details when collapsing
   useEffect(() => {
     if (!isExpanded) {
       setActiveTab("details");
     }
   }, [isExpanded]);
 
-  // Only apply strikethrough if task is marked as done
   const titleClassName = cn(
     "font-medium text-base text-balance mr-2",
     task.status === TaskStatus.DONE && "line-through text-muted-foreground"
   );
 
-  // Improved hover control area that doesn't interfere with content
   const controlButtons = (
     <div className="flex items-center gap-1 z-10 ml-auto shrink-0">
       <CollapsibleTrigger asChild onClick={(e) => e.stopPropagation()}>
@@ -442,7 +441,10 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
               <CollapsibleContent className="animate-accordion-down overflow-hidden">
                 {!isEditing ? (
                   <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="w-full mb-3 bg-muted/50 h-9">
+                    <TabsList className={cn(
+                      "w-full mb-3 bg-muted/50 h-9",
+                      isMobile && "flex-wrap overflow-x-auto"
+                    )}>
                       <TabsTrigger value="details" className="text-xs h-7">Details</TabsTrigger>
                       <TabsTrigger value="subtasks" className="text-xs h-7">
                         Subtasks
@@ -463,7 +465,7 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
                       <TabsTrigger value="activity" className="text-xs h-7">Activity</TabsTrigger>
                     </TabsList>
                     
-                    <TabsContent value="details" className="mt-0 space-y-3">
+                    <TabsContent value="details" className="mt-0 space-y-3 overflow-x-auto">
                       {task.description ? (
                         <div className={cn(
                           "text-sm text-muted-foreground pb-3 border-b border-border/40",
@@ -489,21 +491,21 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
                       )}
                     </TabsContent>
                     
-                    <TabsContent value="subtasks" className="mt-0 pt-1">
+                    <TabsContent value="subtasks" className="mt-0 pt-1 overflow-x-auto">
                       <SubtaskList taskId={task.id} />
                     </TabsContent>
                     
-                    <TabsContent value="comments" className="mt-0 pt-1">
+                    <TabsContent value="comments" className="mt-0 pt-1 overflow-x-auto">
                       <CommentList taskId={task.id} />
                     </TabsContent>
                     
-                    <TabsContent value="activity" className="mt-0 pt-1">
+                    <TabsContent value="activity" className="mt-0 pt-1 overflow-x-auto">
                       <ActivityHistory taskId={task.id} />
                     </TabsContent>
                   </Tabs>
                 ) : (
                   <Form {...form}>
-                    <form className="space-y-3 pb-3 border-b border-border/40 mb-3" onClick={stopPropagation}>
+                    <form className="space-y-3 pb-3 border-b border-border/40 mb-3 overflow-x-auto" onClick={stopPropagation}>
                       <FormField
                         control={form.control}
                         name="description"
@@ -586,7 +588,7 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
                 )}
                 
                 <div className="flex justify-between items-center mt-2">
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     {!isEditing ? (
                       <Button 
                         variant="outline" 
