@@ -1,152 +1,179 @@
 
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.21.0';
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.25.0";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+interface OAuthCallbackRequest {
+  code: string;
+  provider: string;
+  redirect_uri: string;
+}
 
+serve(async (req: Request) => {
   try {
-    const { provider, code, redirectUri } = await req.json();
-    
-    // Validate required params
-    if (!provider || !code || !redirectUri) {
-      return new Response(
-        JSON.stringify({ error: 'Missing required parameters' }),
-        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-      );
+    // Handle CORS preflight requests
+    if (req.method === "OPTIONS") {
+      return new Response(null, {
+        headers: corsHeaders,
+      });
     }
-    
-    // Create Supabase admin client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") as string;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    
-    // Get the user from the authorization header
-    const authHeader = req.headers.get('Authorization')!;
-    const token = authHeader.replace('Bearer ', '');
-    
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-      );
+
+    const { code, provider, redirect_uri } = await req.json() as OAuthCallbackRequest;
+
+    if (!code || !provider) {
+      throw new Error("Missing required parameters: code, provider");
     }
-    
-    // Handle different OAuth providers
-    if (provider === 'google') {
-      // Exchange the code for tokens using Google's OAuth API
-      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          code,
-          client_id: Deno.env.get('GOOGLE_CLIENT_ID')!,
-          client_secret: Deno.env.get('GOOGLE_CLIENT_SECRET')!,
-          redirect_uri: redirectUri,
-          grant_type: 'authorization_code',
-        }),
-      });
-      
-      const tokenData = await tokenResponse.json();
-      
-      if (!tokenResponse.ok) {
-        console.error('Error exchanging code for tokens:', tokenData);
-        return new Response(
-          JSON.stringify({ error: 'Failed to exchange authorization code' }),
-          { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-        );
-      }
-      
-      // Get user info from Google
-      const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-        headers: {
-          'Authorization': `Bearer ${tokenData.access_token}`,
-        },
-      });
-      
-      const userInfo = await userInfoResponse.json();
-      
-      // Check if this integration already exists
-      const { data: existingIntegration } = await supabase
-        .from('integrations')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('provider', 'google')
-        .maybeSingle();
-      
-      // Prepare integration data
-      const integrationData = {
-        user_id: user.id,
-        provider: 'google',
-        provider_user_id: userInfo.id,
-        access_token: tokenData.access_token,
-        refresh_token: tokenData.refresh_token,
-        token_expires_at: new Date(Date.now() + tokenData.expires_in * 1000).toISOString(),
-        scopes: tokenData.scope.split(' '),
-        settings: {
-          email: userInfo.email,
-          name: userInfo.name,
-          picture: userInfo.picture
-        }
-      };
-      
-      let integrationResult;
-      
-      if (existingIntegration) {
-        // Update existing integration
-        integrationResult = await supabase
-          .from('integrations')
-          .update(integrationData)
-          .eq('id', existingIntegration.id)
-          .select()
-          .single();
-      } else {
-        // Create new integration
-        integrationResult = await supabase
-          .from('integrations')
-          .insert(integrationData)
-          .select()
-          .single();
-      }
-      
-      if (integrationResult.error) {
-        console.error('Error saving integration:', integrationResult.error);
-        return new Response(
-          JSON.stringify({ error: 'Failed to save integration data' }),
-          { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-        );
-      }
-      
-      return new Response(
-        JSON.stringify({ 
-          success: true,
-          integration: integrationResult.data
-        }),
-        { headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-      );
+
+    // Log basic info
+    console.log(`Processing OAuth callback for provider: ${provider}`);
+
+    // Get client ID and secret based on provider
+    let client_id, client_secret, token_url, scope;
+
+    if (provider === "google") {
+      client_id = Deno.env.get("GOOGLE_CLIENT_ID");
+      client_secret = Deno.env.get("GOOGLE_CLIENT_SECRET");
+      token_url = "https://oauth2.googleapis.com/token";
+      scope = "https://www.googleapis.com/auth/calendar";
     } else {
-      return new Response(
-        JSON.stringify({ error: `OAuth provider ${provider} not supported` }),
-        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-      );
+      throw new Error(`Unsupported provider: ${provider}`);
     }
-  } catch (error) {
-    console.error('Error processing OAuth callback:', error);
+
+    if (!client_id || !client_secret) {
+      throw new Error(`Missing credentials for provider: ${provider}`);
+    }
+
+    // Exchange code for access token
+    const tokenResponse = await fetch(token_url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        code,
+        client_id,
+        client_secret,
+        redirect_uri,
+        grant_type: "authorization_code",
+      }),
+    });
+
+    if (!tokenResponse.ok) {
+      const errorData = await tokenResponse.text();
+      console.error("Error exchanging code for token:", errorData);
+      throw new Error(`Failed to exchange code for token: ${errorData}`);
+    }
+
+    const tokenData = await tokenResponse.json();
+    console.log("Successfully exchanged code for tokens");
+
+    // Get user info based on provider
+    let provider_user_id = null;
+    
+    if (provider === "google") {
+      const userInfoResponse = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+        headers: {
+          Authorization: `Bearer ${tokenData.access_token}`,
+        },
+      });
+      
+      if (userInfoResponse.ok) {
+        const userInfo = await userInfoResponse.json();
+        provider_user_id = userInfo.id;
+      }
+    }
+
+    // Get the user from the request
+    const { data: { user } } = await supabase.auth.getUser(req.headers.get("Authorization")?.split("Bearer ")[1] || "");
+    
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
+
+    // Calculate token expiration
+    const expiresAt = new Date();
+    expiresAt.setSeconds(expiresAt.getSeconds() + tokenData.expires_in);
+    
+    // Check if integration already exists
+    const { data: existingIntegration } = await supabase
+      .from("integrations")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("provider", provider)
+      .maybeSingle();
+
+    // Integration data
+    const integrationData = {
+      user_id: user.id,
+      provider,
+      provider_user_id,
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token,
+      token_expires_at: expiresAt.toISOString(),
+      scopes: [scope],
+      settings: {}
+    };
+
+    let result;
+    
+    if (existingIntegration) {
+      // Update existing integration
+      result = await supabase
+        .from("integrations")
+        .update(integrationData)
+        .eq("id", existingIntegration.id)
+        .select()
+        .single();
+    } else {
+      // Create new integration
+      result = await supabase
+        .from("integrations")
+        .insert(integrationData)
+        .select()
+        .single();
+    }
+
+    if (result.error) {
+      throw result.error;
+    }
+
+    console.log(`Integration ${existingIntegration ? 'updated' : 'created'} successfully`);
+
     return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      JSON.stringify({
+        success: true,
+        integration_id: result.data.id,
+        provider
+      }),
+      {
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
+      }
+    );
+  } catch (error) {
+    console.error("Error in oauth-callback function:", error);
+    
+    return new Response(
+      JSON.stringify({
+        error: error.message || "An unknown error occurred",
+      }),
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
+      }
     );
   }
 });

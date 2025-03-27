@@ -101,9 +101,18 @@ export class CalendarService {
       const userId = session.session.user.id;
       const mappedData = mapCalendarEventToApiCalendarEvent(eventData, userId);
       
+      // Make sure required fields are present
+      if (!mappedData.title) {
+        mappedData.title = eventData.title; // Ensure title is set
+      }
+      
       const { data, error } = await supabase
         .from('calendar_events')
-        .insert(mappedData)
+        .insert({
+          ...mappedData,
+          user_id: userId,
+          title: eventData.title // Explicitly add title again for safety
+        })
         .select()
         .single();
         
@@ -126,9 +135,14 @@ export class CalendarService {
     try {
       const mappedData = mapCalendarEventToApiCalendarEvent(eventData);
       
+      // Remove undefined fields and ensure ID is included
+      const updateData = Object.fromEntries(
+        Object.entries(mappedData).filter(([_, v]) => v !== undefined)
+      );
+      
       const { data, error } = await supabase
         .from('calendar_events')
-        .update(mappedData)
+        .update(updateData)
         .eq('id', eventData.id)
         .select()
         .single();

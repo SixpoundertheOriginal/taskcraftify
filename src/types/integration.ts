@@ -17,7 +17,8 @@ export interface Integration {
   updatedAt: Date;
 }
 
-export interface APIIntegration extends Database['public']['Tables']['integrations']['Row'] {}
+// Use type assertion instead of interface extension
+export type APIIntegration = Database['public']['Tables']['integrations']['Row'];
 
 export interface CalendarEvent {
   id: string;
@@ -39,7 +40,8 @@ export interface CalendarEvent {
   updatedAt: Date;
 }
 
-export interface APICalendarEvent extends Database['public']['Tables']['calendar_events']['Row'] {}
+// Use type assertion instead of interface extension
+export type APICalendarEvent = Database['public']['Tables']['calendar_events']['Row'];
 
 export interface EmailSettings {
   id: string;
@@ -57,7 +59,8 @@ export interface EmailSettings {
   updatedAt: Date;
 }
 
-export interface APIEmailSettings extends Database['public']['Tables']['email_settings']['Row'] {}
+// Use type assertion instead of interface extension
+export type APIEmailSettings = Database['public']['Tables']['email_settings']['Row'];
 
 export interface CreateIntegrationDTO {
   provider: Provider;
@@ -140,14 +143,17 @@ export function mapApiIntegrationToIntegration(apiIntegration: APIIntegration): 
 }
 
 export function mapIntegrationToApiIntegration(integration: CreateIntegrationDTO | UpdateIntegrationDTO, userId?: string): Partial<APIIntegration> {
-  const apiIntegration: Partial<APIIntegration> = {
-    provider: integration.provider,
-    provider_user_id: integration.providerUserId || null,
-    access_token: integration.accessToken || null,
-    refresh_token: integration.refreshToken || null,
-    scopes: integration.scopes || null,
-    settings: integration.settings || null,
-  };
+  const apiIntegration: Partial<APIIntegration> = {};
+  
+  if ('provider' in integration) {
+    apiIntegration.provider = integration.provider;
+  }
+  
+  apiIntegration.provider_user_id = integration.providerUserId || null;
+  apiIntegration.access_token = integration.accessToken || null;
+  apiIntegration.refresh_token = integration.refreshToken || null;
+  apiIntegration.scopes = integration.scopes || null;
+  apiIntegration.settings = integration.settings || null;
 
   if (userId) {
     apiIntegration.user_id = userId;
@@ -189,18 +195,22 @@ export function mapApiCalendarEventToCalendarEvent(apiEvent: APICalendarEvent): 
 }
 
 export function mapCalendarEventToApiCalendarEvent(event: CreateCalendarEventDTO | UpdateCalendarEventDTO, userId?: string): Partial<APICalendarEvent> {
-  const apiEvent: Partial<APICalendarEvent> = {
-    integration_id: event.integrationId || null,
-    external_event_id: event.externalEventId || null,
-    task_id: event.taskId || null,
-    title: event.title,
-    description: event.description || null,
-    all_day: event.allDay || null,
-    location: event.location || null,
-    status: event.status || null,
-    calendar_id: event.calendarId || null,
-    recurrence: event.recurrence || null,
-  };
+  const apiEvent: Partial<APICalendarEvent> = {};
+  
+  apiEvent.integration_id = event.integrationId || null;
+  apiEvent.external_event_id = event.externalEventId || null;
+  apiEvent.task_id = event.taskId || null;
+  
+  if ('title' in event && event.title !== undefined) {
+    apiEvent.title = event.title;
+  }
+  
+  apiEvent.description = event.description || null;
+  apiEvent.all_day = event.allDay || null;
+  apiEvent.location = event.location || null;
+  apiEvent.status = event.status || null;
+  apiEvent.calendar_id = event.calendarId || null;
+  apiEvent.recurrence = event.recurrence || null;
 
   if (userId) {
     apiEvent.user_id = userId;
@@ -246,12 +256,12 @@ export function mapApiEmailSettingsToEmailSettings(apiSettings: APIEmailSettings
 }
 
 export function mapEmailSettingsToApiEmailSettings(settings: UpdateEmailSettingsDTO, userId?: string): Partial<APIEmailSettings> {
-  const apiSettings: Partial<APIEmailSettings> = {
-    email_address: settings.emailAddress || null,
-    forward_address: settings.forwardAddress || null,
-    daily_summary: settings.dailySummary,
-    summary_time: settings.summaryTime || null,
-  };
+  const apiSettings: Partial<APIEmailSettings> = {};
+  
+  apiSettings.email_address = settings.emailAddress || null;
+  apiSettings.forward_address = settings.forwardAddress || null;
+  apiSettings.daily_summary = settings.dailySummary;
+  apiSettings.summary_time = settings.summaryTime || null;
 
   if (userId) {
     apiSettings.user_id = userId;

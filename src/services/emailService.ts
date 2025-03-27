@@ -68,7 +68,10 @@ export class EmailService {
         // Create new settings
         result = await supabase
           .from('email_settings')
-          .insert(mappedData)
+          .insert({
+            ...mappedData,
+            user_id: userId
+          })
           .select()
           .single();
       }

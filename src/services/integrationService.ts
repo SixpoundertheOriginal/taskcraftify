@@ -7,7 +7,6 @@ import {
   mapApiIntegrationToIntegration,
   mapIntegrationToApiIntegration
 } from '@/types/integration';
-import { useAuth } from '@/auth/AuthContext';
 
 export class IntegrationService {
   // Fetch all integrations for the current user
@@ -98,7 +97,11 @@ export class IntegrationService {
       
       const { data, error } = await supabase
         .from('integrations')
-        .insert(mappedData)
+        .insert({
+          ...mappedData,
+          provider: integrationData.provider,
+          user_id: userId
+        })
         .select()
         .single();
         
@@ -121,9 +124,14 @@ export class IntegrationService {
     try {
       const mappedData = mapIntegrationToApiIntegration(integrationData);
       
+      // Remove undefined fields and ensure ID is included
+      const updateData = Object.fromEntries(
+        Object.entries(mappedData).filter(([_, v]) => v !== undefined)
+      );
+      
       const { data, error } = await supabase
         .from('integrations')
-        .update(mappedData)
+        .update(updateData)
         .eq('id', integrationData.id)
         .select()
         .single();
