@@ -1,4 +1,3 @@
-
 import { useState, useCallback, memo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -82,7 +81,6 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
     resetForm
   } = useTaskEditForm(task);
   
-  // Handle status change with optimistic UI updates
   const handleStatusChange = useCallback(async (status: TaskStatus) => {
     try {
       setIsUpdating(true);
@@ -103,7 +101,6 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
     }
   }, [task.id, updateTask]);
 
-  // Handle task deletion with confirmation and optimistic UI
   const handleDelete = useCallback(async () => {
     try {
       setIsDeleting(true);
@@ -123,7 +120,6 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
     }
   }, [task.id, deleteTask]);
 
-  // Handle checkbox click for quickly toggling completion
   const handleCheckboxClick = useCallback(async () => {
     let newStatus = TaskStatus.DONE;
     if (task.status === TaskStatus.DONE) {
@@ -132,21 +128,17 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
     await handleStatusChange(newStatus);
   }, [task.status, handleStatusChange]);
 
-  // Toggle expanded state
   const toggleExpanded = useCallback(() => {
     setIsExpanded(prev => !prev);
   }, []);
-  
-  // Toggle edit mode
+
   const toggleEditMode = useCallback(() => {
     if (isEditing) {
-      // If we're exiting edit mode, reset form
       resetForm();
     }
     setIsEditing(prev => !prev);
   }, [isEditing, resetForm]);
-  
-  // Save task changes
+
   const handleSaveChanges = useCallback(async () => {
     try {
       setIsUpdating(true);
@@ -350,10 +342,6 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
                           <FormItem className="w-fit">
                             <FormControl>
                               <ProjectSelector 
-                                // The line causing the error - ProjectSelector doesn't accept these props directly
-                                // value={field.value || ""} 
-                                // onValueChange={field.onChange}
-                                // className="h-7 text-xs"
                                 selectedProjectId={field.value || ""}
                                 onProjectSelect={field.onChange}
                                 buttonClassName="h-7 text-xs"
@@ -571,5 +559,4 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
   );
 }
 
-// Use memo to prevent unnecessary re-renders, especially in list views
 export const TaskCard = memo(TaskCardComponent);

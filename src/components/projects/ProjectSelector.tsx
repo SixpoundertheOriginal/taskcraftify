@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useProjectStore, useTaskStore } from '@/store';
 import { Button } from '@/components/ui/button';
@@ -8,35 +7,49 @@ import { Check, ChevronDown, FolderPlus, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProjectDialog } from './ProjectDialog';
 
-export function ProjectSelector() {
+interface ProjectSelectorProps {
+  selectedProjectId?: string | null;
+  onProjectSelect?: (projectId: string | null) => void;
+  buttonClassName?: string;
+}
+
+export function ProjectSelector({ 
+  selectedProjectId: externalSelectedProjectId, 
+  onProjectSelect,
+  buttonClassName
+}: ProjectSelectorProps = {}) {
   const [open, setOpen] = useState(false);
   const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
-  const { projects, selectedProjectId, selectProject } = useProjectStore();
+  const { projects, selectedProjectId: storeSelectedProjectId, selectProject } = useProjectStore();
   const { setFilters, filters } = useTaskStore();
   
-  const currentProject = projects.find(project => project.id === selectedProjectId);
+  const effectiveProjectId = externalSelectedProjectId !== undefined ? externalSelectedProjectId : storeSelectedProjectId;
+  
+  const currentProject = projects.find(project => project.id === effectiveProjectId);
   
   const handleSelect = (projectId: string | null) => {
-    selectProject(projectId);
-    
-    // Update task filters
-    setFilters({
-      ...filters,
-      projectId: projectId === 'none' ? 'none' : projectId
-    });
+    if (onProjectSelect) {
+      onProjectSelect(projectId);
+    } else {
+      selectProject(projectId);
+      
+      setFilters({
+        ...filters,
+        projectId: projectId === 'none' ? 'none' : projectId
+      });
+    }
     
     setOpen(false);
   };
   
   useEffect(() => {
-    // Initialize filters with the selected project
-    if (selectedProjectId && !filters.projectId) {
+    if (storeSelectedProjectId && !filters.projectId && externalSelectedProjectId === undefined) {
       setFilters({
         ...filters,
-        projectId: selectedProjectId
+        projectId: storeSelectedProjectId
       });
     }
-  }, [selectedProjectId]);
+  }, [storeSelectedProjectId, filters, setFilters, externalSelectedProjectId]);
   
   return (
     <>
@@ -46,10 +59,10 @@ export function ProjectSelector() {
             variant="outline" 
             role="combobox" 
             aria-expanded={open}
-            className="flex items-center justify-between w-full text-left"
+            className={cn("flex items-center justify-between w-full text-left", buttonClassName)}
           >
             <div className="flex items-center gap-2 truncate">
-              {selectedProjectId ? (
+              {effectiveProjectId ? (
                 <>
                   <div 
                     className="w-3 h-3 rounded-full" 
@@ -79,7 +92,7 @@ export function ProjectSelector() {
                 >
                   <Layers className="w-4 h-4 opacity-70" />
                   <span>All Projects</span>
-                  {!selectedProjectId && <Check className="ml-auto h-4 w-4" />}
+                  {!effectiveProjectId && <Check className="ml-auto h-4 w-4" />}
                 </CommandItem>
                 
                 <CommandItem 
@@ -88,7 +101,7 @@ export function ProjectSelector() {
                 >
                   <div className="w-3 h-3 rounded-full bg-gray-300" />
                   <span>No Project</span>
-                  {selectedProjectId === 'none' && <Check className="ml-auto h-4 w-4" />}
+                  {effectiveProjectId === 'none' && <Check className="ml-auto h-4 w-4" />}
                 </CommandItem>
               </CommandGroup>
               
@@ -107,7 +120,7 @@ export function ProjectSelector() {
                           style={{ backgroundColor: project.color }}
                         />
                         <span className="truncate">{project.name}</span>
-                        {selectedProjectId === project.id && <Check className="ml-auto h-4 w-4" />}
+                        {effectiveProjectId === project.id && <Check className="ml-auto h-4 w-4" />}
                       </CommandItem>
                     ))}
                   </CommandGroup>
