@@ -9,22 +9,26 @@ import { TaskCard } from './TaskCard';
 import { cn } from '@/lib/utils';
 import { TaskForm } from './TaskForm';
 import { Button } from '@/components/ui/button';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface KanbanColumnProps {
   id: string;
   title: string;
   tasks: Task[];
   status: TaskStatus;
+  className?: string;
 }
 
-export function KanbanColumn({ id, title, tasks, status }: KanbanColumnProps) {
+export function KanbanColumn({ id, title, tasks, status, className }: KanbanColumnProps) {
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const { isOver, setNodeRef } = useDroppable({ id });
+  const isMobile = useIsMobile();
   
   // Animation for the column when a task is being dragged over it
   const columnClass = cn(
     "flex flex-col h-full rounded-lg border bg-card transition-all duration-200",
-    isOver ? "border-primary/60 bg-accent/30 scale-[1.02] shadow-md" : "border-border/40"
+    isOver ? "border-primary/60 bg-accent/30 scale-[1.02] shadow-md" : "border-border/40",
+    className
   );
   
   const handleAddTask = () => {
@@ -51,7 +55,10 @@ export function KanbanColumn({ id, title, tasks, status }: KanbanColumnProps) {
         </Button>
       </div>
       
-      <div className="p-3 flex-1 overflow-y-auto max-h-[calc(100vh-14rem)]">
+      <div className={cn(
+        "p-3 flex-1 overflow-y-auto",
+        isMobile ? "max-h-[calc(100vh-12rem)]" : "max-h-[calc(100vh-14rem)]"
+      )}>
         <SortableContext 
           id={id} 
           items={tasks.map(task => task.id)} 
