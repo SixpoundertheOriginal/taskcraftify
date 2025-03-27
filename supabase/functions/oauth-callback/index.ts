@@ -60,16 +60,34 @@ serve(async (req: Request) => {
     console.log(`Using token URL: ${token_url}`);
 
     // Create form data parameters for token exchange
-    const formParams = new URLSearchParams();
-    formParams.append("code", code);
-    formParams.append("client_id", client_id);
-    formParams.append("client_secret", client_secret);
-    formParams.append("redirect_uri", redirect_uri);
-    formParams.append("grant_type", "authorization_code");
+    let formParams;
+    let headers = {
+      "Content-Type": "application/x-www-form-urlencoded",
+    };
     
-    // Microsoft requires scope to be sent during token exchange
     if (provider === "microsoft") {
+      // Fix: Ensure params are properly formatted for Microsoft OAuth
+      // This is critical - Microsoft requires parameters in specific format
+      console.log("Preparing Microsoft token exchange request");
+      
+      formParams = new URLSearchParams();
+      formParams.append("client_id", client_id);
+      formParams.append("client_secret", client_secret);
+      formParams.append("code", code);
+      formParams.append("redirect_uri", redirect_uri);
+      formParams.append("grant_type", "authorization_code");
       formParams.append("scope", scope);
+      
+      // Log the parameters for debugging
+      console.log("Microsoft token exchange parameters:", Object.fromEntries(formParams.entries()));
+    } else {
+      // Google and other providers
+      formParams = new URLSearchParams();
+      formParams.append("code", code);
+      formParams.append("client_id", client_id);
+      formParams.append("client_secret", client_secret);
+      formParams.append("redirect_uri", redirect_uri);
+      formParams.append("grant_type", "authorization_code");
     }
 
     console.log("Form parameters prepared for token exchange");
@@ -77,20 +95,29 @@ serve(async (req: Request) => {
     // Exchange code for access token
     const tokenResponse = await fetch(token_url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
+      headers: headers,
       body: formParams,
     });
 
+    const responseText = await tokenResponse.text();
+    
+    // Log detailed response info for debugging
+    console.log(`Token response status: ${tokenResponse.status}`);
+    console.log(`Token response headers: ${JSON.stringify(Object.fromEntries(tokenResponse.headers.entries()))}`);
+    
     if (!tokenResponse.ok) {
-      const errorData = await tokenResponse.text();
-      console.error("Error exchanging code for token:", errorData);
-      throw new Error(`Failed to exchange code for token: ${errorData}`);
+      console.error("Error exchanging code for token:", responseText);
+      throw new Error(`Failed to exchange code for token: ${responseText}`);
     }
 
-    const tokenData = await tokenResponse.json();
-    console.log("Successfully exchanged code for tokens");
+    let tokenData;
+    try {
+      tokenData = JSON.parse(responseText);
+      console.log("Successfully exchanged code for tokens");
+    } catch (error) {
+      console.error("Failed to parse token response:", error);
+      throw new Error("Failed to parse token response");
+    }
 
     // Get user info based on provider
     let provider_user_id = null;

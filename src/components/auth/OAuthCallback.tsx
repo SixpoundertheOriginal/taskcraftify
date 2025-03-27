@@ -33,10 +33,11 @@ export function OAuthCallback() {
           return;
         }
         
-        console.log(`Processing OAuth callback for provider: ${provider}`);
+        console.log(`Processing OAuth callback for provider: ${provider} with code: ${code.substring(0, 5)}...`);
         
         // Get the redirect URI that was used for the auth flow
         const redirectUri = window.location.origin + '/auth/callback';
+        console.log(`Using redirect URI: ${redirectUri}`);
         
         const result = await handleOAuthCallback(provider, code, redirectUri);
         
@@ -58,10 +59,18 @@ export function OAuthCallback() {
     
     // Try to determine the provider from the URL or other parameters
     const determineProvider = (): string => {
+      const state = searchParams.get('state');
+      
       // Microsoft adds 'session_state' parameter
       if (searchParams.has('session_state')) {
         return 'microsoft';
       }
+      
+      // Check if state parameter contains provider info
+      if (state && (state.includes('microsoft') || state.includes('outlook'))) {
+        return 'microsoft';
+      }
+      
       // Default to Google if we can't determine
       return 'google';
     };
@@ -74,7 +83,14 @@ export function OAuthCallback() {
       {error ? (
         <div className="text-center space-y-2">
           <h2 className="text-xl font-semibold text-red-500">Authentication Error</h2>
-          <p>{error}</p>
+          <p className="max-w-md">{error}</p>
+          <div className="mt-4 p-4 bg-gray-100 rounded-md text-left max-w-md overflow-auto text-sm">
+            <h3 className="font-medium mb-2">Debug Information:</h3>
+            <p>URL Parameters:</p>
+            <pre className="bg-gray-200 p-2 rounded text-xs">
+              {JSON.stringify(Object.fromEntries([...searchParams]), null, 2)}
+            </pre>
+          </div>
           <button 
             className="px-4 py-2 bg-primary text-white rounded-md mt-4"
             onClick={() => navigate('/settings')}

@@ -183,8 +183,21 @@ export class IntegrationService {
       // Include all required scopes for Microsoft
       const scope = encodeURIComponent('Calendars.ReadWrite User.Read offline_access');
       
-      // Ensure we're using the correct authority, endpoints and parameters
-      return `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUrl)}&response_type=code&scope=${scope}&response_mode=query`;
+      // Fix: Ensure we're using the correct OAuth parameters format for Microsoft
+      // Making sure client_id is included in the URL parameters properly
+      const params = new URLSearchParams({
+        client_id: clientId,
+        redirect_uri: redirectUrl,
+        response_type: 'code',
+        scope: 'Calendars.ReadWrite User.Read offline_access',
+        response_mode: 'query'
+      });
+      
+      // Log the URL being generated for debugging
+      const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params.toString()}`;
+      console.log('Generated Microsoft OAuth URL:', authUrl);
+      
+      return authUrl;
     }
     
     throw new Error(`OAuth URL generation not implemented for provider: ${provider}`);
