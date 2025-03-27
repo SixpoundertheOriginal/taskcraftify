@@ -20,6 +20,7 @@ import {
   Trash,
   ListChecks,
   MessageSquare,
+  GripVertical,
 } from 'lucide-react';
 import { Task, TaskStatus, TaskPriority, countCompletedSubtasks } from '@/types/task';
 import { 
@@ -42,6 +43,8 @@ import {
 } from "@/components/ui/hover-card";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { TaskForm } from './TaskForm';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface TaskCardProps {
   task: Task;
@@ -56,6 +59,28 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
   const { updateTask, deleteTask } = useTaskStore();
   const { projects } = useProjectStore();
   const isMobile = useIsMobile();
+  
+  // Setup sortable functionality
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging: isSortableDragging,
+  } = useSortable({ 
+    id: task.id,
+    data: {
+      task,
+    },
+  });
+  
+  const sortableStyle = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isSortableDragging ? 50 : 1,
+    opacity: isSortableDragging ? 0.6 : 1,
+  };
   
   const project = task.projectId ? projects.find(p => p.id === task.projectId) : null;
   
@@ -119,7 +144,8 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
       !e.target.closest('[role="combobox"]') && 
       !e.target.closest('[data-radix-popper-content-wrapper]') &&
       !e.target.closest('[role="tab"]') &&
-      !e.target.closest('label')
+      !e.target.closest('label') &&
+      !e.target.closest('[data-drag-handle]')
     ) {
       setIsTaskModalOpen(true);
     }
@@ -130,62 +156,45 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
     task.status === TaskStatus.DONE && "line-through text-muted-foreground"
   );
 
-  const controlButtons = (
-    <div className="flex items-center gap-1 z-10 ml-auto shrink-0">      
-      {(isUpdating || isDeleting) ? (
-        <Loader2 className="h-4 w-4 animate-spin ml-1" />
-      ) : (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-6 w-6 rounded-full opacity-70 hover:opacity-100"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <MoreHorizontal className="h-4 w-4" />
-              <span className="sr-only">Task actions</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-[180px]">
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(TaskStatus.TODO); }}>
-              Mark as To Do
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(TaskStatus.IN_PROGRESS); }}>
-              Mark as In Progress
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(TaskStatus.DONE); }}>
-              Mark as Done
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(TaskStatus.ARCHIVED); }}>
-              Archive
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setIsTaskModalOpen(true); }}>
-              View/Edit Task
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDelete(); }} className="text-destructive">
-              <Trash className="h-4 w-4 mr-2" />
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
-    </div>
-  );
+  const isCurrentlyDragging = isDragging || isSortableDragging;
 
   return (
     <>
       <Card 
+        ref={setNodeRef}
+        style={{
+          ...sortableStyle,
+          ...(project ? { borderLeftColor: project.color } : {}),
+        }}
         className={cn(
           "group w-full transition-all duration-200 border border-border/40 shadow-sm hover:shadow-md hover:border-border/80 cursor-pointer",
           project ? `border-l-4` : '',
-          isUpdating || isDeleting ? 'opacity-70' : '',
-          isDragging ? 'opacity-80 rotate-1 scale-105 shadow-md z-50' : ''
+          (isUpdating || isDeleting) ? 'opacity-70' : '',
+          isCurrentlyDragging ? 'opacity-80 rotate-1 scale-105 shadow-md z-50' : ''
         )}
-        style={project ? { borderLeftColor: project.color } : {}}
         onClick={handleCardClick}
+        tabIndex={0}
+        role="button"
+        aria-label={`Task: ${task.title}`}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            setIsTaskModalOpen(true);
+          }
+        }}
       >
-        <CardContent className="p-4">
+        <CardContent className="p-4 relative">
+          {/* Drag handle */}
+          <div 
+            className="absolute top-2 -left-1 w-6 h-10 flex items-center justify-center opacity-0 group-hover:opacity-40 hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+            {...attributes}
+            {...listeners}
+            data-drag-handle="true"
+            aria-label="Drag task"
+            title="Drag to reorder"
+          >
+            <GripVertical className="h-5 w-5" />
+          </div>
+
           <div className="flex items-start gap-3">
             <button
               onClick={handleCheckboxClick}
@@ -207,7 +216,46 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
                     {task.title}
                   </h3>
                 </div>
-                {controlButtons}
+                <div className="flex items-center gap-1 z-10 ml-auto shrink-0">      
+                  {(isUpdating || isDeleting) ? (
+                    <Loader2 className="h-4 w-4 animate-spin ml-1" />
+                  ) : (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6 rounded-full opacity-70 hover:opacity-100"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Task actions</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-[180px]">
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(TaskStatus.TODO); }}>
+                          Mark as To Do
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(TaskStatus.IN_PROGRESS); }}>
+                          Mark as In Progress
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(TaskStatus.DONE); }}>
+                          Mark as Done
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(TaskStatus.ARCHIVED); }}>
+                          Archive
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setIsTaskModalOpen(true); }}>
+                          View/Edit Task
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDelete(); }} className="text-destructive">
+                          <Trash className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
               </div>
               
               <div className="flex flex-wrap gap-2 my-2">

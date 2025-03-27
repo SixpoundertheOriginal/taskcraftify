@@ -17,17 +17,20 @@ interface KanbanColumnProps {
   tasks: Task[];
   status: TaskStatus;
   className?: string;
+  isDraggingActive?: boolean;
 }
 
-export function KanbanColumn({ id, title, tasks, status, className }: KanbanColumnProps) {
+export function KanbanColumn({ id, title, tasks, status, className, isDraggingActive = false }: KanbanColumnProps) {
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const { isOver, setNodeRef } = useDroppable({ id });
   const isMobile = useIsMobile();
   
-  // Animation for the column when a task is being dragged over it
+  // Enhanced animation for the column when a task is being dragged over it
   const columnClass = cn(
     "flex flex-col h-full rounded-lg border bg-card transition-all duration-200",
-    isOver ? "border-primary/60 bg-accent/30 scale-[1.02] shadow-md" : "border-border/40",
+    isOver && "border-primary border-dashed bg-accent/30 scale-[1.02] shadow-md",
+    isDraggingActive && !isOver && "opacity-95",
+    isOver ? "z-10" : "z-0",
     className
   );
   
@@ -36,7 +39,12 @@ export function KanbanColumn({ id, title, tasks, status, className }: KanbanColu
   };
   
   return (
-    <div ref={setNodeRef} className={columnClass}>
+    <div 
+      ref={setNodeRef} 
+      className={columnClass}
+      aria-label={`${title} column`}
+      role="region"
+    >
       <div className="p-3 border-b flex items-center justify-between bg-muted/30 rounded-t-lg">
         <div className="flex items-center gap-2">
           <h3 className="font-medium text-sm">{title}</h3>
@@ -49,6 +57,7 @@ export function KanbanColumn({ id, title, tasks, status, className }: KanbanColu
           size="icon" 
           className="h-7 w-7 rounded-full hover:bg-primary/10 transition-colors"
           onClick={handleAddTask}
+          aria-label={`Add task to ${title}`}
         >
           <Plus className="h-4 w-4" />
           <span className="sr-only">Add task</span>
@@ -57,7 +66,8 @@ export function KanbanColumn({ id, title, tasks, status, className }: KanbanColu
       
       <div className={cn(
         "p-3 flex-1 overflow-y-auto",
-        isMobile ? "max-h-[calc(100vh-12rem)]" : "max-h-[calc(100vh-14rem)]"
+        isMobile ? "max-h-[calc(100vh-12rem)]" : "max-h-[calc(100vh-14rem)]",
+        isOver && "bg-accent/10" // Subtle background change when dragging over
       )}>
         <SortableContext 
           id={id} 
@@ -65,7 +75,10 @@ export function KanbanColumn({ id, title, tasks, status, className }: KanbanColu
           strategy={verticalListSortingStrategy}
         >
           {tasks.length > 0 ? (
-            <div className="flex flex-col gap-3">
+            <div 
+              className="flex flex-col gap-3" 
+              aria-label={`${tasks.length} tasks in ${title}`}
+            >
               {tasks.map(task => (
                 <TaskCard 
                   key={task.id} 
@@ -78,7 +91,9 @@ export function KanbanColumn({ id, title, tasks, status, className }: KanbanColu
           ) : (
             <div className="flex flex-col items-center justify-center h-32 text-center">
               <p className="text-sm text-muted-foreground">
-                No tasks in this column
+                {isOver 
+                  ? "Drop task here" 
+                  : "No tasks in this column"}
               </p>
               <Button 
                 variant="ghost" 
