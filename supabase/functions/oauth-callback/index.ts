@@ -26,7 +26,19 @@ serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { code, provider, redirect_uri } = await req.json() as OAuthCallbackRequest;
+    // Parse request body
+    const requestBody = await req.text();
+    console.log("Raw request body:", requestBody);
+    
+    let parsedBody;
+    try {
+      parsedBody = JSON.parse(requestBody);
+    } catch (e) {
+      console.error("Failed to parse request body:", e);
+      throw new Error(`Invalid request body: ${e.message}`);
+    }
+    
+    const { code, provider, redirect_uri } = parsedBody as OAuthCallbackRequest;
 
     if (!code || !provider) {
       throw new Error("Missing required parameters: code, provider");
@@ -58,6 +70,7 @@ serve(async (req: Request) => {
     }
 
     console.log(`Using token URL: ${token_url}`);
+    console.log(`Using client_id: ${client_id.substring(0, 5)}...`); // Log part of the client ID for debugging
 
     // Create form data parameters for token exchange
     const formParams = new URLSearchParams();
@@ -68,7 +81,7 @@ serve(async (req: Request) => {
     formParams.append("grant_type", "authorization_code");
     
     if (provider === "microsoft") {
-      // Microsoft may need scope explicitly in the token request too
+      // Microsoft needs scope explicitly in the token request
       formParams.append("scope", scope);
     }
     
@@ -78,12 +91,14 @@ serve(async (req: Request) => {
     
     // Log detailed request information for debugging
     console.log(`Token request params for ${provider}:`, Object.fromEntries(formParams.entries()));
+    console.log("Token request body (stringified):", formParams.toString());
+    console.log("Token request headers:", headers);
 
     // Exchange code for access token
     const tokenResponse = await fetch(token_url, {
       method: "POST",
       headers: headers,
-      body: formParams,
+      body: formParams.toString(), // Explicitly convert to string
     });
 
     const responseText = await tokenResponse.text();

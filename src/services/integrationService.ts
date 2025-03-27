@@ -180,22 +180,13 @@ export class IntegrationService {
       // Microsoft Graph OAuth configuration
       const clientId = import.meta.env.VITE_MICROSOFT_CLIENT_ID || '';
       // Include all required scopes for Microsoft
-      const scope = 'Calendars.ReadWrite User.Read offline_access';
-      
-      // For Microsoft, you need to use the URLSearchParams properly as they're very specific
-      // about the format of the authorization request
-      const params = new URLSearchParams({
-        client_id: clientId,
-        redirect_uri: redirectUrl,
-        response_type: 'code',
-        scope: scope,
-        response_mode: 'query'
-      });
+      const scope = encodeURIComponent('Calendars.ReadWrite User.Read offline_access');
       
       // Build the authorization URL with properly formatted parameters
-      const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params.toString()}`;
-      console.log('Generated Microsoft OAuth URL:', authUrl);
+      // Microsoft is very specific about parameter formatting
+      const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUrl)}&response_type=code&scope=${scope}&response_mode=query`;
       
+      console.log('Generated Microsoft OAuth URL:', authUrl);
       return authUrl;
     }
     

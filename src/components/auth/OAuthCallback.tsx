@@ -15,10 +15,20 @@ export function OAuthCallback() {
   useEffect(() => {
     const processCallback = async () => {
       try {
+        // Get parameters from URL
         const code = searchParams.get('code');
         const provider = searchParams.get('provider') || determineProvider();
         const error = searchParams.get('error');
         const errorDescription = searchParams.get('error_description');
+        
+        console.log('OAuth callback parameters:', {
+          code: code ? `${code.substring(0, 5)}...` : null,
+          provider,
+          error,
+          errorDescription,
+          sessionState: searchParams.has('session_state') ? 'present' : 'absent',
+          state: searchParams.get('state')
+        });
         
         if (error) {
           console.error(`OAuth error: ${error} - ${errorDescription}`);
@@ -59,19 +69,25 @@ export function OAuthCallback() {
     
     // Try to determine the provider from the URL or other parameters
     const determineProvider = (): string => {
+      // Log all search params for debugging
+      console.log('All search params:', Object.fromEntries([...searchParams]));
+      
       const state = searchParams.get('state');
       
       // Microsoft adds 'session_state' parameter
       if (searchParams.has('session_state')) {
+        console.log('Detected Microsoft provider from session_state parameter');
         return 'microsoft';
       }
       
       // Check if state parameter contains provider info
       if (state && (state.includes('microsoft') || state.includes('outlook'))) {
+        console.log('Detected Microsoft provider from state parameter');
         return 'microsoft';
       }
       
       // Default to Google if we can't determine
+      console.log('Defaulting to Google provider');
       return 'google';
     };
     
