@@ -17,9 +17,11 @@ export function OAuthCallback() {
       try {
         // Get parameters from URL
         const code = searchParams.get('code');
-        const provider = searchParams.get('provider') || determineProvider();
         const error = searchParams.get('error');
         const errorDescription = searchParams.get('error_description');
+        
+        // More robust provider detection
+        const provider = determineProvider();
         
         console.log('OAuth callback parameters:', {
           code: code ? `${code.substring(0, 5)}...` : null,
@@ -27,11 +29,12 @@ export function OAuthCallback() {
           error,
           errorDescription,
           sessionState: searchParams.has('session_state') ? 'present' : 'absent',
-          state: searchParams.get('state')
+          state: searchParams.get('state'),
+          allParams: Object.fromEntries([...searchParams])
         });
         
         if (error) {
-          console.error(`OAuth error: ${error} - ${errorDescription}`);
+          console.error(`OAuth error from provider: ${error} - ${errorDescription}`);
           setError(errorDescription || error);
           setProcessing(false);
           return;
@@ -49,16 +52,22 @@ export function OAuthCallback() {
         const redirectUri = window.location.origin + '/auth/callback';
         console.log(`Using redirect URI: ${redirectUri}`);
         
-        const result = await handleOAuthCallback(provider, code, redirectUri);
-        
-        if (result) {
-          toast({
-            title: "Integration connected successfully",
-            description: `Your ${provider === 'google' ? 'Google Calendar' : 'Microsoft Outlook'} account has been connected.`
-          });
-          navigate('/settings');
-        } else {
-          throw new Error('Failed to complete authentication');
+        try {
+          const result = await handleOAuthCallback(provider, code, redirectUri);
+          
+          if (result) {
+            toast({
+              title: "Integration connected successfully",
+              description: `Your ${provider === 'google' ? 'Google Calendar' : 'Microsoft Outlook'} account has been connected.`
+            });
+            navigate('/settings');
+          } else {
+            throw new Error('Failed to complete authentication');
+          }
+        } catch (callbackError) {
+          console.error('Error in handleOAuthCallback:', callbackError);
+          setError(callbackError instanceof Error ? callbackError.message : 'Failed to complete OAuth process');
+          setProcessing(false);
         }
       } catch (err) {
         console.error('OAuth callback error:', err);
@@ -67,8 +76,8 @@ export function OAuthCallback() {
       }
     };
     
-    // Try to determine the provider from the URL or other parameters
-    const determineProvider = (): string => {
+    // Helper function to determine the provider from URL parameters
+    function determineProvider(): string {
       // Log all search params for debugging
       console.log('All search params:', Object.fromEntries([...searchParams]));
       
@@ -81,15 +90,41 @@ export function OAuthCallback() {
       }
       
       // Check if state parameter contains provider info
-      if (state && (state.includes('microsoft') || state.includes('outlook'))) {
-        console.log('Detected Microsoft provider from state parameter');
+      if (state) {
+        if (state.includes('microsoft') || state.includes('outlook')) {
+          console.log('Detected Microsoft provider from state parameter');
+          return 'microsoft';
+        }
+        
+        if (state.includes('google')) {
+          console.log('Detected Google provider from state parameter');
+          return 'google';
+        }
+      }
+      
+      // Check the URL path for provider hints
+      const currentUrl = window.location.href.toLowerCase();
+      if (currentUrl.includes('microsoft') || currentUrl.includes('outlook')) {
+        console.log('Detected Microsoft provider from URL path');
         return 'microsoft';
       }
       
-      // Default to Google if we can't determine
+      if (currentUrl.includes('google')) {
+        console.log('Detected Google provider from URL path');
+        return 'google';
+      }
+      
+      // Default to inferring from 'session_state' parameter
+      const hasSessionState = searchParams.has('session_state');
+      if (hasSessionState) {
+        console.log('Defaulting to Microsoft provider based on session_state presence');
+        return 'microsoft';
+      }
+      
+      // Final fallback to Google
       console.log('Defaulting to Google provider');
       return 'google';
-    };
+    }
     
     processCallback();
   }, [searchParams, handleOAuthCallback, navigate]);

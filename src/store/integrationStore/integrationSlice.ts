@@ -398,11 +398,15 @@ export const createIntegrationSlice = (set: any, get: any) => ({
       }
       
       console.log(`Calling OAuth callback edge function for ${provider}`);
+      
+      const debugTimestamp = new Date().toISOString();
+      
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || ''}/oauth-callback`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
+          'Authorization': `Bearer ${authToken}`,
+          'X-Debug-Timestamp': debugTimestamp
         },
         body: JSON.stringify({ 
           provider, 
@@ -412,16 +416,29 @@ export const createIntegrationSlice = (set: any, get: any) => ({
       });
       
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('OAuth callback error:', errorData);
-        throw new Error(errorData.error || 'Failed to complete OAuth flow');
+        let errorMessage = `HTTP error: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          console.error('OAuth callback error response:', errorData);
+          errorMessage = errorData.error || errorMessage;
+        } catch (jsonError) {
+          try {
+            const errorText = await response.text();
+            console.error('OAuth callback error text:', errorText);
+            errorMessage = errorText || errorMessage;
+          } catch (textError) {
+            console.error('Could not parse error response as text');
+          }
+        }
+        
+        throw new Error(`Failed to complete OAuth flow: ${errorMessage}`);
       }
       
       const data = await response.json();
       console.log('OAuth callback successful:', data);
       
       if (!data.success) {
-        throw new Error('OAuth flow completed but was not successful');
+        throw new Error(data.error || 'OAuth flow completed but was not successful');
       }
       
       await get().fetchIntegrations();

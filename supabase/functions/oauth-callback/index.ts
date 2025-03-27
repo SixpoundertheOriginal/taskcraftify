@@ -73,32 +73,49 @@ serve(async (req: Request) => {
     console.log(`Using client_id: ${client_id.substring(0, 5)}...`); // Log part of the client ID for debugging
 
     // Create form data parameters for token exchange
-    const formParams = new URLSearchParams();
-    formParams.append("client_id", client_id);
-    formParams.append("client_secret", client_secret);
-    formParams.append("code", code);
-    formParams.append("redirect_uri", redirect_uri);
-    formParams.append("grant_type", "authorization_code");
+    const formData = new FormData();
+    formData.append("client_id", client_id);
+    formData.append("client_secret", client_secret);
+    formData.append("code", code);
+    formData.append("redirect_uri", redirect_uri);
+    formData.append("grant_type", "authorization_code");
     
     if (provider === "microsoft") {
       // Microsoft needs scope explicitly in the token request
-      formParams.append("scope", scope);
+      formData.append("scope", scope);
     }
     
-    const headers = {
-      "Content-Type": "application/x-www-form-urlencoded",
-    };
+    // For Microsoft, use URLSearchParams instead of FormData
+    let body;
+    let headers = {};
     
-    // Log detailed request information for debugging
-    console.log(`Token request params for ${provider}:`, Object.fromEntries(formParams.entries()));
-    console.log("Token request body (stringified):", formParams.toString());
-    console.log("Token request headers:", headers);
-
+    if (provider === "microsoft") {
+      const urlParams = new URLSearchParams();
+      urlParams.append("client_id", client_id);
+      urlParams.append("client_secret", client_secret);
+      urlParams.append("code", code);
+      urlParams.append("redirect_uri", redirect_uri);
+      urlParams.append("grant_type", "authorization_code");
+      urlParams.append("scope", scope);
+      
+      body = urlParams.toString();
+      headers = {
+        "Content-Type": "application/x-www-form-urlencoded",
+      };
+      
+      // Double-check the request before sending
+      console.log("Microsoft token request body:", body);
+      console.log("Microsoft token request headers:", headers);
+    } else {
+      // For Google, continue using FormData
+      body = formData;
+    }
+    
     // Exchange code for access token
     const tokenResponse = await fetch(token_url, {
       method: "POST",
       headers: headers,
-      body: formParams.toString(), // Explicitly convert to string
+      body: body,
     });
 
     const responseText = await tokenResponse.text();

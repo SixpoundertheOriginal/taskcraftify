@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Integration,
@@ -182,12 +183,8 @@ export class IntegrationService {
       // Include all required scopes for Microsoft
       const scope = encodeURIComponent('Calendars.ReadWrite User.Read offline_access');
       
-      // Build the authorization URL with properly formatted parameters
-      // Microsoft is very specific about parameter formatting
-      const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUrl)}&response_type=code&scope=${scope}&response_mode=query`;
-      
-      console.log('Generated Microsoft OAuth URL:', authUrl);
-      return authUrl;
+      // Simplified URL with correct format for Microsoft
+      return `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUrl)}&scope=${scope}`;
     }
     
     throw new Error(`OAuth URL generation not implemented for provider: ${provider}`);
