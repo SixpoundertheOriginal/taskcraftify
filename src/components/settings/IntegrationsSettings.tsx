@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useIntegrationStore } from '@/store';
 import { useAuth } from '@/auth/AuthContext';
@@ -37,7 +36,7 @@ import {
   RefreshCw,
   CheckCircle,
   XCircle,
-  Microsoft
+  Library,
 } from 'lucide-react';
 
 export function IntegrationsSettings() {
@@ -202,7 +201,9 @@ export function IntegrationsSettings() {
                 {/* Microsoft Outlook Integration */}
                 <div className="flex items-center justify-between bg-secondary/50 rounded-lg p-4">
                   <div className="flex items-center gap-3">
-                    <Microsoft className="h-8 w-8 text-blue-500" />
+                    <div className="h-8 w-8 bg-blue-500 text-white flex items-center justify-center rounded-sm">
+                      <Library className="h-5 w-5" />
+                    </div>
                     <div>
                       <div className="font-medium">Microsoft Outlook</div>
                       <div className="text-sm text-muted-foreground">
