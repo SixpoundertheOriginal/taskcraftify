@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Integration,
@@ -183,8 +182,11 @@ export class IntegrationService {
       // Include all required scopes for Microsoft
       const scope = encodeURIComponent('Calendars.ReadWrite User.Read offline_access');
       
-      // Simplified URL with correct format for Microsoft
-      return `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUrl)}&scope=${scope}`;
+      // Add state parameter to help with provider identification
+      const state = encodeURIComponent(`provider=microsoft&timestamp=${Date.now()}`);
+      
+      // Build the URL with correct parameters for Microsoft
+      return `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUrl)}&scope=${scope}&state=${state}&prompt=consent`;
     }
     
     throw new Error(`OAuth URL generation not implemented for provider: ${provider}`);

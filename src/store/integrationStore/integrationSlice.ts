@@ -401,6 +401,14 @@ export const createIntegrationSlice = (set: any, get: any) => ({
       
       const debugTimestamp = new Date().toISOString();
       
+      console.log('Preparing OAuth callback request with data:', { 
+        provider, 
+        code: code.substring(0, 5) + '...',
+        redirect_uri: redirectUri,
+        token: authToken.substring(0, 5) + '...',
+        timestamp: debugTimestamp
+      });
+      
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || ''}/oauth-callback`, {
         method: 'POST',
         headers: {

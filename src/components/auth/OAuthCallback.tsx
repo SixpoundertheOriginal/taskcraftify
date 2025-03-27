@@ -19,17 +19,18 @@ export function OAuthCallback() {
         const code = searchParams.get('code');
         const error = searchParams.get('error');
         const errorDescription = searchParams.get('error_description');
+        const state = searchParams.get('state');
         
-        // More robust provider detection
-        const provider = determineProvider();
+        // Enhanced provider detection
+        const provider = determineProvider(state);
         
         console.log('OAuth callback parameters:', {
           code: code ? `${code.substring(0, 5)}...` : null,
           provider,
           error,
           errorDescription,
+          state,
           sessionState: searchParams.has('session_state') ? 'present' : 'absent',
-          state: searchParams.get('state'),
           allParams: Object.fromEntries([...searchParams])
         });
         
@@ -76,30 +77,48 @@ export function OAuthCallback() {
       }
     };
     
-    // Helper function to determine the provider from URL parameters
-    function determineProvider(): string {
+    // Enhanced provider detection function
+    function determineProvider(state: string | null): string {
       // Log all search params for debugging
       console.log('All search params:', Object.fromEntries([...searchParams]));
       
-      const state = searchParams.get('state');
+      // First, check if state parameter contains provider info
+      if (state) {
+        try {
+          // Try to parse it as a query string
+          const stateParams = new URLSearchParams(state);
+          const providerInState = stateParams.get('provider');
+          if (providerInState) {
+            console.log(`Detected provider ${providerInState} from state parameter`);
+            return providerInState;
+          }
+          
+          // Check if it's in a different format
+          if (state.includes('microsoft') || state.includes('outlook')) {
+            console.log('Detected Microsoft provider from state parameter');
+            return 'microsoft';
+          }
+          
+          if (state.includes('google')) {
+            console.log('Detected Google provider from state parameter');
+            return 'google';
+          }
+        } catch (e) {
+          console.log('Could not parse state as URL params, checking for provider mentions');
+          // Continue with string includes checks
+          if (state.includes('microsoft') || state.includes('outlook')) {
+            return 'microsoft';
+          }
+          if (state.includes('google')) {
+            return 'google';
+          }
+        }
+      }
       
-      // Microsoft adds 'session_state' parameter
+      // Check for Microsoft session_state parameter
       if (searchParams.has('session_state')) {
         console.log('Detected Microsoft provider from session_state parameter');
         return 'microsoft';
-      }
-      
-      // Check if state parameter contains provider info
-      if (state) {
-        if (state.includes('microsoft') || state.includes('outlook')) {
-          console.log('Detected Microsoft provider from state parameter');
-          return 'microsoft';
-        }
-        
-        if (state.includes('google')) {
-          console.log('Detected Google provider from state parameter');
-          return 'google';
-        }
       }
       
       // Check the URL path for provider hints
@@ -114,15 +133,14 @@ export function OAuthCallback() {
         return 'google';
       }
       
-      // Default to inferring from 'session_state' parameter
-      const hasSessionState = searchParams.has('session_state');
-      if (hasSessionState) {
+      // Default to Microsoft if session_state exists
+      if (searchParams.has('session_state')) {
         console.log('Defaulting to Microsoft provider based on session_state presence');
         return 'microsoft';
       }
       
-      // Final fallback to Google
-      console.log('Defaulting to Google provider');
+      // Final fallback - default to Google
+      console.log('Could not detect provider from parameters, defaulting to Google');
       return 'google';
     }
     

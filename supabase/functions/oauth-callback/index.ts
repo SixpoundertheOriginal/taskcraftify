@@ -70,26 +70,14 @@ serve(async (req: Request) => {
     }
 
     console.log(`Using token URL: ${token_url}`);
-    console.log(`Using client_id: ${client_id.substring(0, 5)}...`); // Log part of the client ID for debugging
+    console.log(`Using client_id: ${client_id.substring(0, 5)}...`);
+    console.log(`Using redirect_uri: ${redirect_uri}`);
 
-    // Create form data parameters for token exchange
-    const formData = new FormData();
-    formData.append("client_id", client_id);
-    formData.append("client_secret", client_secret);
-    formData.append("code", code);
-    formData.append("redirect_uri", redirect_uri);
-    formData.append("grant_type", "authorization_code");
+    // Exchange code for tokens - special handling for Microsoft
+    let tokenResponse;
     
     if (provider === "microsoft") {
-      // Microsoft needs scope explicitly in the token request
-      formData.append("scope", scope);
-    }
-    
-    // For Microsoft, use URLSearchParams instead of FormData
-    let body;
-    let headers = {};
-    
-    if (provider === "microsoft") {
+      // For Microsoft, use URLSearchParams with a proper content-type header
       const urlParams = new URLSearchParams();
       urlParams.append("client_id", client_id);
       urlParams.append("client_secret", client_secret);
@@ -98,25 +86,35 @@ serve(async (req: Request) => {
       urlParams.append("grant_type", "authorization_code");
       urlParams.append("scope", scope);
       
-      body = urlParams.toString();
-      headers = {
-        "Content-Type": "application/x-www-form-urlencoded",
-      };
+      const requestBody = urlParams.toString();
+      console.log("Microsoft token request body:", requestBody);
       
-      // Double-check the request before sending
-      console.log("Microsoft token request body:", body);
-      console.log("Microsoft token request headers:", headers);
+      tokenResponse = await fetch(token_url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: requestBody,
+      });
     } else {
-      // For Google, continue using FormData
-      body = formData;
+      // For Google and other providers, use FormData
+      const formData = new FormData();
+      formData.append("client_id", client_id);
+      formData.append("client_secret", client_secret);
+      formData.append("code", code);
+      formData.append("redirect_uri", redirect_uri);
+      formData.append("grant_type", "authorization_code");
+      
+      if (provider === "google") {
+        // Google specific adjustments if needed
+        console.log("Google token request: using FormData");
+      }
+      
+      tokenResponse = await fetch(token_url, {
+        method: "POST",
+        body: formData,
+      });
     }
-    
-    // Exchange code for access token
-    const tokenResponse = await fetch(token_url, {
-      method: "POST",
-      headers: headers,
-      body: body,
-    });
 
     const responseText = await tokenResponse.text();
     
