@@ -1,33 +1,47 @@
 
+import { useState, useEffect, useRef } from 'react';
 import { useProjectStore, useTaskStore } from '@/store';
 import { Task, countTasksByProject } from '@/types/task';
+import { Project } from '@/types/project';
 import { 
   SidebarMenu, 
   SidebarMenuItem, 
   SidebarMenuButton,
-  SidebarMenuAction,
   SidebarMenuBadge,
-  SidebarGroupAction
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
+  SidebarGroupAction,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent
 } from '@/components/ui/sidebar';
 import { 
   Layers, 
   FolderPlus, 
-  MoreHorizontal, 
   Pencil, 
   Trash2,
   FileQuestion,
   RefreshCw,
-  Database
+  Database,
+  ChevronDown,
+  ChevronRight,
+  Plus,
+  Star,
+  Clock,
+  PanelLeft,
+  Grip,
+  Info
 } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
+import { useState as useZustandState } from 'zustand';
+import { useMemo, useCallback } from 'react';
 import { ProjectDialog } from './ProjectDialog';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,14 +54,56 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useDndSortable } from '@/hooks/use-dnd-sortable';
+import { Badge } from '@/components/ui/badge';
+import { motion } from 'framer-motion';
 
 export function ProjectList() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState<string | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const { projects, selectedProjectId, selectProject, deleteProject } = useProjectStore();
+  const [recentOpen, setRecentOpen] = useState(true);
+  const [favoriteOpen, setFavoriteOpen] = useState(true);
+  const [allProjectsOpen, setAllProjectsOpen] = useState(true);
+  const [projectInfoId, setProjectInfoId] = useState<string | null>(null);
+  
+  const { projects, selectedProjectId, selectProject, deleteProject, updateProject } = useProjectStore();
   const { filters, setFilters, tasks, refreshTaskCounts, fetchTasks, diagnosticDatabaseQuery } = useTaskStore();
+  
+  // Track recent projects
+  const [recentProjects, setRecentProjects] = useState<string[]>(() => {
+    const saved = localStorage.getItem('recentProjects');
+    return saved ? JSON.parse(saved) : [];
+  });
+  
+  // Track favorite projects
+  const [favoriteProjects, setFavoriteProjects] = useState<string[]>(() => {
+    const saved = localStorage.getItem('favoriteProjects');
+    return saved ? JSON.parse(saved) : [];
+  });
+  
+  // Update recent projects when a project is selected
+  useEffect(() => {
+    if (selectedProjectId && selectedProjectId !== 'none') {
+      setRecentProjects(prev => {
+        const filtered = prev.filter(id => id !== selectedProjectId);
+        const updated = [selectedProjectId, ...filtered].slice(0, 5);
+        localStorage.setItem('recentProjects', JSON.stringify(updated));
+        return updated;
+      });
+    }
+  }, [selectedProjectId]);
+  
+  // Save favorites to localStorage when changed
+  useEffect(() => {
+    localStorage.setItem('favoriteProjects', JSON.stringify(favoriteProjects));
+  }, [favoriteProjects]);
+  
+  // Setup drag and drop
+  const { items: sortedProjects, onDragEnd } = useDndSortable(projects);
   
   useEffect(() => {
     console.log(`ProjectList: Rendering with ${tasks.length} tasks`);
@@ -56,15 +112,6 @@ export function ProjectList() {
   const taskCounts = useMemo(() => {
     console.log(`Computing task counts for ${tasks.length} tasks`);
     const counts: Record<string, number> = {};
-    
-    // Enhanced debugging: Log task projectIds with clear type information
-    console.log('All task projectIds:', tasks.map(t => ({ 
-      id: t.id, 
-      title: t.title.substring(0, 20), // Truncate long titles for readability
-      projectId: t.projectId === undefined ? 'undefined' : 
-                t.projectId === null ? 'null' : t.projectId,
-      projectIdType: typeof t.projectId
-    })));
     
     // Group tasks by project ID
     tasks.forEach((task: Task) => {
@@ -116,6 +163,16 @@ export function ProjectList() {
       
       if (selectedProjectId === projectToDelete) {
         handleSelectProject(null);
+      }
+      
+      // Remove from favorites if present
+      if (favoriteProjects.includes(projectToDelete)) {
+        setFavoriteProjects(prev => prev.filter(id => id !== projectToDelete));
+      }
+      
+      // Remove from recents if present
+      if (recentProjects.includes(projectToDelete)) {
+        setRecentProjects(prev => prev.filter(id => id !== projectToDelete));
       }
       
       setTimeout(() => {
@@ -205,150 +262,467 @@ export function ProjectList() {
     }
   };
   
-  return (
-    <>
-      <div className="flex justify-between items-center mb-2">
-        <h4 className="text-sm font-medium">Projects</h4>
-        <div className="flex gap-1">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-6 w-6" 
-            onClick={handleDiagnosticQuery}
-            disabled={isRefreshing}
-            title="Run Database Diagnostic"
-          >
-            <Database className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span className="sr-only">Database Diagnostic</span>
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-6 w-6" 
-            onClick={handleRefreshCounts}
-            disabled={isRefreshing}
-          >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span className="sr-only">Refresh Counts</span>
-          </Button>
-        </div>
-      </div>
+  const toggleFavorite = (projectId: string) => {
+    setFavoriteProjects(prev => {
+      if (prev.includes(projectId)) {
+        return prev.filter(id => id !== projectId);
+      } else {
+        return [...prev, projectId];
+      }
+    });
+  };
+  
+  // Function to get project by ID (for rendering)
+  const getProjectById = (id: string) => {
+    return projects.find(p => p.id === id);
+  };
+  
+  // Register keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only respond to keyboard shortcuts when not in an input or textarea
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
       
-      <SidebarMenu>
-        <SidebarMenuItem>
-          <SidebarMenuButton 
-            isActive={selectedProjectId === null}
-            onClick={() => handleSelectProject(null)}
-          >
-            <Layers className="w-4 h-4" />
-            <span>All Projects</span>
-            <SidebarMenuBadge>{totalTaskCount}</SidebarMenuBadge>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-        
-        <SidebarMenuItem>
-          <SidebarMenuButton 
-            isActive={selectedProjectId === 'none'}
-            onClick={() => handleSelectProject('none')}
-          >
-            <FileQuestion className="w-4 h-4" />
-            <span>No Project</span>
-            <SidebarMenuBadge>{noProjectTaskCount}</SidebarMenuBadge>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-        
-        {projects.map((project) => (
-          <SidebarMenuItem key={project.id}>
-            <SidebarMenuButton 
-              isActive={selectedProjectId === project.id}
-              onClick={() => handleSelectProject(project.id)}
-            >
-              <div 
-                className="w-3 h-3 rounded-full" 
-                style={{ backgroundColor: project.color }}
-              />
-              <span>{project.name}</span>
-              <SidebarMenuBadge>{taskCounts[project.id] || 0}</SidebarMenuBadge>
-              
-              <SidebarMenuAction asChild showOnHover>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className="flex h-8 w-8 items-center justify-center rounded-md border border-input bg-background">
-                      <MoreHorizontal className="h-4 w-4" />
-                      <span className="sr-only">Open menu</span>
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleEditProject(project.id)}>
-                      <Pencil className="mr-2 h-4 w-4" />
-                      Edit Project
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem 
-                      className="text-destructive focus:bg-destructive/10" 
-                      onClick={() => setProjectToDelete(project.id)}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete Project
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </SidebarMenuAction>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        ))}
-        
-        <SidebarMenuItem>
-          <SidebarMenuButton 
-            onClick={() => setCreateDialogOpen(true)}
-            className="text-primary hover:text-primary"
-          >
-            <FolderPlus className="w-4 h-4" />
-            <span>New Project</span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      </SidebarMenu>
+      // Ctrl+N for new project
+      if (e.ctrlKey && e.key === 'n') {
+        e.preventDefault();
+        setCreateDialogOpen(true);
+        return;
+      }
       
-      <ProjectDialog 
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
+      // Navigate through projects with Alt+Up/Down
+      if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+        e.preventDefault();
+        
+        // Get all visible project IDs
+        const visibleProjects = sortedProjects.map(p => p.id);
+        
+        // Find current selected index
+        const currentIndex = selectedProjectId ? visibleProjects.indexOf(selectedProjectId) : -1;
+        
+        let newIndex;
+        if (e.key === 'ArrowUp') {
+          // Previous project (or last if at beginning)
+          newIndex = currentIndex <= 0 ? visibleProjects.length - 1 : currentIndex - 1;
+        } else {
+          // Next project (or first if at end)
+          newIndex = currentIndex === visibleProjects.length - 1 || currentIndex === -1 ? 0 : currentIndex + 1;
+        }
+        
+        if (visibleProjects[newIndex]) {
+          handleSelectProject(visibleProjects[newIndex]);
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedProjectId, sortedProjects, handleSelectProject]);
+  
+  // Render a project item
+  const renderProjectItem = (project: Project, isFavorite = false) => (
+    <SidebarMenuItem 
+      key={project.id} 
+      className="group relative transition-all duration-200"
+    >
+      <div className="absolute left-0 top-1/2 h-[60%] w-0.5 -translate-y-1/2 rounded-r-full bg-primary/70 opacity-0 transition-opacity data-[active=true]:opacity-100" 
+        data-active={selectedProjectId === project.id}
       />
-      
-      {projectToEdit && (
-        <ProjectDialog 
-          open={Boolean(projectToEdit)}
-          onOpenChange={(open) => {
-            if (!open) setProjectToEdit(null);
-          }}
-          projectToEdit={projects.find(p => p.id === projectToEdit)}
-        />
-      )}
-      
-      <AlertDialog 
-        open={Boolean(projectToDelete)} 
-        onOpenChange={(open) => {
-          if (!open) setProjectToDelete(null);
-        }}
+      <SidebarMenuButton 
+        isActive={selectedProjectId === project.id}
+        onClick={() => handleSelectProject(project.id)}
+        className="group relative pl-6 pr-8 transition-all hover:pl-7"
       >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete the project and remove its association from all tasks.
-              Tasks will not be deleted.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDeleteProject}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+        <div className="relative">
+          <div 
+            className="absolute left-0 top-1/2 -ml-4 h-2 w-2 -translate-y-1/2 rounded-full transition-all group-hover:scale-110" 
+            style={{ backgroundColor: project.color }}
+          />
+          <span className="truncate">{project.name}</span>
+        </div>
+        
+        <SidebarMenuBadge className="transition-all">
+          {taskCounts[project.id] || 0}
+        </SidebarMenuBadge>
+        
+        <div className="absolute right-2 flex opacity-0 transition-opacity group-hover:opacity-100">
+          {isFavorite ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  size="icon" 
+                  variant="ghost" 
+                  className="h-6 w-6 rounded-full p-0 text-yellow-400 hover:text-yellow-500"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFavorite(project.id);
+                  }}
+                >
+                  <Star className="h-3.5 w-3.5" />
+                  <span className="sr-only">Unfavorite</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Unfavorite</TooltipContent>
+            </Tooltip>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  size="icon" 
+                  variant="ghost" 
+                  className="h-6 w-6 rounded-full p-0 text-muted-foreground hover:text-foreground"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFavorite(project.id);
+                  }}
+                >
+                  <Star className="h-3.5 w-3.5" />
+                  <span className="sr-only">Favorite</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Favorite</TooltipContent>
+            </Tooltip>
+          )}
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                size="icon" 
+                variant="ghost" 
+                className="h-6 w-6 rounded-full p-0 text-muted-foreground hover:text-foreground"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEditProject(project.id);
+                }}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                <span className="sr-only">Edit</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Edit</TooltipContent>
+          </Tooltip>
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                size="icon" 
+                variant="ghost" 
+                className="h-6 w-6 rounded-full p-0 text-muted-foreground hover:text-destructive" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setProjectToDelete(project.id);
+                }}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                <span className="sr-only">Delete</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Delete</TooltipContent>
+          </Tooltip>
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                size="icon" 
+                variant="ghost" 
+                className="h-6 w-6 rounded-full p-0 text-muted-foreground hover:text-foreground" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setProjectInfoId(projectInfoId === project.id ? null : project.id);
+                }}
+              >
+                <Info className="h-3.5 w-3.5" />
+                <span className="sr-only">Info</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Info</TooltipContent>
+          </Tooltip>
+        </div>
+      </SidebarMenuButton>
+      
+      {projectInfoId === project.id && project.description && (
+        <div className="mx-4 my-1 rounded-md bg-card/50 p-2 text-xs text-card-foreground">
+          {project.description}
+        </div>
+      )}
+    </SidebarMenuItem>
+  );
+  
+  return (
+    <TooltipProvider delayDuration={300}>
+      <>
+        <div className="flex justify-between items-center mb-2">
+          <div className="flex items-center">
+            <h4 className="text-sm font-medium">Projects</h4>
+            <kbd className="ml-2 rounded bg-muted px-1.5 text-[10px] font-medium text-muted-foreground">
+              Alt+↑↓
+            </kbd>
+          </div>
+          <div className="flex gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-6 w-6" 
+                  onClick={handleDiagnosticQuery}
+                  disabled={isRefreshing}
+                >
+                  <Database className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  <span className="sr-only">Database Diagnostic</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Database Diagnostic</TooltipContent>
+            </Tooltip>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-6 w-6" 
+                  onClick={handleRefreshCounts}
+                  disabled={isRefreshing}
+                >
+                  <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  <span className="sr-only">Refresh Counts</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Refresh Counts</TooltipContent>
+            </Tooltip>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-6 w-6 text-primary" 
+                  onClick={() => setCreateDialogOpen(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                  <span className="sr-only">New Project</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>New Project (Ctrl+N)</TooltipContent>
+            </Tooltip>
+          </div>
+        </div>
+        
+        <div className="space-y-4">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton 
+                isActive={selectedProjectId === null}
+                onClick={() => handleSelectProject(null)}
+                className="group relative pl-6"
+              >
+                <div className="absolute left-0 top-1/2 h-[60%] w-0.5 -translate-y-1/2 rounded-r-full bg-primary/70 opacity-0 transition-opacity data-[active=true]:opacity-100" 
+                  data-active={selectedProjectId === null}
+                />
+                <Layers className="w-4 h-4" />
+                <span>All Projects</span>
+                <SidebarMenuBadge>{totalTaskCount}</SidebarMenuBadge>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            
+            <SidebarMenuItem>
+              <SidebarMenuButton 
+                isActive={selectedProjectId === 'none'}
+                onClick={() => handleSelectProject('none')}
+                className="group relative pl-6"
+              >
+                <div className="absolute left-0 top-1/2 h-[60%] w-0.5 -translate-y-1/2 rounded-r-full bg-primary/70 opacity-0 transition-opacity data-[active=true]:opacity-100" 
+                  data-active={selectedProjectId === 'none'}
+                />
+                <FileQuestion className="w-4 h-4" />
+                <span>No Project</span>
+                <SidebarMenuBadge>{noProjectTaskCount}</SidebarMenuBadge>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+          
+          {favoriteProjects.length > 0 && (
+            <Collapsible 
+              open={favoriteOpen} 
+              onOpenChange={setFavoriteOpen}
+              className="space-y-1"
             >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+              <div className="flex items-center">
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-6 px-2 gap-1">
+                    {favoriteOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                    <span className="text-xs font-medium">Favorites</span>
+                  </Button>
+                </CollapsibleTrigger>
+                <Badge variant="outline" className="ml-auto h-5 text-[10px]">
+                  {favoriteProjects.length}
+                </Badge>
+              </div>
+              
+              <CollapsibleContent className="space-y-1">
+                <SidebarMenu className="pl-2">
+                  {favoriteProjects.map(id => {
+                    const project = getProjectById(id);
+                    return project ? renderProjectItem(project, true) : null;
+                  })}
+                </SidebarMenu>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+          
+          {recentProjects.length > 0 && (
+            <Collapsible 
+              open={recentOpen} 
+              onOpenChange={setRecentOpen}
+              className="space-y-1"
+            >
+              <div className="flex items-center">
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-6 px-2 gap-1">
+                    {recentOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                    <span className="text-xs font-medium">Recent</span>
+                  </Button>
+                </CollapsibleTrigger>
+                <Badge variant="outline" className="ml-auto h-5 text-[10px]">
+                  {recentProjects.length}
+                </Badge>
+              </div>
+              
+              <CollapsibleContent className="space-y-1">
+                <SidebarMenu className="pl-2">
+                  {recentProjects.map(id => {
+                    const project = getProjectById(id);
+                    return project ? (
+                      <SidebarMenuItem key={project.id}>
+                        <SidebarMenuButton 
+                          isActive={selectedProjectId === project.id}
+                          onClick={() => handleSelectProject(project.id)}
+                          className="group relative pl-6"
+                        >
+                          <div className="absolute left-0 top-1/2 h-[60%] w-0.5 -translate-y-1/2 rounded-r-full bg-primary/70 opacity-0 transition-opacity data-[active=true]:opacity-100" 
+                            data-active={selectedProjectId === project.id}
+                          />
+                          <div className="relative">
+                            <div 
+                              className="absolute left-0 top-1/2 -ml-4 h-2 w-2 -translate-y-1/2 rounded-full" 
+                              style={{ backgroundColor: project.color }}
+                            />
+                            <span className="truncate">{project.name}</span>
+                          </div>
+                          <div className="flex gap-1 ml-auto">
+                            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                            <SidebarMenuBadge>
+                              {taskCounts[project.id] || 0}
+                            </SidebarMenuBadge>
+                          </div>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ) : null;
+                  })}
+                </SidebarMenu>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+          
+          <Collapsible 
+            open={allProjectsOpen} 
+            onOpenChange={setAllProjectsOpen}
+            className="space-y-1"
+          >
+            <div className="flex items-center">
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-6 px-2 gap-1">
+                  {allProjectsOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                  <span className="text-xs font-medium">All Projects</span>
+                </Button>
+              </CollapsibleTrigger>
+              <Badge variant="outline" className="ml-auto h-5 text-[10px]">
+                {projects.length}
+              </Badge>
+            </div>
+            
+            <CollapsibleContent className="space-y-1">
+              {projects.length === 0 ? (
+                <div className="px-3 py-6 text-center">
+                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                    <FolderPlus className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-sm font-medium">No projects</h3>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Create your first project to organize your tasks.
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="gap-1"
+                    onClick={() => setCreateDialogOpen(true)}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    New Project
+                  </Button>
+                </div>
+              ) : (
+                <SidebarMenu className="pl-2">
+                  {sortedProjects.map(project => renderProjectItem(project, favoriteProjects.includes(project.id)))}
+                  
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      onClick={() => setCreateDialogOpen(true)}
+                      className="text-primary hover:text-primary transition-all mt-1"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>New Project</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
+        
+        <ProjectDialog 
+          open={createDialogOpen}
+          onOpenChange={setCreateDialogOpen}
+        />
+        
+        {projectToEdit && (
+          <ProjectDialog 
+            open={Boolean(projectToEdit)}
+            onOpenChange={(open) => {
+              if (!open) setProjectToEdit(null);
+            }}
+            projectToEdit={projects.find(p => p.id === projectToEdit)}
+          />
+        )}
+        
+        <AlertDialog 
+          open={Boolean(projectToDelete)} 
+          onOpenChange={(open) => {
+            if (!open) setProjectToDelete(null);
+          }}
+        >
+          <AlertDialogContent className="max-w-[360px]">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete project?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete the project and remove its association from all tasks.
+                Tasks will not be deleted.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleDeleteProject}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
+    </TooltipProvider>
   );
 }
