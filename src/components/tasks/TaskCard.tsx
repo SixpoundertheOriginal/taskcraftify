@@ -350,9 +350,13 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
                           <FormItem className="w-fit">
                             <FormControl>
                               <ProjectSelector 
-                                value={field.value || ""} 
-                                onValueChange={field.onChange}
-                                className="h-7 text-xs"
+                                // The line causing the error - ProjectSelector doesn't accept these props directly
+                                // value={field.value || ""} 
+                                // onValueChange={field.onChange}
+                                // className="h-7 text-xs"
+                                selectedProjectId={field.value || ""}
+                                onProjectSelect={field.onChange}
+                                buttonClassName="h-7 text-xs"
                               />
                             </FormControl>
                           </FormItem>
