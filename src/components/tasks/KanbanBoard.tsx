@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { 
   DndContext, 
@@ -30,10 +29,8 @@ export function KanbanBoard() {
     updateTask 
   } = useTaskStore();
   
-  // Track the active dragged task
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   
-  // Setup drag sensors
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -45,13 +42,11 @@ export function KanbanBoard() {
     })
   );
   
-  // Filter tasks by status
   const todoTasks = getFilteredTasks().filter(task => task.status === TaskStatus.TODO);
   const inProgressTasks = getFilteredTasks().filter(task => task.status === TaskStatus.IN_PROGRESS);
   const doneTasks = getFilteredTasks().filter(task => task.status === TaskStatus.DONE);
   const archivedTasks = getFilteredTasks().filter(task => task.status === TaskStatus.ARCHIVED);
   
-  // Get status label
   const getColumnTitle = (status: TaskStatus): string => {
     switch (status) {
       case TaskStatus.TODO:
@@ -67,7 +62,6 @@ export function KanbanBoard() {
     }
   };
   
-  // Handle drag start
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     const taskId = active.id as string;
@@ -78,7 +72,6 @@ export function KanbanBoard() {
     }
   };
   
-  // Handle drag end
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     
@@ -90,7 +83,6 @@ export function KanbanBoard() {
     const taskId = active.id as string;
     const targetColumnId = over.id as string;
     
-    // Update task status if moved to a different column
     if (targetColumnId.startsWith('column-')) {
       const newStatus = targetColumnId.replace('column-', '') as TaskStatus;
       const task = tasks.find(t => t.id === taskId);
@@ -103,7 +95,6 @@ export function KanbanBoard() {
     setActiveTask(null);
   };
   
-  // Handle drag over
   const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
     
@@ -111,12 +102,8 @@ export function KanbanBoard() {
     
     const taskId = active.id as string;
     const targetId = over.id as string;
-    
-    // If dragging over another task, we'll handle reordering in future
-    // For now we just need to handle column changes
   };
   
-  // Show error state if there's an error
   if (error) {
     return (
       <Alert variant="destructive" className="mb-6">
@@ -128,7 +115,6 @@ export function KanbanBoard() {
     );
   }
   
-  // Show loading state when initially loading data
   if (isLoading && tasks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-60">
@@ -140,7 +126,6 @@ export function KanbanBoard() {
   
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Loading indicator while refreshing with existing data */}
       {isLoading && tasks.length > 0 && (
         <div className="flex justify-center mb-4">
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
@@ -185,11 +170,10 @@ export function KanbanBoard() {
             />
           </div>
           
-          {/* Overlay for dragged task */}
           <DragOverlay>
             {activeTask && (
               <div className="w-[calc(100%-2rem)] opacity-80">
-                <TaskCard task={activeTask} isDragging={true} />
+                <TaskCard task={activeTask} isDragging={true} isCompact={true} />
               </div>
             )}
           </DragOverlay>

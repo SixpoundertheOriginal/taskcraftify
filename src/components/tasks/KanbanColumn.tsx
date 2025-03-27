@@ -63,6 +63,8 @@ export function KanbanColumn({ id, title, tasks, status }: KanbanColumnProps) {
                 <TaskCard 
                   key={task.id} 
                   task={task} 
+                  isDragging={false}
+                  isCompact={true} // More compact view for Kanban
                 />
               ))}
             </div>
