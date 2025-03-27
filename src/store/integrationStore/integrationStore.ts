@@ -1,14 +1,13 @@
 
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { IntegrationState, createIntegrationSlice } from './integrationSlice';
+import { IntegrationState, IntegrationActions, createIntegrationSlice } from './integrationSlice';
 
-export type IntegrationStore = IntegrationState;
+// Combine both state and actions in the store type
+export type IntegrationStore = IntegrationState & IntegrationActions;
 
 export const useIntegrationStore = create<IntegrationStore>()(
-  devtools(
-    (...a) => ({
-      ...createIntegrationSlice(...a),
-    })
-  )
+  devtools((...a) => ({
+    ...createIntegrationSlice(...a),
+  }))
 );
