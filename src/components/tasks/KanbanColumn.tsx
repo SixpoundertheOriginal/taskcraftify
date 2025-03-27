@@ -2,7 +2,6 @@
 import { useTaskStore } from '@/store/taskStore/taskStore';
 import { Task, TaskStatus } from '@/types/task';
 import { useDroppable } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { TaskCard } from './TaskCard';
@@ -17,10 +16,10 @@ interface KanbanColumnProps {
   tasks: Task[];
   status: TaskStatus;
   className?: string;
-  isDraggingActive?: boolean;
+  activeId?: string | null;
 }
 
-export function KanbanColumn({ id, title, tasks, status, className, isDraggingActive = false }: KanbanColumnProps) {
+export function KanbanColumn({ id, title, tasks, status, className, activeId }: KanbanColumnProps) {
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const { isOver, setNodeRef } = useDroppable({ id });
   const isMobile = useIsMobile();
@@ -29,8 +28,6 @@ export function KanbanColumn({ id, title, tasks, status, className, isDraggingAc
   const columnClass = cn(
     "flex flex-col h-full rounded-lg border bg-card transition-all duration-200",
     isOver && "border-primary border-dashed bg-accent/30 scale-[1.02] shadow-md",
-    isDraggingActive && !isOver && "opacity-95",
-    isOver ? "z-10" : "z-0",
     className
   );
   
@@ -69,44 +66,38 @@ export function KanbanColumn({ id, title, tasks, status, className, isDraggingAc
         isMobile ? "max-h-[calc(100vh-12rem)]" : "max-h-[calc(100vh-14rem)]",
         isOver && "bg-accent/10" // Subtle background change when dragging over
       )}>
-        <SortableContext 
-          id={id} 
-          items={tasks.map(task => task.id)} 
-          strategy={verticalListSortingStrategy}
-        >
-          {tasks.length > 0 ? (
-            <div 
-              className="flex flex-col gap-3" 
-              aria-label={`${tasks.length} tasks in ${title}`}
+        {tasks.length > 0 ? (
+          <div 
+            className="flex flex-col gap-3" 
+            aria-label={`${tasks.length} tasks in ${title}`}
+          >
+            {tasks.map(task => (
+              <TaskCard 
+                key={task.id} 
+                task={task} 
+                isDragging={activeId === task.id}
+                isCompact={true} // More compact view for Kanban
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-32 text-center">
+            <p className="text-sm text-muted-foreground">
+              {isOver 
+                ? "Drop task here" 
+                : "No tasks in this column"}
+            </p>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="mt-2 hover:bg-primary/10"
+              onClick={handleAddTask}
             >
-              {tasks.map(task => (
-                <TaskCard 
-                  key={task.id} 
-                  task={task} 
-                  isDragging={false}
-                  isCompact={true} // More compact view for Kanban
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-32 text-center">
-              <p className="text-sm text-muted-foreground">
-                {isOver 
-                  ? "Drop task here" 
-                  : "No tasks in this column"}
-              </p>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="mt-2 hover:bg-primary/10"
-                onClick={handleAddTask}
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Add Task
-              </Button>
-            </div>
-          )}
-        </SortableContext>
+              <Plus className="h-4 w-4 mr-1" />
+              Add Task
+            </Button>
+          </div>
+        )}
       </div>
       
       <TaskForm 

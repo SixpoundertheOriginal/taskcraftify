@@ -3,18 +3,12 @@ import { useState } from 'react';
 import { 
   DndContext, 
   DragEndEvent,
-  DragOverEvent,
-  DragOverlay,
-  DragStartEvent,
   KeyboardSensor,
   PointerSensor,
   closestCorners,
   useSensor,
   useSensors,
-  DragCancelEvent,
-  UniqueIdentifier
 } from '@dnd-kit/core';
-import { SortableContext, arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { CheckCircle, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTaskStore } from '@/store';
 import { Task, TaskStatus } from '@/types/task';
@@ -35,27 +29,29 @@ export function KanbanBoard() {
     updateTask 
   } = useTaskStore();
   
-  const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [activeColumnIndex, setActiveColumnIndex] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
   const isMobile = useIsMobile();
   
-  // Enhanced sensors with better activation constraints
+  // Configure sensors for drag detection
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        // Increase distance for mobile to prevent accidental drags
-        distance: isMobile ? 12 : 8,
-        // Add delay activation for touch devices
-        delay: isMobile ? 200 : 0,
-        tolerance: 5,
+        distance: isMobile ? 8 : 4, // Increase for mobile to prevent accidental drags
       },
     }),
     useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
+      coordinateGetter: (event) => {
+        // Return the coordinates for keyboard events to support keyboard navigation
+        return {
+          x: 0,
+          y: 0,
+        };
+      },
     })
   );
   
+  // Filter tasks by status
   const todoTasks = getFilteredTasks().filter(task => task.status === TaskStatus.TODO);
   const inProgressTasks = getFilteredTasks().filter(task => task.status === TaskStatus.IN_PROGRESS);
   const doneTasks = getFilteredTasks().filter(task => task.status === TaskStatus.DONE);
@@ -69,126 +65,46 @@ export function KanbanBoard() {
     { id: `column-${TaskStatus.ARCHIVED}`, title: 'Archived', tasks: archivedTasks, status: TaskStatus.ARCHIVED },
   ];
   
-  // Get column by ID helper function
-  const getColumnByTaskId = (taskId: string): string | null => {
-    for (const column of columns) {
-      if (column.tasks.some(t => t.id === taskId)) {
-        return column.id;
-      }
-    }
-    return null;
-  };
-  
-  // Find task by ID helper function
-  const findTaskById = (taskId: string): Task | undefined => {
-    return tasks.find(t => t.id === taskId);
-  };
-
-  const handleDragStart = (event: DragStartEvent) => {
+  function handleDragStart(event) {
     const { active } = event;
-    const taskId = active.id as string;
-    const task = findTaskById(taskId);
-    
-    if (task) {
-      setActiveTask(task);
-      setIsDragging(true);
-      
-      // Announce to screen readers
-      const announcement = `Started dragging task: ${task.title}`;
-      if (typeof window !== 'undefined') {
-        const announcementElement = document.getElementById('drag-announcement');
-        if (announcementElement) {
-          announcementElement.textContent = announcement;
-        }
-      }
-    }
-  };
+    setActiveId(active.id);
+  }
   
-  const handleDragOver = (event: DragOverEvent) => {
+  async function handleDragEnd(event) {
     const { active, over } = event;
+    setActiveId(null);
     
-    if (!over || !active.id || !over.id) return;
+    if (!over) return;
     
-    const activeId = active.id as string;
-    const overId = over.id as string;
+    const taskId = active.id;
+    const targetId = over.id;
     
-    // Skip if not dragging over a column
-    if (!overId.startsWith('column-')) return;
+    // Skip if not dropping on a column
+    if (!targetId.startsWith('column-')) return;
     
-    const activeColumnId = getColumnByTaskId(activeId);
+    const newStatus = targetId.replace('column-', '') as TaskStatus;
+    const task = tasks.find(t => t.id === taskId);
     
-    // If dragging over a different column, update the visual feedback
-    if (activeColumnId !== overId) {
-      // You can update some state here if needed for visual feedback
-    }
-  };
-  
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-    setIsDragging(false);
-    
-    if (!over) {
-      setActiveTask(null);
-      return;
-    }
-    
-    const taskId = active.id as string;
-    const targetId = over.id as string;
-    
-    // If dropping on a column, update the task status
-    if (targetId.startsWith('column-')) {
-      const newStatus = targetId.replace('column-', '') as TaskStatus;
-      const task = findTaskById(taskId);
-      
-      if (task && task.status !== newStatus) {
-        // Optimistic UI update
-        const oldStatus = task.status;
+    if (task && task.status !== newStatus) {
+      try {
+        // Show toast for status change
+        toast({
+          title: 'Moving task',
+          description: `Changing status to ${newStatus}`,
+        });
         
-        try {
-          // Show toast for status change
-          toast({
-            title: 'Moving task',
-            description: `Changing status to ${newStatus}`,
-          });
-          
-          // Update the task in the database
-          await updateTask({ id: taskId, status: newStatus });
-          
-          // Announce to screen readers
-          const announcement = `Task moved to ${newStatus} column`;
-          if (typeof window !== 'undefined') {
-            const announcementElement = document.getElementById('drag-announcement');
-            if (announcementElement) {
-              announcementElement.textContent = announcement;
-            }
-          }
-        } catch (error) {
-          console.error('Error updating task status:', error);
-          toast({
-            title: 'Error',
-            description: 'Failed to update task status',
-            variant: 'destructive',
-          });
-        }
+        // Update the task in the store
+        await updateTask({ id: taskId, status: newStatus });
+      } catch (error) {
+        console.error('Error updating task status:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to update task status',
+          variant: 'destructive',
+        });
       }
     }
-    
-    setActiveTask(null);
-  };
-  
-  const handleDragCancel = (event: DragCancelEvent) => {
-    setIsDragging(false);
-    setActiveTask(null);
-    
-    // Announce to screen readers
-    const announcement = 'Cancelled dragging task';
-    if (typeof window !== 'undefined') {
-      const announcementElement = document.getElementById('drag-announcement');
-      if (announcementElement) {
-        announcementElement.textContent = announcement;
-      }
-    }
-  };
+  }
   
   // Navigation for mobile view
   const nextColumn = () => {
@@ -240,8 +156,6 @@ export function KanbanBoard() {
         collisionDetection={closestCorners}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
-        onDragOver={handleDragOver}
-        onDragCancel={handleDragCancel}
       >
         {/* Mobile View with Column Navigation */}
         {isMobile && (
@@ -283,7 +197,7 @@ export function KanbanBoard() {
                 tasks={columns[activeColumnIndex].tasks}
                 status={columns[activeColumnIndex].status}
                 className="h-[calc(100vh-16rem)]"
-                isDraggingActive={isDragging}
+                activeId={activeId}
               />
             </div>
           </div>
@@ -299,24 +213,11 @@ export function KanbanBoard() {
                 title={column.title}
                 tasks={column.tasks}
                 status={column.status}
-                isDraggingActive={isDragging}
+                activeId={activeId}
               />
             ))}
           </div>
         </div>
-        
-        {/* Drag Overlay with improved visual feedback */}
-        <DragOverlay adjustScale={true} zIndex={100}>
-          {activeTask && (
-            <div className="opacity-80 transform scale-105 w-[calc(100%-2rem)] shadow-lg">
-              <TaskCard 
-                task={activeTask} 
-                isDragging={true} 
-                isCompact={true} 
-              />
-            </div>
-          )}
-        </DragOverlay>
       </DndContext>
       
       {getFilteredTasks().length === 0 && (

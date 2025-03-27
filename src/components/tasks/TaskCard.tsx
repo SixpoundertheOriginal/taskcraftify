@@ -16,7 +16,6 @@ import {
   Loader2, 
   MoreHorizontal, 
   Tag,
-  CalendarIcon,
   Trash,
   ListChecks,
   MessageSquare,
@@ -43,8 +42,7 @@ import {
 } from "@/components/ui/hover-card";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { TaskForm } from './TaskForm';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { useDraggable } from '@dnd-kit/core';
 
 interface TaskCardProps {
   task: Task;
@@ -60,27 +58,15 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
   const { projects } = useProjectStore();
   const isMobile = useIsMobile();
   
-  // Setup sortable functionality
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging: isSortableDragging,
-  } = useSortable({ 
+  // Setup draggable functionality
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: task.id,
-    data: {
-      task,
-    },
+    data: { task },
   });
   
-  const sortableStyle = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isSortableDragging ? 50 : 1,
-    opacity: isSortableDragging ? 0.6 : 1,
-  };
+  const dragStyle = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+  } : undefined;
   
   const project = task.projectId ? projects.find(p => p.id === task.projectId) : null;
   
@@ -156,21 +142,19 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
     task.status === TaskStatus.DONE && "line-through text-muted-foreground"
   );
 
-  const isCurrentlyDragging = isDragging || isSortableDragging;
-
   return (
     <>
       <Card 
         ref={setNodeRef}
         style={{
-          ...sortableStyle,
+          ...dragStyle,
           ...(project ? { borderLeftColor: project.color } : {}),
         }}
         className={cn(
           "group w-full transition-all duration-200 border border-border/40 shadow-sm hover:shadow-md hover:border-border/80 cursor-pointer",
           project ? `border-l-4` : '',
           (isUpdating || isDeleting) ? 'opacity-70' : '',
-          isCurrentlyDragging ? 'opacity-80 rotate-1 scale-105 shadow-md z-50' : ''
+          isDragging ? 'opacity-80 rotate-1 scale-105 shadow-md z-50' : ''
         )}
         onClick={handleCardClick}
         tabIndex={0}
