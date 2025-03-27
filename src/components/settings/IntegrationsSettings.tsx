@@ -36,7 +36,8 @@ import {
   Mail,
   RefreshCw,
   CheckCircle,
-  XCircle
+  XCircle,
+  Microsoft
 } from 'lucide-react';
 
 export function IntegrationsSettings() {
@@ -105,6 +106,7 @@ export function IntegrationsSettings() {
   };
   
   const googleIntegration = integrations.find(i => i.provider === 'google');
+  const microsoftIntegration = integrations.find(i => i.provider === 'microsoft');
   
   return (
     <div className="space-y-6">
@@ -197,7 +199,68 @@ export function IntegrationsSettings() {
                   </div>
                 </div>
                 
-                {/* Can add more calendar providers here */}
+                {/* Microsoft Outlook Integration */}
+                <div className="flex items-center justify-between bg-secondary/50 rounded-lg p-4">
+                  <div className="flex items-center gap-3">
+                    <Microsoft className="h-8 w-8 text-blue-500" />
+                    <div>
+                      <div className="font-medium">Microsoft Outlook</div>
+                      <div className="text-sm text-muted-foreground">
+                        {microsoftIntegration 
+                          ? 'Connected' 
+                          : 'Sync your tasks with Microsoft Outlook/Office 365'}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {microsoftIntegration ? (
+                      <>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleSyncCalendar(microsoftIntegration.id)}
+                          disabled={isLoading}
+                        >
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Sync
+                        </Button>
+                        
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Disconnect
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will disconnect your Microsoft Outlook integration. 
+                                Any synced events will remain but will no longer be updated.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDisconnectIntegration(microsoftIntegration.id)}
+                              >
+                                Disconnect
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </>
+                    ) : (
+                      <Button 
+                        onClick={() => handleConnectCalendar('microsoft')}
+                        disabled={isLoading}
+                      >
+                        Connect
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>

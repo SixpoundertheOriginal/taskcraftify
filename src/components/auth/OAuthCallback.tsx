@@ -14,7 +14,7 @@ export function OAuthCallback() {
     const processCallback = async () => {
       const code = searchParams.get('code');
       const state = searchParams.get('state');
-      const provider = searchParams.get('provider') || 'google'; // Default to Google if not specified
+      const provider = searchParams.get('provider') || determineProvider();
       const error = searchParams.get('error');
       
       if (error) {
@@ -29,10 +29,20 @@ export function OAuthCallback() {
       
       try {
         await handleOAuthCallback(provider, code);
-        navigate('/');
+        navigate('/settings');
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to complete authentication');
       }
+    };
+    
+    // Try to determine the provider from the URL or other parameters
+    const determineProvider = (): string => {
+      // Microsoft adds 'session_state' parameter
+      if (searchParams.has('session_state')) {
+        return 'microsoft';
+      }
+      // Default to Google if we can't determine
+      return 'google';
     };
     
     processCallback();

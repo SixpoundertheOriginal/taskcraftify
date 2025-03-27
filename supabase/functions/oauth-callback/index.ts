@@ -43,6 +43,11 @@ serve(async (req: Request) => {
       client_secret = Deno.env.get("GOOGLE_CLIENT_SECRET");
       token_url = "https://oauth2.googleapis.com/token";
       scope = "https://www.googleapis.com/auth/calendar";
+    } else if (provider === "microsoft") {
+      client_id = Deno.env.get("MICROSOFT_CLIENT_ID");
+      client_secret = Deno.env.get("MICROSOFT_CLIENT_SECRET");
+      token_url = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
+      scope = "Calendars.ReadWrite User.Read";
     } else {
       throw new Error(`Unsupported provider: ${provider}`);
     }
@@ -63,6 +68,7 @@ serve(async (req: Request) => {
         client_secret,
         redirect_uri,
         grant_type: "authorization_code",
+        ...(provider === "microsoft" ? { scope } : {}),
       }),
     });
 
@@ -80,6 +86,17 @@ serve(async (req: Request) => {
     
     if (provider === "google") {
       const userInfoResponse = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+        headers: {
+          Authorization: `Bearer ${tokenData.access_token}`,
+        },
+      });
+      
+      if (userInfoResponse.ok) {
+        const userInfo = await userInfoResponse.json();
+        provider_user_id = userInfo.id;
+      }
+    } else if (provider === "microsoft") {
+      const userInfoResponse = await fetch("https://graph.microsoft.com/v1.0/me", {
         headers: {
           Authorization: `Bearer ${tokenData.access_token}`,
         },

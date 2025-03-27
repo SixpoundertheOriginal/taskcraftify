@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Integration,
@@ -177,6 +176,12 @@ export class IntegrationService {
       const scope = encodeURIComponent('https://www.googleapis.com/auth/calendar');
       
       return `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUrl)}&response_type=code&scope=${scope}&access_type=offline&prompt=consent`;
+    } else if (provider === 'microsoft') {
+      // Microsoft Graph OAuth configuration
+      const clientId = import.meta.env.VITE_MICROSOFT_CLIENT_ID || '';
+      const scope = encodeURIComponent('Calendars.ReadWrite User.Read offline_access');
+      
+      return `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUrl)}&response_type=code&scope=${scope}&response_mode=query`;
     }
     
     throw new Error(`OAuth URL generation not implemented for provider: ${provider}`);

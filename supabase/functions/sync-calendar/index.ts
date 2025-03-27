@@ -99,6 +99,49 @@ serve(async (req: Request) => {
           const errorData = await refreshResponse.text();
           throw new Error(`Failed to refresh token: ${errorData}`);
         }
+      } else if (integration.provider === "microsoft") {
+        const client_id = Deno.env.get("MICROSOFT_CLIENT_ID");
+        const client_secret = Deno.env.get("MICROSOFT_CLIENT_SECRET");
+        
+        const refreshResponse = await fetch("https://login.microsoftonline.com/common/oauth2/v2.0/token", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            client_id,
+            client_secret,
+            refresh_token: integration.refresh_token,
+            grant_type: "refresh_token",
+            scope: "Calendars.ReadWrite User.Read offline_access",
+          }),
+        });
+        
+        if (refreshResponse.ok) {
+          const refreshData = await refreshResponse.json();
+          accessToken = refreshData.access_token;
+          
+          // Calculate new expiration
+          const expiresAt = new Date();
+          expiresAt.setSeconds(expiresAt.getSeconds() + refreshData.expires_in);
+          
+          // Update integration with new token
+          const { error: updateError } = await supabase
+            .from("integrations")
+            .update({
+              access_token: accessToken,
+              refresh_token: refreshData.refresh_token || integration.refresh_token,
+              token_expires_at: expiresAt.toISOString(),
+            })
+            .eq("id", integrationId);
+          
+          if (updateError) {
+            console.error("Failed to update integration with new token:", updateError);
+          }
+        } else {
+          const errorData = await refreshResponse.text();
+          throw new Error(`Failed to refresh token: ${errorData}`);
+        }
       }
     }
 
@@ -159,6 +202,96 @@ serve(async (req: Request) => {
           status: event.status || null,
           calendar_id: event.organizer?.email || "primary",
           recurrence: event.recurrence || null,
+          last_synced_at: new Date().toISOString(),
+        };
+        
+        if (existingEventMap.has(event.id)) {
+          // Update existing event
+          const { error: updateError } = await supabase
+            .from("calendar_events")
+            .update(eventData)
+            .eq("id", existingEventMap.get(event.id));
+          
+          if (updateError) {
+            console.error(`Error updating event ${event.id}:`, updateError);
+          }
+        } else {
+          // Create new event
+          const { error: insertError } = await supabase
+            .from("calendar_events")
+            .insert(eventData);
+          
+          if (insertError) {
+            console.error(`Error inserting event ${event.id}:`, insertError);
+          }
+        }
+      }
+    } else if (integration.provider === "microsoft") {
+      // Set time range for syncing (e.g., last 30 days to next 90 days)
+      const timeMin = new Date();
+      timeMin.setDate(timeMin.getDate() - 30);
+      
+      const timeMax = new Date();
+      timeMax.setDate(timeMax.getDate() + 90);
+      
+      // Format dates in Microsoft's preferred format
+      const startDateTime = timeMin.toISOString();
+      const endDateTime = timeMax.toISOString();
+      
+      // Fetch calendar events from Microsoft Graph API
+      const calendarResponse = await fetch(
+        `https://graph.microsoft.com/v1.0/me/calendarview?startDateTime=${startDateTime}&endDateTime=${endDateTime}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Prefer: "outlook.timezone=\"UTC\"",
+          },
+        }
+      );
+      
+      if (!calendarResponse.ok) {
+        const errorData = await calendarResponse.text();
+        throw new Error(`Failed to fetch Microsoft Calendar events: ${errorData}`);
+      }
+      
+      const calendarData = await calendarResponse.json();
+      const events = calendarData.value || [];
+      
+      console.log(`Found ${events.length} Microsoft events to sync`);
+      
+      // Get existing events for this integration
+      const { data: existingEvents } = await supabase
+        .from("calendar_events")
+        .select("id, external_event_id")
+        .eq("integration_id", integrationId);
+      
+      const existingEventMap = new Map();
+      if (existingEvents) {
+        existingEvents.forEach((event) => {
+          existingEventMap.set(event.external_event_id, event.id);
+        });
+      }
+      
+      // Process each event
+      for (const event of events) {
+        // Check if it's an all-day event by comparing start and end time formats
+        const isAllDay = !event.start.dateTime || !event.end.dateTime;
+        
+        const eventData = {
+          user_id: integration.user_id,
+          integration_id: integrationId,
+          external_event_id: event.id,
+          title: event.subject || "Untitled Event",
+          description: event.bodyPreview || null,
+          start_time: event.start.dateTime ? `${event.start.dateTime}Z` : 
+                     (event.start.date ? `${event.start.date}T00:00:00Z` : null),
+          end_time: event.end.dateTime ? `${event.end.dateTime}Z` : 
+                   (event.end.date ? `${event.end.date}T23:59:59Z` : null),
+          all_day: isAllDay,
+          location: event.location?.displayName || null,
+          status: event.showAs || null,
+          calendar_id: event.calendar?.id || "primary",
+          recurrence: event.recurrence ? [event.recurrence.pattern.type] : null,
           last_synced_at: new Date().toISOString(),
         };
         

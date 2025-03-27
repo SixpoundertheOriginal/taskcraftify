@@ -1,7 +1,6 @@
-
 import { Database } from './database';
 
-export type Provider = 'google' | 'apple' | 'microsoft';
+export type Provider = 'google' | 'microsoft' | 'apple';
 
 export interface Integration {
   id: string;
@@ -17,7 +16,6 @@ export interface Integration {
   updatedAt: Date;
 }
 
-// Use type assertion instead of interface extension
 export type APIIntegration = Database['public']['Tables']['integrations']['Row'];
 
 export interface CalendarEvent {
@@ -40,7 +38,6 @@ export interface CalendarEvent {
   updatedAt: Date;
 }
 
-// Use type assertion instead of interface extension
 export type APICalendarEvent = Database['public']['Tables']['calendar_events']['Row'];
 
 export interface EmailSettings {
@@ -59,7 +56,6 @@ export interface EmailSettings {
   updatedAt: Date;
 }
 
-// Use type assertion instead of interface extension
 export type APIEmailSettings = Database['public']['Tables']['email_settings']['Row'];
 
 export interface CreateIntegrationDTO {
@@ -125,7 +121,6 @@ export interface UpdateEmailSettingsDTO {
   summaryTime?: string;
 }
 
-// Mapper functions
 export function mapApiIntegrationToIntegration(apiIntegration: APIIntegration): Integration {
   return {
     id: apiIntegration.id,
