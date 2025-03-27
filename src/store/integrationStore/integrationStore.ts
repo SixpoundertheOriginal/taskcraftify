@@ -7,7 +7,7 @@ import { IntegrationState, IntegrationActions, createIntegrationSlice } from './
 export type IntegrationStore = IntegrationState & IntegrationActions;
 
 export const useIntegrationStore = create<IntegrationStore>()(
-  devtools((...a) => ({
-    ...createIntegrationSlice(...a),
+  devtools((set, get) => ({
+    ...createIntegrationSlice(set, get),
   }))
 );

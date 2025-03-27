@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { 
   Integration, 
@@ -41,9 +40,8 @@ export type IntegrationActions = {
   sendTaskSummary: (userId: string) => Promise<boolean>;
   shareTaskViaEmail: (taskId: string, email: string, message?: string) => Promise<boolean>;
   startOAuthFlow: (provider: string) => void;
+  handleOAuthCallback: (provider: string, code: string) => Promise<Integration | null>;
 };
-
-export type IntegrationStore = IntegrationState & IntegrationActions;
 
 export const createIntegrationSlice = (set: any, get: any) => ({
   // State
@@ -393,6 +391,46 @@ export const createIntegrationSlice = (set: any, get: any) => ({
       window.location.href = oauthURL;
     } catch (error: any) {
       set({ error: error.message || 'Failed to start OAuth flow' });
+    }
+  },
+  
+  // Handle OAuth Callback
+  handleOAuthCallback: async (provider: string, code: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      // Call edge function or API to exchange the code for tokens
+      const response = await fetch('/api/oauth-callback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ provider, code }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to complete OAuth flow');
+      }
+      
+      const data = await response.json();
+      
+      // Create or update the integration in our database
+      const integration = await get().createIntegration({
+        provider: provider as any,
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token,
+        tokenExpiresAt: data.expires_at ? new Date(data.expires_at) : undefined,
+        scopes: data.scope ? data.scope.split(' ') : undefined,
+        providerUserId: data.provider_user_id,
+        settings: data.settings || {},
+      });
+      
+      return integration;
+    } catch (error: any) {
+      set({ error: error.message || 'Failed to handle OAuth callback' });
+      return null;
+    } finally {
+      set({ isLoading: false });
     }
   }
 });
