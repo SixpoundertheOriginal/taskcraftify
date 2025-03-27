@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Integration,
@@ -179,8 +180,10 @@ export class IntegrationService {
     } else if (provider === 'microsoft') {
       // Microsoft Graph OAuth configuration
       const clientId = import.meta.env.VITE_MICROSOFT_CLIENT_ID || '';
+      // Include all required scopes for Microsoft
       const scope = encodeURIComponent('Calendars.ReadWrite User.Read offline_access');
       
+      // Ensure we're using the correct authority, endpoints and parameters
       return `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUrl)}&response_type=code&scope=${scope}&response_mode=query`;
     }
     

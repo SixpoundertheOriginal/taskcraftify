@@ -34,6 +34,7 @@ serve(async (req: Request) => {
 
     // Log basic info
     console.log(`Processing OAuth callback for provider: ${provider}`);
+    console.log(`Redirect URI: ${redirect_uri}`);
 
     // Get client ID and secret based on provider
     let client_id, client_secret, token_url, scope;
@@ -47,7 +48,7 @@ serve(async (req: Request) => {
       client_id = Deno.env.get("MICROSOFT_CLIENT_ID");
       client_secret = Deno.env.get("MICROSOFT_CLIENT_SECRET");
       token_url = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
-      scope = "Calendars.ReadWrite User.Read";
+      scope = "Calendars.ReadWrite User.Read offline_access";
     } else {
       throw new Error(`Unsupported provider: ${provider}`);
     }
@@ -56,20 +57,30 @@ serve(async (req: Request) => {
       throw new Error(`Missing credentials for provider: ${provider}`);
     }
 
+    console.log(`Using token URL: ${token_url}`);
+
+    // Create form data parameters for token exchange
+    const formParams = new URLSearchParams();
+    formParams.append("code", code);
+    formParams.append("client_id", client_id);
+    formParams.append("client_secret", client_secret);
+    formParams.append("redirect_uri", redirect_uri);
+    formParams.append("grant_type", "authorization_code");
+    
+    // Microsoft requires scope to be sent during token exchange
+    if (provider === "microsoft") {
+      formParams.append("scope", scope);
+    }
+
+    console.log("Form parameters prepared for token exchange");
+    
     // Exchange code for access token
     const tokenResponse = await fetch(token_url, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: new URLSearchParams({
-        code,
-        client_id,
-        client_secret,
-        redirect_uri,
-        grant_type: "authorization_code",
-        ...(provider === "microsoft" ? { scope } : {}),
-      }),
+      body: formParams,
     });
 
     if (!tokenResponse.ok) {

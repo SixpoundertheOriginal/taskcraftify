@@ -40,7 +40,7 @@ export type IntegrationActions = {
   sendTaskSummary: (userId: string) => Promise<boolean>;
   shareTaskViaEmail: (taskId: string, email: string, message?: string) => Promise<boolean>;
   startOAuthFlow: (provider: string) => void;
-  handleOAuthCallback: (provider: string, code: string) => Promise<Integration | null>;
+  handleOAuthCallback: (provider: string, code: string, redirectUri: string) => Promise<boolean>;
 };
 
 export const createIntegrationSlice = (set: any, get: any) => ({
@@ -184,7 +184,6 @@ export const createIntegrationSlice = (set: any, get: any) => ({
         throw error;
       }
       
-      // Update the state with the fetched events
       set({ calendarEvents: data || [] });
       
       return data;
@@ -273,7 +272,6 @@ export const createIntegrationSlice = (set: any, get: any) => ({
         throw error;
       }
       
-      // After sync, refresh calendar events
       await get().fetchCalendarEvents();
       
       return true;
@@ -381,54 +379,59 @@ export const createIntegrationSlice = (set: any, get: any) => ({
   // OAuth Flow
   startOAuthFlow: (provider: string) => {
     try {
-      // Generate redirect URL
       const redirectURL = window.location.origin + '/auth/callback';
-      
-      // Generate OAuth URL
       const oauthURL = IntegrationService.generateOAuthUrl(provider, redirectURL);
-      
-      // Redirect to OAuth URL
       window.location.href = oauthURL;
     } catch (error: any) {
       set({ error: error.message || 'Failed to start OAuth flow' });
     }
   },
   
-  // Handle OAuth Callback
-  handleOAuthCallback: async (provider: string, code: string) => {
+  handleOAuthCallback: async (provider: string, code: string, redirectUri: string) => {
     set({ isLoading: true, error: null });
     try {
-      // Call edge function or API to exchange the code for tokens
-      const response = await fetch('/api/oauth-callback', {
+      console.log(`Processing OAuth callback for ${provider} with redirect URI: ${redirectUri}`);
+      
+      const { data: authSessionData } = await supabase.auth.getSession();
+      const authToken = authSessionData.session?.access_token;
+      
+      if (!authToken) {
+        throw new Error('No authentication token available');
+      }
+      
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || ''}/oauth-callback`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
         },
-        body: JSON.stringify({ provider, code }),
+        body: JSON.stringify({ 
+          provider, 
+          code,
+          redirect_uri: redirectUri
+        }),
       });
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to complete OAuth flow');
+        console.error('OAuth callback error:', errorData);
+        throw new Error(errorData.error || 'Failed to complete OAuth flow');
       }
       
       const data = await response.json();
+      console.log('OAuth callback successful:', data);
       
-      // Create or update the integration in our database
-      const integration = await get().createIntegration({
-        provider: provider as any,
-        accessToken: data.access_token,
-        refreshToken: data.refresh_token,
-        tokenExpiresAt: data.expires_at ? new Date(data.expires_at) : undefined,
-        scopes: data.scope ? data.scope.split(' ') : undefined,
-        providerUserId: data.provider_user_id,
-        settings: data.settings || {},
-      });
+      if (!data.success) {
+        throw new Error('OAuth flow completed but was not successful');
+      }
       
-      return integration;
+      await get().fetchIntegrations();
+      
+      return true;
     } catch (error: any) {
+      console.error('Failed to handle OAuth callback:', error);
       set({ error: error.message || 'Failed to handle OAuth callback' });
-      return null;
+      return false;
     } finally {
       set({ isLoading: false });
     }
