@@ -6,7 +6,14 @@ import {
   mapApiTaskToTask, 
   TaskPriority,
   TaskStatus,
-  APITask
+  APITask,
+  Subtask,
+  CreateSubtaskDTO,
+  UpdateSubtaskDTO,
+  Comment,
+  CreateCommentDTO,
+  UpdateCommentDTO,
+  ActivityItem
 } from '@/types/task';
 import { Database } from '@/integrations/supabase/types';
 
@@ -312,6 +319,459 @@ export const TaskService = {
       console.error('Error in direct database query:', error);
       return {
         data: null,
+        error: error instanceof Error ? error : new Error('Unknown error occurred')
+      };
+    }
+  },
+
+  async fetchSubtasks(taskId: string): Promise<ServiceResult<Subtask[]>> {
+    try {
+      const { data, error } = await supabase
+        .from('subtasks')
+        .select('*')
+        .eq('task_id', taskId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching subtasks:', error);
+        return { data: null, error: new Error(error.message) };
+      }
+
+      const subtasks: Subtask[] = data.map(item => ({
+        id: item.id,
+        taskId: item.task_id,
+        title: item.title,
+        completed: item.completed,
+        createdAt: new Date(item.created_at),
+        updatedAt: new Date(item.updated_at)
+      }));
+
+      return { data: subtasks, error: null };
+    } catch (error) {
+      console.error('Unexpected error fetching subtasks:', error);
+      return { 
+        data: null, 
+        error: error instanceof Error ? error : new Error('Unknown error occurred') 
+      };
+    }
+  },
+
+  async createSubtask(subtaskData: CreateSubtaskDTO): Promise<ServiceResult<Subtask>> {
+    try {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        console.error('Error getting user:', userError);
+        return { data: null, error: new Error(userError.message) };
+      }
+      
+      const userId = userData.user?.id;
+      if (!userId) {
+        return { data: null, error: new Error('User not authenticated') };
+      }
+
+      const { data, error } = await supabase
+        .from('subtasks')
+        .insert({
+          task_id: subtaskData.taskId,
+          title: subtaskData.title,
+          completed: false,
+          user_id: userId
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating subtask:', error);
+        return { data: null, error: new Error(error.message) };
+      }
+
+      // Create activity log for subtask creation
+      await this.createActivityLog({
+        taskId: subtaskData.taskId,
+        type: 'subtask_added',
+        description: `Added subtask: ${subtaskData.title}`
+      });
+
+      const subtask: Subtask = {
+        id: data.id,
+        taskId: data.task_id,
+        title: data.title,
+        completed: data.completed,
+        createdAt: new Date(data.created_at),
+        updatedAt: new Date(data.updated_at)
+      };
+
+      return { data: subtask, error: null };
+    } catch (error) {
+      console.error('Unexpected error creating subtask:', error);
+      return { 
+        data: null, 
+        error: error instanceof Error ? error : new Error('Unknown error occurred')
+      };
+    }
+  },
+
+  async updateSubtask(subtaskUpdate: UpdateSubtaskDTO): Promise<ServiceResult<Subtask>> {
+    try {
+      const updateData: any = { id: subtaskUpdate.id };
+      
+      if (subtaskUpdate.title !== undefined) updateData.title = subtaskUpdate.title;
+      if (subtaskUpdate.completed !== undefined) updateData.completed = subtaskUpdate.completed;
+
+      const { data, error } = await supabase
+        .from('subtasks')
+        .update(updateData)
+        .eq('id', subtaskUpdate.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating subtask:', error);
+        return { data: null, error: new Error(error.message) };
+      }
+
+      // Get task information for activity log
+      const { data: subtaskData } = await supabase
+        .from('subtasks')
+        .select('task_id')
+        .eq('id', subtaskUpdate.id)
+        .single();
+
+      if (subtaskData && subtaskUpdate.completed !== undefined) {
+        // Create activity log for subtask completion status change
+        await this.createActivityLog({
+          taskId: subtaskData.task_id,
+          type: 'subtask_completed',
+          description: `${subtaskUpdate.completed ? 'Completed' : 'Reopened'} subtask: ${data.title}`
+        });
+      } else if (subtaskData && subtaskUpdate.title !== undefined) {
+        // Create activity log for subtask edit
+        await this.createActivityLog({
+          taskId: subtaskData.task_id,
+          type: 'subtask_edited',
+          description: `Updated subtask: ${data.title}`
+        });
+      }
+
+      const subtask: Subtask = {
+        id: data.id,
+        taskId: data.task_id,
+        title: data.title,
+        completed: data.completed,
+        createdAt: new Date(data.created_at),
+        updatedAt: new Date(data.updated_at)
+      };
+
+      return { data: subtask, error: null };
+    } catch (error) {
+      console.error('Unexpected error updating subtask:', error);
+      return { 
+        data: null, 
+        error: error instanceof Error ? error : new Error('Unknown error occurred')
+      };
+    }
+  },
+
+  async deleteSubtask(id: string): Promise<ServiceResult<void>> {
+    try {
+      // Get task information for activity log
+      const { data: subtaskData } = await supabase
+        .from('subtasks')
+        .select('task_id, title')
+        .eq('id', id)
+        .single();
+
+      const { error } = await supabase
+        .from('subtasks')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error deleting subtask:', error);
+        return { data: null, error: new Error(error.message) };
+      }
+
+      if (subtaskData) {
+        // Create activity log for subtask deletion
+        await this.createActivityLog({
+          taskId: subtaskData.task_id,
+          type: 'subtask_deleted',
+          description: `Deleted subtask: ${subtaskData.title}`
+        });
+      }
+
+      return { data: null, error: null };
+    } catch (error) {
+      console.error('Unexpected error deleting subtask:', error);
+      return { 
+        data: null, 
+        error: error instanceof Error ? error : new Error('Unknown error occurred')
+      };
+    }
+  },
+
+  async fetchComments(taskId: string): Promise<ServiceResult<Comment[]>> {
+    try {
+      const { data, error } = await supabase
+        .from('comments')
+        .select('*')
+        .eq('task_id', taskId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching comments:', error);
+        return { data: null, error: new Error(error.message) };
+      }
+
+      const comments: Comment[] = data.map(item => ({
+        id: item.id,
+        taskId: item.task_id,
+        content: item.content,
+        createdBy: item.created_by,
+        createdAt: new Date(item.created_at),
+        updatedAt: new Date(item.updated_at),
+        edited: item.edited
+      }));
+
+      return { data: comments, error: null };
+    } catch (error) {
+      console.error('Unexpected error fetching comments:', error);
+      return { 
+        data: null, 
+        error: error instanceof Error ? error : new Error('Unknown error occurred') 
+      };
+    }
+  },
+
+  async createComment(commentData: CreateCommentDTO): Promise<ServiceResult<Comment>> {
+    try {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        console.error('Error getting user:', userError);
+        return { data: null, error: new Error(userError.message) };
+      }
+      
+      const userId = userData.user?.id;
+      if (!userId) {
+        return { data: null, error: new Error('User not authenticated') };
+      }
+
+      const { data, error } = await supabase
+        .from('comments')
+        .insert({
+          task_id: commentData.taskId,
+          content: commentData.content,
+          created_by: userId,
+          edited: false
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating comment:', error);
+        return { data: null, error: new Error(error.message) };
+      }
+
+      // Create activity log for comment addition
+      await this.createActivityLog({
+        taskId: commentData.taskId,
+        type: 'comment_added',
+        description: `Added a comment`
+      });
+
+      const comment: Comment = {
+        id: data.id,
+        taskId: data.task_id,
+        content: data.content,
+        createdBy: data.created_by,
+        createdAt: new Date(data.created_at),
+        updatedAt: new Date(data.updated_at),
+        edited: data.edited
+      };
+
+      return { data: comment, error: null };
+    } catch (error) {
+      console.error('Unexpected error creating comment:', error);
+      return { 
+        data: null, 
+        error: error instanceof Error ? error : new Error('Unknown error occurred')
+      };
+    }
+  },
+
+  async updateComment(commentUpdate: UpdateCommentDTO): Promise<ServiceResult<Comment>> {
+    try {
+      const { data, error } = await supabase
+        .from('comments')
+        .update({
+          content: commentUpdate.content,
+          edited: true
+        })
+        .eq('id', commentUpdate.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating comment:', error);
+        return { data: null, error: new Error(error.message) };
+      }
+
+      // Create activity log for comment edit
+      await this.createActivityLog({
+        taskId: data.task_id,
+        type: 'comment_edited',
+        description: `Edited a comment`
+      });
+
+      const comment: Comment = {
+        id: data.id,
+        taskId: data.task_id,
+        content: data.content,
+        createdBy: data.created_by,
+        createdAt: new Date(data.created_at),
+        updatedAt: new Date(data.updated_at),
+        edited: data.edited
+      };
+
+      return { data: comment, error: null };
+    } catch (error) {
+      console.error('Unexpected error updating comment:', error);
+      return { 
+        data: null, 
+        error: error instanceof Error ? error : new Error('Unknown error occurred')
+      };
+    }
+  },
+
+  async deleteComment(id: string): Promise<ServiceResult<void>> {
+    try {
+      // Get task information for activity log
+      const { data: commentData } = await supabase
+        .from('comments')
+        .select('task_id')
+        .eq('id', id)
+        .single();
+
+      const { error } = await supabase
+        .from('comments')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error deleting comment:', error);
+        return { data: null, error: new Error(error.message) };
+      }
+
+      if (commentData) {
+        // Create activity log for comment deletion
+        await this.createActivityLog({
+          taskId: commentData.task_id,
+          type: 'comment_deleted',
+          description: `Deleted a comment`
+        });
+      }
+
+      return { data: null, error: null };
+    } catch (error) {
+      console.error('Unexpected error deleting comment:', error);
+      return { 
+        data: null, 
+        error: error instanceof Error ? error : new Error('Unknown error occurred')
+      };
+    }
+  },
+
+  async fetchActivities(taskId: string): Promise<ServiceResult<ActivityItem[]>> {
+    try {
+      const { data, error } = await supabase
+        .from('activities')
+        .select('*')
+        .eq('task_id', taskId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching activities:', error);
+        return { data: null, error: new Error(error.message) };
+      }
+
+      const activities: ActivityItem[] = data.map(item => ({
+        id: item.id,
+        taskId: item.task_id,
+        type: item.type as ActivityItem['type'],
+        description: item.description,
+        createdAt: new Date(item.created_at),
+        createdBy: item.created_by,
+        metadata: item.metadata
+      }));
+
+      return { data: activities, error: null };
+    } catch (error) {
+      console.error('Unexpected error fetching activities:', error);
+      return { 
+        data: null, 
+        error: error instanceof Error ? error : new Error('Unknown error occurred') 
+      };
+    }
+  },
+
+  async createActivityLog({
+    taskId,
+    type,
+    description,
+    metadata
+  }: {
+    taskId: string;
+    type: ActivityItem['type'];
+    description: string;
+    metadata?: Record<string, any>;
+  }): Promise<ServiceResult<ActivityItem>> {
+    try {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        console.error('Error getting user:', userError);
+        return { data: null, error: new Error(userError.message) };
+      }
+      
+      const userId = userData.user?.id;
+      if (!userId) {
+        return { data: null, error: new Error('User not authenticated') };
+      }
+
+      const { data, error } = await supabase
+        .from('activities')
+        .insert({
+          task_id: taskId,
+          type,
+          description,
+          created_by: userId,
+          metadata
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating activity log:', error);
+        return { data: null, error: new Error(error.message) };
+      }
+
+      const activity: ActivityItem = {
+        id: data.id,
+        taskId: data.task_id,
+        type: data.type as ActivityItem['type'],
+        description: data.description,
+        createdAt: new Date(data.created_at),
+        createdBy: data.created_by,
+        metadata: data.metadata
+      };
+
+      return { data: activity, error: null };
+    } catch (error) {
+      console.error('Unexpected error creating activity log:', error);
+      return { 
+        data: null, 
         error: error instanceof Error ? error : new Error('Unknown error occurred')
       };
     }

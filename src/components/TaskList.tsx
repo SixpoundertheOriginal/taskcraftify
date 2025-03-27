@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useTaskStore } from '@/store/useTaskStore';
+import { useTaskStore } from '@/store';
 import { TaskCard } from '@/components/TaskCard';
 import { Input } from '@/components/ui/input';
 import { TaskFilters, TaskStatus, TaskPriority } from '@/types/task';

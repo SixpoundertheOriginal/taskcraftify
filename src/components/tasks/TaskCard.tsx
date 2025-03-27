@@ -1,4 +1,5 @@
-import { useState, useCallback, memo } from 'react';
+
+import { useState, useCallback, memo, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,9 +22,12 @@ import {
   Edit,
   Trash,
   Save,
-  X
+  X,
+  ListChecks,
+  MessageSquare,
+  Activity
 } from 'lucide-react';
-import { Task, TaskStatus, TaskPriority } from '@/types/task';
+import { Task, TaskStatus, TaskPriority, countCompletedSubtasks } from '@/types/task';
 import { 
   formatDate, 
   getPriorityColor, 
@@ -57,6 +61,15 @@ import {
 import { format } from "date-fns";
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { ProjectSelector } from '@/components/projects';
+import { 
+  Tabs, 
+  TabsContent, 
+  TabsList, 
+  TabsTrigger 
+} from '@/components/ui/tabs';
+import { SubtaskList } from './SubtaskList';
+import { CommentList } from './CommentList';
+import { ActivityHistory } from './ActivityHistory';
 
 interface TaskCardProps {
   task: Task;
@@ -69,6 +82,7 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [activeTab, setActiveTab] = useState("details");
   const { updateTask, deleteTask } = useTaskStore();
   const { projects } = useProjectStore();
   
@@ -80,6 +94,8 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
     isDirty,
     resetForm
   } = useTaskEditForm(task);
+  
+  const subtaskCounts = countCompletedSubtasks(task);
   
   const handleStatusChange = useCallback(async (status: TaskStatus) => {
     try {
@@ -144,7 +160,9 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
       !e.target.closest('input') && 
       !e.target.closest('textarea') &&
       !e.target.closest('[role="combobox"]') && 
-      !e.target.closest('[data-radix-popper-content-wrapper]')
+      !e.target.closest('[data-radix-popper-content-wrapper]') &&
+      !e.target.closest('[role="tab"]') &&
+      !e.target.closest('label')
     ) {
       toggleExpanded();
     }
@@ -187,6 +205,13 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
       e.stopPropagation();
     }
   }, [isEditing]);
+
+  // Reset tab to details when collapsing
+  useEffect(() => {
+    if (!isExpanded) {
+      setActiveTab("details");
+    }
+  }, [isExpanded]);
 
   return (
     <Card 
@@ -318,6 +343,20 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
                     {task.projectId && (
                       <ProjectBadge projectId={task.projectId} />
                     )}
+                    
+                    {subtaskCounts.total > 0 && (
+                      <Badge variant="outline" className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100">
+                        <ListChecks className="mr-1 h-3 w-3" />
+                        {subtaskCounts.completed}/{subtaskCounts.total}
+                      </Badge>
+                    )}
+                    
+                    {task.comments && task.comments.length > 0 && (
+                      <Badge variant="outline" className="bg-green-50 text-green-600 hover:bg-green-100">
+                        <MessageSquare className="mr-1 h-3 w-3" />
+                        {task.comments.length}
+                      </Badge>
+                    )}
                   </>
                 ) : (
                   <Form {...form}>
@@ -391,27 +430,66 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
               
               <CollapsibleContent className="animate-accordion-down overflow-hidden">
                 {!isEditing ? (
-                  <>
-                    {task.description && (
-                      <div className={cn(
-                        "text-sm text-muted-foreground mb-3 pb-3 border-b border-border/40",
-                        task.status === TaskStatus.DONE && "line-through"
-                      )}>
-                        {task.description}
-                      </div>
-                    )}
+                  <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="w-full mb-3 bg-muted/50 h-9">
+                      <TabsTrigger value="details" className="text-xs h-7">Details</TabsTrigger>
+                      <TabsTrigger value="subtasks" className="text-xs h-7">
+                        Subtasks
+                        {subtaskCounts.total > 0 && (
+                          <span className="ml-1 text-xs bg-muted rounded-full px-1.5">
+                            {subtaskCounts.completed}/{subtaskCounts.total}
+                          </span>
+                        )}
+                      </TabsTrigger>
+                      <TabsTrigger value="comments" className="text-xs h-7">
+                        Comments
+                        {task.comments && task.comments.length > 0 && (
+                          <span className="ml-1 text-xs bg-muted rounded-full px-1.5">
+                            {task.comments.length}
+                          </span>
+                        )}
+                      </TabsTrigger>
+                      <TabsTrigger value="activity" className="text-xs h-7">Activity</TabsTrigger>
+                    </TabsList>
                     
-                    {task.tags && task.tags.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-1 mb-3">
-                        <Tag className="h-3 w-3 mr-1 text-muted-foreground" />
-                        {task.tags.map(tag => (
-                          <Badge key={tag} variant="secondary" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </>
+                    <TabsContent value="details" className="mt-0 space-y-3">
+                      {task.description ? (
+                        <div className={cn(
+                          "text-sm text-muted-foreground pb-3 border-b border-border/40",
+                          task.status === TaskStatus.DONE && "line-through"
+                        )}>
+                          {task.description}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-muted-foreground italic pb-3 border-b border-border/40">
+                          No description provided
+                        </div>
+                      )}
+                      
+                      {task.tags && task.tags.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1 mt-3">
+                          <Tag className="h-3 w-3 mr-1 text-muted-foreground" />
+                          {task.tags.map(tag => (
+                            <Badge key={tag} variant="secondary" className="text-xs">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </TabsContent>
+                    
+                    <TabsContent value="subtasks" className="mt-0 pt-1">
+                      <SubtaskList taskId={task.id} />
+                    </TabsContent>
+                    
+                    <TabsContent value="comments" className="mt-0 pt-1">
+                      <CommentList taskId={task.id} />
+                    </TabsContent>
+                    
+                    <TabsContent value="activity" className="mt-0 pt-1">
+                      <ActivityHistory taskId={task.id} />
+                    </TabsContent>
+                  </Tabs>
                 ) : (
                   <Form {...form}>
                     <form className="space-y-3 pb-3 border-b border-border/40 mb-3" onClick={stopPropagation}>
@@ -564,25 +642,43 @@ function TaskCardComponent({ task, isDragging = false, isCompact = false }: Task
               
               {!isExpanded && !isEditing && (
                 <div className="flex justify-between items-center text-xs text-muted-foreground mt-1">
-                  {task.dueDate && (
-                    <div className={cn(
-                      "flex items-center",
-                      isOverdue(task.dueDate) ? 'text-destructive' : ''
-                    )}>
-                      <Clock className="h-3 w-3 mr-1" />
-                      {formatDate(task.dueDate)}
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {task.dueDate && (
+                      <div className={cn(
+                        "flex items-center",
+                        isOverdue(task.dueDate) ? 'text-destructive' : ''
+                      )}>
+                        <Clock className="h-3 w-3 mr-1" />
+                        {formatDate(task.dueDate)}
+                      </div>
+                    )}
+                    
+                    {subtaskCounts.total > 0 && (
+                      <div className="flex items-center">
+                        <ListChecks className="h-3 w-3 mr-1" />
+                        <span>{subtaskCounts.completed}/{subtaskCounts.total}</span>
+                      </div>
+                    )}
+                  </div>
                   
-                  {task.tags && task.tags.length > 0 && !isCompact && (
-                    <div className="flex items-center">
-                      <Tag className="h-3 w-3 mr-1" />
-                      {task.tags.slice(0, 2).map(tag => (
-                        <span key={tag} className="ml-1">#{tag}</span>
-                      ))}
-                      {task.tags.length > 2 && <span>+{task.tags.length - 2}</span>}
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {task.comments && task.comments.length > 0 && (
+                      <div className="flex items-center">
+                        <MessageSquare className="h-3 w-3 mr-1" />
+                        <span>{task.comments.length}</span>
+                      </div>
+                    )}
+                    
+                    {task.tags && task.tags.length > 0 && !isCompact && (
+                      <div className="flex items-center">
+                        <Tag className="h-3 w-3 mr-1" />
+                        {task.tags.slice(0, 2).map(tag => (
+                          <span key={tag} className="ml-1">#{tag}</span>
+                        ))}
+                        {task.tags.length > 2 && <span>+{task.tags.length - 2}</span>}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

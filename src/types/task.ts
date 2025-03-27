@@ -13,6 +13,35 @@ export enum TaskStatus {
   ARCHIVED = "ARCHIVED"
 }
 
+export interface Subtask {
+  id: string;
+  taskId: string;
+  title: string;
+  completed: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Comment {
+  id: string;
+  taskId: string;
+  content: string;
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+  edited: boolean;
+}
+
+export interface ActivityItem {
+  id: string;
+  taskId: string;
+  type: 'status_change' | 'edit' | 'comment_added' | 'comment_edited' | 'comment_deleted' | 'subtask_added' | 'subtask_completed' | 'subtask_edited' | 'subtask_deleted';
+  description: string;
+  createdAt: Date;
+  createdBy: string;
+  metadata?: Record<string, any>;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -24,6 +53,9 @@ export interface Task {
   updatedAt: Date;
   tags?: string[];
   projectId?: string | null;
+  subtasks?: Subtask[];
+  comments?: Comment[];
+  activities?: ActivityItem[];
 }
 
 export interface CreateTaskDTO {
@@ -45,6 +77,27 @@ export interface UpdateTaskDTO {
   dueDate?: Date | null;
   tags?: string[];
   projectId?: string | null;
+}
+
+export interface CreateSubtaskDTO {
+  taskId: string;
+  title: string;
+}
+
+export interface UpdateSubtaskDTO {
+  id: string;
+  title?: string;
+  completed?: boolean;
+}
+
+export interface CreateCommentDTO {
+  taskId: string;
+  content: string;
+}
+
+export interface UpdateCommentDTO {
+  id: string;
+  content: string;
 }
 
 export interface TaskFilters {
@@ -69,6 +122,38 @@ export interface APITask {
   updated_at: string;
   tags: string[] | null;
   project_id: string | null;
+  subtasks?: APISubtask[];
+  comments?: APIComment[];
+  activities?: APIActivity[];
+}
+
+export interface APISubtask {
+  id: string;
+  task_id: string;
+  title: string;
+  completed: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface APIComment {
+  id: string;
+  task_id: string;
+  content: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  edited: boolean;
+}
+
+export interface APIActivity {
+  id: string;
+  task_id: string;
+  type: string;
+  description: string;
+  created_at: string;
+  created_by: string;
+  metadata: Record<string, any> | null;
 }
 
 // Convert API task to app task
@@ -83,8 +168,33 @@ export function mapApiTaskToTask(apiTask: APITask): Task {
     createdAt: new Date(apiTask.created_at),
     updatedAt: new Date(apiTask.updated_at),
     tags: apiTask.tags || undefined,
-    // FIX: Properly handle null project_id values
     projectId: apiTask.project_id,
+    subtasks: apiTask.subtasks?.map(subtask => ({
+      id: subtask.id,
+      taskId: subtask.task_id,
+      title: subtask.title,
+      completed: subtask.completed,
+      createdAt: new Date(subtask.created_at),
+      updatedAt: new Date(subtask.updated_at)
+    })),
+    comments: apiTask.comments?.map(comment => ({
+      id: comment.id,
+      taskId: comment.task_id,
+      content: comment.content,
+      createdBy: comment.created_by,
+      createdAt: new Date(comment.created_at),
+      updatedAt: new Date(comment.updated_at),
+      edited: comment.edited
+    })),
+    activities: apiTask.activities?.map(activity => ({
+      id: activity.id,
+      taskId: activity.task_id,
+      type: activity.type as ActivityItem['type'],
+      description: activity.description,
+      createdAt: new Date(activity.created_at),
+      createdBy: activity.created_by,
+      metadata: activity.metadata || undefined
+    }))
   };
 }
 
@@ -114,6 +224,23 @@ export function mapTaskToApiTask(task: CreateTaskDTO | UpdateTaskDTO, userId?: s
   }
 
   return apiTask;
+}
+
+/**
+ * Count completed subtasks for a task
+ * 
+ * @param task The task to count subtasks for
+ * @returns Object with completed count and total count
+ */
+export function countCompletedSubtasks(task: Task): { completed: number; total: number } {
+  if (!task.subtasks || task.subtasks.length === 0) {
+    return { completed: 0, total: 0 };
+  }
+
+  const total = task.subtasks.length;
+  const completed = task.subtasks.filter(subtask => subtask.completed).length;
+  
+  return { completed, total };
 }
 
 /**

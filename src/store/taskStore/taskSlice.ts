@@ -1,17 +1,47 @@
 import { StateCreator } from 'zustand';
 import { TaskService } from '@/services/taskService';
-import { Task } from '@/types/task';
+import { 
+  Task, 
+  TaskStatus, 
+  Subtask, 
+  Comment, 
+  ActivityItem,
+  CreateSubtaskDTO,
+  UpdateSubtaskDTO,
+  CreateCommentDTO,
+  UpdateCommentDTO
+} from '@/types/task';
 import { toast } from '@/hooks/use-toast';
 
 export interface TaskSlice {
   tasks: Task[];
   isLoading: boolean;
   error: string | null;
+  
+  // Task operations
   fetchTasks: () => Promise<void>;
   createTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Task>;
   updateTask: (task: Partial<Task> & { id: string }) => Promise<Task>;
   deleteTask: (id: string) => Promise<void>;
   setTaskStatus: (id: string, status: Task['status']) => Promise<Task>;
+  
+  // Subtask operations
+  fetchSubtasks: (taskId: string) => Promise<Subtask[]>;
+  createSubtask: (subtask: CreateSubtaskDTO) => Promise<Subtask>;
+  updateSubtask: (subtask: UpdateSubtaskDTO) => Promise<Subtask>;
+  deleteSubtask: (id: string) => Promise<void>;
+  toggleSubtaskCompletion: (id: string, completed: boolean) => Promise<Subtask>;
+  
+  // Comment operations
+  fetchComments: (taskId: string) => Promise<Comment[]>;
+  createComment: (comment: CreateCommentDTO) => Promise<Comment>;
+  updateComment: (comment: UpdateCommentDTO) => Promise<Comment>;
+  deleteComment: (id: string) => Promise<void>;
+  
+  // Activity operations
+  fetchActivities: (taskId: string) => Promise<ActivityItem[]>;
+  
+  // Utility functions
   refreshTaskCounts: () => void;
   diagnosticDatabaseQuery: () => Promise<void>;
 }
@@ -21,6 +51,7 @@ export const createTaskSlice: StateCreator<TaskSlice, [], [], TaskSlice> = (set,
   isLoading: false,
   error: null,
   
+  // Task operations
   fetchTasks: async () => {
     set({ isLoading: true, error: null });
     
@@ -124,29 +155,320 @@ export const createTaskSlice: StateCreator<TaskSlice, [], [], TaskSlice> = (set,
     return get().updateTask({ id, status });
   },
   
-  deleteTask: async (id) => {
-    set({ isLoading: true, error: null });
-    
+  // Subtask operations
+  fetchSubtasks: async (taskId: string) => {
     try {
-      const result = await TaskService.deleteTask(id);
+      const result = await TaskService.fetchSubtasks(taskId);
       if (result.error) {
         throw result.error;
       }
       
-      set((state) => ({
-        tasks: state.tasks.filter((task) => task.id !== id),
+      // Update the task with its subtasks
+      set(state => ({
+        tasks: state.tasks.map(task => 
+          task.id === taskId 
+            ? { ...task, subtasks: result.data || [] } 
+            : task
+        )
+      }));
+      
+      return result.data || [];
+    } catch (error) {
+      console.error('Error fetching subtasks:', error);
+      toast({
+        title: "Failed to fetch subtasks",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive"
+      });
+      return [];
+    }
+  },
+  
+  createSubtask: async (subtaskData) => {
+    set({ isLoading: true, error: null });
+    
+    try {
+      const result = await TaskService.createSubtask(subtaskData);
+      if (result.error) {
+        throw result.error;
+      }
+      
+      if (!result.data) {
+        throw new Error('No subtask returned from creation');
+      }
+      
+      // Add the subtask to the task
+      set(state => ({
+        tasks: state.tasks.map(task => {
+          if (task.id === subtaskData.taskId) {
+            const subtasks = task.subtasks || [];
+            return {
+              ...task,
+              subtasks: [...subtasks, result.data!]
+            };
+          }
+          return task;
+        }),
         isLoading: false
       }));
+      
+      return result.data;
     } catch (error) {
-      console.error('Error deleting task:', error);
+      console.error('Error creating subtask:', error);
       set({ 
-        error: error instanceof Error ? error.message : 'Failed to delete task', 
+        error: error instanceof Error ? error.message : 'Failed to create subtask', 
         isLoading: false 
       });
       throw error;
     }
   },
   
+  updateSubtask: async (subtaskData) => {
+    set({ isLoading: true, error: null });
+    
+    try {
+      const result = await TaskService.updateSubtask(subtaskData);
+      if (result.error) {
+        throw result.error;
+      }
+      
+      if (!result.data) {
+        throw new Error('No subtask returned from update');
+      }
+      
+      // Update the subtask in the task
+      set(state => ({
+        tasks: state.tasks.map(task => {
+          if (task.subtasks?.some(subtask => subtask.id === subtaskData.id)) {
+            return {
+              ...task,
+              subtasks: task.subtasks.map(subtask => 
+                subtask.id === subtaskData.id ? result.data! : subtask
+              )
+            };
+          }
+          return task;
+        }),
+        isLoading: false
+      }));
+      
+      return result.data;
+    } catch (error) {
+      console.error('Error updating subtask:', error);
+      set({ 
+        error: error instanceof Error ? error.message : 'Failed to update subtask', 
+        isLoading: false 
+      });
+      throw error;
+    }
+  },
+  
+  deleteSubtask: async (id) => {
+    set({ isLoading: true, error: null });
+    
+    try {
+      const result = await TaskService.deleteSubtask(id);
+      if (result.error) {
+        throw result.error;
+      }
+      
+      // Remove the subtask from the task
+      set(state => ({
+        tasks: state.tasks.map(task => {
+          if (task.subtasks?.some(subtask => subtask.id === id)) {
+            return {
+              ...task,
+              subtasks: task.subtasks.filter(subtask => subtask.id !== id)
+            };
+          }
+          return task;
+        }),
+        isLoading: false
+      }));
+    } catch (error) {
+      console.error('Error deleting subtask:', error);
+      set({ 
+        error: error instanceof Error ? error.message : 'Failed to delete subtask', 
+        isLoading: false 
+      });
+      throw error;
+    }
+  },
+  
+  toggleSubtaskCompletion: async (id, completed) => {
+    return get().updateSubtask({ id, completed });
+  },
+  
+  // Comment operations
+  fetchComments: async (taskId) => {
+    try {
+      const result = await TaskService.fetchComments(taskId);
+      if (result.error) {
+        throw result.error;
+      }
+      
+      // Update the task with its comments
+      set(state => ({
+        tasks: state.tasks.map(task => 
+          task.id === taskId 
+            ? { ...task, comments: result.data || [] } 
+            : task
+        )
+      }));
+      
+      return result.data || [];
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+      toast({
+        title: "Failed to fetch comments",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive"
+      });
+      return [];
+    }
+  },
+  
+  createComment: async (commentData) => {
+    set({ isLoading: true, error: null });
+    
+    try {
+      const result = await TaskService.createComment(commentData);
+      if (result.error) {
+        throw result.error;
+      }
+      
+      if (!result.data) {
+        throw new Error('No comment returned from creation');
+      }
+      
+      // Add the comment to the task
+      set(state => ({
+        tasks: state.tasks.map(task => {
+          if (task.id === commentData.taskId) {
+            const comments = task.comments || [];
+            return {
+              ...task,
+              comments: [...comments, result.data!]
+            };
+          }
+          return task;
+        }),
+        isLoading: false
+      }));
+      
+      return result.data;
+    } catch (error) {
+      console.error('Error creating comment:', error);
+      set({ 
+        error: error instanceof Error ? error.message : 'Failed to create comment', 
+        isLoading: false 
+      });
+      throw error;
+    }
+  },
+  
+  updateComment: async (commentData) => {
+    set({ isLoading: true, error: null });
+    
+    try {
+      const result = await TaskService.updateComment(commentData);
+      if (result.error) {
+        throw result.error;
+      }
+      
+      if (!result.data) {
+        throw new Error('No comment returned from update');
+      }
+      
+      // Update the comment in the task
+      set(state => ({
+        tasks: state.tasks.map(task => {
+          if (task.comments?.some(comment => comment.id === commentData.id)) {
+            return {
+              ...task,
+              comments: task.comments.map(comment => 
+                comment.id === commentData.id ? result.data! : comment
+              )
+            };
+          }
+          return task;
+        }),
+        isLoading: false
+      }));
+      
+      return result.data;
+    } catch (error) {
+      console.error('Error updating comment:', error);
+      set({ 
+        error: error instanceof Error ? error.message : 'Failed to update comment', 
+        isLoading: false 
+      });
+      throw error;
+    }
+  },
+  
+  deleteComment: async (id) => {
+    set({ isLoading: true, error: null });
+    
+    try {
+      const result = await TaskService.deleteComment(id);
+      if (result.error) {
+        throw result.error;
+      }
+      
+      // Remove the comment from the task
+      set(state => ({
+        tasks: state.tasks.map(task => {
+          if (task.comments?.some(comment => comment.id === id)) {
+            return {
+              ...task,
+              comments: task.comments.filter(comment => comment.id !== id)
+            };
+          }
+          return task;
+        }),
+        isLoading: false
+      }));
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      set({ 
+        error: error instanceof Error ? error.message : 'Failed to delete comment', 
+        isLoading: false 
+      });
+      throw error;
+    }
+  },
+  
+  // Activity operations
+  fetchActivities: async (taskId) => {
+    try {
+      const result = await TaskService.fetchActivities(taskId);
+      if (result.error) {
+        throw result.error;
+      }
+      
+      // Update the task with its activities
+      set(state => ({
+        tasks: state.tasks.map(task => 
+          task.id === taskId 
+            ? { ...task, activities: result.data || [] } 
+            : task
+        )
+      }));
+      
+      return result.data || [];
+    } catch (error) {
+      console.error('Error fetching activities:', error);
+      toast({
+        title: "Failed to fetch activity history",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive"
+      });
+      return [];
+    }
+  },
+  
+  // Utility functions
   refreshTaskCounts: () => {
     // Force a complete refresh by re-fetching all tasks
     const refreshTasks = async () => {
