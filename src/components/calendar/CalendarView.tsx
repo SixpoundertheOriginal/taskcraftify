@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from 'react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, isSameDay, parseISO, isValid } from 'date-fns';
 import { useTaskStore, useIntegrationStore } from '@/store';
@@ -22,6 +23,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import { DayContent, DayContentProps } from 'react-day-picker';
+import { CalendarSummary } from './CalendarSummary';
+import { WeeklyOverview } from './WeeklyOverview';
+import { TimeGroupedTasks } from './TimeGroupedTasks';
 
 export function CalendarView() {
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
@@ -245,6 +249,9 @@ export function CalendarView() {
   
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Task Summary Statistics */}
+      <CalendarSummary tasks={tasks} selectedDate={selectedDate} />
+      
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-2">
           <CalendarIcon className="h-5 w-5" />
@@ -262,6 +269,14 @@ export function CalendarView() {
           </Button>
         </div>
       </div>
+      
+      {/* Weekly Overview */}
+      <WeeklyOverview 
+        tasks={tasks}
+        events={calendarEvents}
+        selectedDate={selectedDate}
+        onDateSelect={handleDateSelect}
+      />
       
       {isLoading ? (
         <div className="flex justify-center py-8">
@@ -308,72 +323,12 @@ export function CalendarView() {
                   
                   <TabsContent value="tasks" className="flex-1 overflow-y-auto">
                     {selectedDateTasks.length > 0 ? (
-                      <div className="space-y-3">
-                        {selectedDateTasks.map(task => (
-                          <Card key={task.id} className={cn(
-                            "border-l-4",
-                            task.status === TaskStatus.TODO && "border-l-orange-400",
-                            task.status === TaskStatus.IN_PROGRESS && "border-l-blue-400",
-                            task.status === TaskStatus.DONE && "border-l-green-400",
-                            task.status === TaskStatus.ARCHIVED && "border-l-gray-400"
-                          )}>
-                            <CardHeader className="p-3 pb-2">
-                              <CardTitle className="text-sm font-medium flex justify-between">
-                                <span className="truncate">{task.title}</span>
-                                <div className="flex items-center gap-1">
-                                  <button 
-                                    onClick={() => handleOpenTaskForm(task)}
-                                    className="text-muted-foreground hover:text-primary transition-colors"
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                    <span className="sr-only">Edit</span>
-                                  </button>
-                                  <button 
-                                    onClick={() => handleTaskDelete(task.id)}
-                                    className="text-muted-foreground hover:text-destructive transition-colors"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                    <span className="sr-only">Delete</span>
-                                  </button>
-                                </div>
-                              </CardTitle>
-                              {task.description && (
-                                <CardDescription className="text-xs line-clamp-2">
-                                  {task.description}
-                                </CardDescription>
-                              )}
-                            </CardHeader>
-                            <CardContent className="p-3 pt-0">
-                              <div className="flex flex-wrap gap-2">
-                                <Badge variant="outline" className="text-xs">
-                                  {task.priority}
-                                </Badge>
-                                <Badge variant="outline" className="text-xs">
-                                  {task.status}
-                                </Badge>
-                                {task.tags?.map(tag => (
-                                  <Badge key={tag} variant="secondary" className="text-xs">
-                                    {tag}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </CardContent>
-                            {task.status !== TaskStatus.DONE && (
-                              <CardFooter className="p-2 border-t flex justify-end">
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="text-xs"
-                                  onClick={() => handleTaskStatusChange(task, TaskStatus.DONE)}
-                                >
-                                  <Check className="h-3 w-3 mr-1" />
-                                  Mark Complete
-                                </Button>
-                              </CardFooter>
-                            )}
-                          </Card>
-                        ))}
-                      </div>
+                      <TimeGroupedTasks 
+                        tasks={selectedDateTasks}
+                        onEdit={handleOpenTaskForm}
+                        onDelete={handleTaskDelete}
+                        onComplete={(task) => handleTaskStatusChange(task, TaskStatus.DONE)}
+                      />
                     ) : (
                       <div className="flex flex-col items-center justify-center h-40 text-center">
                         <CalendarPlus className="h-10 w-10 text-muted-foreground/30 mb-2" />
