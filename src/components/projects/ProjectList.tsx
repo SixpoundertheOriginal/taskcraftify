@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useProjectStore, useTaskStore } from '@/store';
 import { Task, countTasksByProject } from '@/types/task';
@@ -33,7 +32,6 @@ import {
   Grip,
   Info
 } from 'lucide-react';
-// Remove the incorrect import from zustand
 import { useMemo, useCallback } from 'react';
 import { ProjectDialog } from './ProjectDialog';
 import {
@@ -73,19 +71,16 @@ export function ProjectList() {
   const { projects, selectedProjectId, selectProject, deleteProject, updateProject } = useProjectStore();
   const { filters, setFilters, tasks, refreshTaskCounts, fetchTasks, diagnosticDatabaseQuery } = useTaskStore();
   
-  // Track recent projects
   const [recentProjects, setRecentProjects] = useState<string[]>(() => {
     const saved = localStorage.getItem('recentProjects');
     return saved ? JSON.parse(saved) : [];
   });
   
-  // Track favorite projects
   const [favoriteProjects, setFavoriteProjects] = useState<string[]>(() => {
     const saved = localStorage.getItem('favoriteProjects');
     return saved ? JSON.parse(saved) : [];
   });
   
-  // Update recent projects when a project is selected
   useEffect(() => {
     if (selectedProjectId && selectedProjectId !== 'none') {
       setRecentProjects(prev => {
@@ -97,12 +92,10 @@ export function ProjectList() {
     }
   }, [selectedProjectId]);
   
-  // Save favorites to localStorage when changed
   useEffect(() => {
     localStorage.setItem('favoriteProjects', JSON.stringify(favoriteProjects));
   }, [favoriteProjects]);
   
-  // Setup drag and drop
   const { items: sortedProjects, onDragEnd } = useDndSortable(projects);
   
   useEffect(() => {
@@ -113,9 +106,7 @@ export function ProjectList() {
     console.log(`Computing task counts for ${tasks.length} tasks`);
     const counts: Record<string, number> = {};
     
-    // Group tasks by project ID
     tasks.forEach((task: Task) => {
-      // Use nullish coalescing to explicitly handle null projectId values
       const projectId = task.projectId ?? 'none';
       counts[projectId] = (counts[projectId] || 0) + 1;
     });
@@ -125,14 +116,12 @@ export function ProjectList() {
   }, [tasks]);
   
   const totalTaskCount = useMemo(() => {
-    // Use our improved utility function for counting all tasks
     const count = countTasksByProject(tasks, undefined);
     console.log(`Total task count: ${count}`);
     return count;
   }, [tasks]);
   
   const noProjectTaskCount = useMemo(() => {
-    // Use our improved utility function for counting tasks with no project
     const count = countTasksByProject(tasks, null);
     console.log(`No project task count: ${count}`);
     return count;
@@ -165,12 +154,10 @@ export function ProjectList() {
         handleSelectProject(null);
       }
       
-      // Remove from favorites if present
       if (favoriteProjects.includes(projectToDelete)) {
         setFavoriteProjects(prev => prev.filter(id => id !== projectToDelete));
       }
       
-      // Remove from recents if present
       if (recentProjects.includes(projectToDelete)) {
         setRecentProjects(prev => prev.filter(id => id !== projectToDelete));
       }
@@ -231,7 +218,6 @@ export function ProjectList() {
       
       await diagnosticDatabaseQuery();
       
-      // Test countTasksByProject with various values
       console.log('----------------------------------------');
       console.log('TESTING countTasksByProject FUNCTION:');
       console.log('----------------------------------------');
@@ -272,42 +258,32 @@ export function ProjectList() {
     });
   };
   
-  // Function to get project by ID (for rendering)
   const getProjectById = (id: string) => {
     return projects.find(p => p.id === id);
   };
   
-  // Register keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Only respond to keyboard shortcuts when not in an input or textarea
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }
       
-      // Ctrl+N for new project
       if (e.ctrlKey && e.key === 'n') {
         e.preventDefault();
         setCreateDialogOpen(true);
         return;
       }
       
-      // Navigate through projects with Alt+Up/Down
       if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
         e.preventDefault();
         
-        // Get all visible project IDs
         const visibleProjects = sortedProjects.map(p => p.id);
-        
-        // Find current selected index
         const currentIndex = selectedProjectId ? visibleProjects.indexOf(selectedProjectId) : -1;
         
         let newIndex;
         if (e.key === 'ArrowUp') {
-          // Previous project (or last if at beginning)
           newIndex = currentIndex <= 0 ? visibleProjects.length - 1 : currentIndex - 1;
         } else {
-          // Next project (or first if at end)
           newIndex = currentIndex === visibleProjects.length - 1 || currentIndex === -1 ? 0 : currentIndex + 1;
         }
         
@@ -321,7 +297,6 @@ export function ProjectList() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedProjectId, sortedProjects, handleSelectProject]);
   
-  // Render a project item
   const renderProjectItem = (project: Project, isFavorite = false) => (
     <SidebarMenuItem 
       key={project.id} 
@@ -333,21 +308,21 @@ export function ProjectList() {
       <SidebarMenuButton 
         isActive={selectedProjectId === project.id}
         onClick={() => handleSelectProject(project.id)}
-        className="group relative pl-6 pr-8 transition-all hover:pl-7"
+        className="group relative pl-6 pr-14 transition-all hover:pl-7"
       >
         <div className="relative">
           <div 
             className="absolute left-0 top-1/2 -ml-4 h-2 w-2 -translate-y-1/2 rounded-full transition-all group-hover:scale-110" 
             style={{ backgroundColor: project.color }}
           />
-          <span className="truncate">{project.name}</span>
+          <span className="truncate max-w-[160px] inline-block">{project.name}</span>
         </div>
         
         <SidebarMenuBadge className="transition-all">
           {taskCounts[project.id] || 0}
         </SidebarMenuBadge>
         
-        <div className="absolute right-2 flex opacity-0 transition-opacity group-hover:opacity-100">
+        <div className="absolute right-2 flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 z-10 bg-card/80 rounded-full">
           {isFavorite ? (
             <Tooltip>
               <TooltipTrigger asChild>
