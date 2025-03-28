@@ -54,7 +54,10 @@ export function WeeklyOverview({ tasks, events, selectedDate, onDateSelect }: We
   if (!selectedDate || weekDays.length === 0) return null;
   
   return (
-    <div className="flex justify-between mb-4 overflow-x-auto pb-1">
+    <div className={cn(
+      "flex justify-between mb-4 overflow-x-auto pb-1",
+      isMobile && "mb-20" // Add bottom margin on mobile to prevent overlap with floating button
+    )}>
       {weekDays.map((day) => (
         <Button
           key={day.date.toISOString()}

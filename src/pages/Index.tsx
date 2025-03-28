@@ -132,10 +132,11 @@ export default function Index() {
               </TabsContent>
             </Tabs>
             
-            {activeTab === 'tasks' && (
+            {(activeTab === 'tasks' || activeTab === 'calendar') && (
               <FloatingActionButton 
                 open={isTaskFormOpen}
                 onOpenChange={setIsTaskFormOpen}
+                initialDueDate={activeTab === 'calendar' ? new Date() : undefined}
               />
             )}
           </div>
