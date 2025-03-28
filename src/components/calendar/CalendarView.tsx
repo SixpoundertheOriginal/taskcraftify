@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, isSameDay, parseISO, isValid } from 'date-fns';
 import { useTaskStore, useIntegrationStore } from '@/store';
@@ -71,13 +70,11 @@ export function CalendarView() {
     setSelectedDate(date);
     setActiveTab("tasks");
 
-    // Debug: Log when date is selected
     console.log("Date selected:", date ? format(date, 'yyyy-MM-dd') : 'undefined');
     if (date) {
       const tasksForDate = getTasksForDate(date);
       console.log(`Found ${tasksForDate.length} tasks for selected date`, tasksForDate);
       
-      // Debug: Check task due dates format
       console.log("All tasks with due dates:", 
         tasks
           .filter(t => t.dueDate)
@@ -144,9 +141,7 @@ export function CalendarView() {
   const getTasksForDate = (date: Date | undefined) => {
     if (!date || !isValid(date)) return [];
     
-    // Debug: Format the selected date for comparison
     const selectedDateStr = format(date, 'yyyy-MM-dd');
-    console.log(`Looking for tasks on date: ${selectedDateStr}`);
     
     const result = tasks.filter(task => {
       if (!task.dueDate) {
@@ -154,15 +149,7 @@ export function CalendarView() {
       }
       
       try {
-        // Debug: Convert and format the task's due date
-        const taskDueDate = new Date(task.dueDate);
-        const taskDueDateStr = format(taskDueDate, 'yyyy-MM-dd');
-        
-        // Check if dates match
-        const matches = isSameDay(taskDueDate, date);
-        
-        console.log(`Task "${task.title}" (${task.id}): due date=${taskDueDateStr}, matches=${matches}`);
-        
+        const matches = isSameDay(task.dueDate, date);
         return matches;
       } catch (e) {
         console.error(`Error comparing dates for task ${task.id}:`, e);
@@ -170,7 +157,6 @@ export function CalendarView() {
       }
     });
     
-    console.log(`Found ${result.length} tasks for ${selectedDateStr}:`, result);
     return result;
   };
   
@@ -199,17 +185,18 @@ export function CalendarView() {
     const hasItems = dayTasks.length > 0 || dayEvents.length > 0;
     
     return (
-      <div className="relative w-full h-full flex items-center justify-center">
-        <div>{date.getDate()}</div>
+      <div className="relative w-full h-full flex flex-col items-center">
+        <div className="mb-auto pt-1">{date.getDate()}</div>
+        
         {hasItems && (
-          <div className="absolute bottom-0 right-0 flex gap-1">
+          <div className="mt-auto flex gap-1 items-center justify-center w-full pb-1">
             {dayTasks.length > 0 && (
-              <Badge variant="secondary" className="text-xs px-1">
+              <Badge variant="secondary" className="h-4 text-xs px-1 py-0">
                 {dayTasks.length}
               </Badge>
             )}
             {dayEvents.length > 0 && (
-              <Badge variant="secondary" className="text-xs px-1 bg-primary/60">
+              <Badge variant="outline" className="h-4 text-xs px-1 py-0 bg-primary/20 border-primary/30">
                 {dayEvents.length}
               </Badge>
             )}
@@ -224,17 +211,20 @@ export function CalendarView() {
   
   const CustomDayContent = (props: DayContentProps) => {
     const { date, activeModifiers } = props;
+    const isToday = activeModifiers?.today;
+    const isSelected = selectedDate && isSameDay(date, selectedDate);
+    
     return (
       <div className={cn(
-        "relative w-full h-full",
-        selectedDate && isSameDay(date, selectedDate) && "bg-primary text-primary-foreground font-semibold"
+        "relative w-full h-full min-h-9",
+        isSelected && "bg-primary text-primary-foreground",
+        isToday && !isSelected && "bg-accent text-accent-foreground"
       )}>
         {renderDate(date)}
       </div>
     );
   };
   
-  // Debug: Log all tasks and their due dates when tasks change
   useEffect(() => {
     console.log("All tasks:", tasks);
     console.log("Tasks with due dates:", 
