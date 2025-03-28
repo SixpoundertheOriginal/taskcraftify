@@ -43,7 +43,9 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
   const { projects, selectedProjectId } = useProjectStore();
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>(taskToEdit?.tags || []);
-  const [dueDate, setDueDate] = useState<Date | undefined>(taskToEdit?.dueDate || initialDueDate);
+  const [dueDate, setDueDate] = useState<Date | undefined>(
+    taskToEdit?.dueDate || initialDueDate
+  );
   const [projectId, setProjectId] = useState<string | undefined>(taskToEdit?.projectId || selectedProjectId || undefined);
   const [projectSelectorOpen, setProjectSelectorOpen] = useState(false);
   

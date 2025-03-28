@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Task, 
@@ -36,7 +37,12 @@ interface ServiceResult<T> {
 const debugTaskDateMapping = (apiTask: APITask, mappedTask: Task) => {
   console.log(`Task mapping debug for "${apiTask.title}" (${apiTask.id}):`);
   console.log(`  Raw due_date from API: ${apiTask.due_date} (${typeof apiTask.due_date})`);
-  console.log(`  Mapped dueDate: ${mappedTask.dueDate} (${typeof mappedTask.dueDate})`);
+  
+  if (mappedTask.dueDate) {
+    console.log(`  Mapped dueDate: ${mappedTask.dueDate.toISOString()} (${typeof mappedTask.dueDate})`);
+  } else {
+    console.log(`  Mapped dueDate: undefined`);
+  }
   
   if (apiTask.due_date) {
     try {

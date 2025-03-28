@@ -26,7 +26,7 @@ export interface Task {
   description?: string;
   status: TaskStatus;
   priority: TaskPriority;
-  dueDate?: Date | string; // Note: This might be the issue if it's not handling both Date and string types
+  dueDate?: Date; // Changed to only accept Date objects
   tags?: string[];
   projectId?: string;
   subtasks?: Subtask[];
@@ -41,7 +41,7 @@ export interface CreateTaskDTO {
   description?: string;
   status: TaskStatus;
   priority: TaskPriority;
-  dueDate?: Date | string;  // Updated to accept string type as well
+  dueDate?: Date;  // Changed to only accept Date objects
   tags?: string[];
   projectId?: string;
 }
@@ -52,7 +52,7 @@ export interface UpdateTaskDTO {
   description?: string | null;
   status?: TaskStatus;
   priority?: TaskPriority;
-  dueDate?: Date | string | null;  // Updated to accept string type as well
+  dueDate?: Date | null;  // Changed to only accept Date or null
   tags?: string[] | null;
   projectId?: string | null;
 }
@@ -199,17 +199,15 @@ export const mapApiTaskToTask = (apiTask: APITask): Task => {
   // Debug the dueDate conversion
   console.log(`MapApiTaskToTask for "${apiTask.title}": due_date=${apiTask.due_date}, type=${typeof apiTask.due_date}`);
   
-  let dueDate: Date | string | undefined = undefined;
+  let dueDate: Date | undefined = undefined;
   
   if (apiTask.due_date) {
     try {
-      // Try to parse as ISO date string
-      dueDate = new Date(apiTask.due_date);
+      // Parse as ISO date string
+      dueDate = parseISO(apiTask.due_date);
       console.log(`  Converted dueDate to Date object: ${dueDate.toISOString()}`);
     } catch (e) {
-      // If parsing fails, keep as string
-      dueDate = apiTask.due_date;
-      console.log(`  Kept dueDate as string: ${dueDate}`);
+      console.error(`  Failed to parse date: ${apiTask.due_date}`, e);
     }
   }
   
