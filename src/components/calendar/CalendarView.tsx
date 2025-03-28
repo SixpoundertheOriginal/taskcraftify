@@ -173,7 +173,7 @@ export function CalendarView() {
               </Badge>
             )}
             {dayEvents.length > 0 && (
-              <Badge variant="primary" className="text-xs px-1 bg-primary/60">
+              <Badge variant="secondary" className="text-xs px-1 bg-primary/60">
                 {dayEvents.length}
               </Badge>
             )}
@@ -414,7 +414,6 @@ export function CalendarView() {
         onOpenChange={setIsTaskFormOpen} 
         taskToEdit={selectedTask || undefined}
         initialStatus={undefined}
-        initialDueDate={selectedDate}
       />
       
       <Dialog open={eventDetailsOpen} onOpenChange={setEventDetailsOpen}>

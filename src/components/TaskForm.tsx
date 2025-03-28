@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { 
@@ -31,13 +32,14 @@ import { toast } from '@/hooks/use-toast';
 interface TaskFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialDueDate?: Date;
 }
 
-export function TaskForm({ open, onOpenChange }: TaskFormProps) {
+export function TaskForm({ open, onOpenChange, initialDueDate }: TaskFormProps) {
   const { createTask, isLoading, error } = useTaskStore();
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
-  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+  const [dueDate, setDueDate] = useState<Date | undefined>(initialDueDate);
   
   const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateTaskDTO>();
   

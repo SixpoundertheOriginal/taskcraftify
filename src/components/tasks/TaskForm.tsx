@@ -23,9 +23,10 @@ interface TaskFormProps {
   onOpenChange: (open: boolean) => void;
   taskToEdit?: Task;
   initialStatus?: TaskStatus;
+  initialDueDate?: Date;
 }
 
-export function TaskForm({ open, onOpenChange, taskToEdit, initialStatus }: TaskFormProps) {
+export function TaskForm({ open, onOpenChange, taskToEdit, initialStatus, initialDueDate }: TaskFormProps) {
   const [activeTab, setActiveTab] = useState(taskToEdit ? "details" : "form");
   const isMobile = useIsMobile();
   
@@ -83,6 +84,7 @@ export function TaskForm({ open, onOpenChange, taskToEdit, initialStatus }: Task
               <TaskFormContent 
                 onSuccess={handleSuccess} 
                 taskToEdit={taskToEdit}
+                initialDueDate={initialDueDate}
               />
             </TabsContent>
             
@@ -102,7 +104,8 @@ export function TaskForm({ open, onOpenChange, taskToEdit, initialStatus }: Task
           <TaskFormContent 
             onSuccess={handleSuccess} 
             taskToEdit={taskToEdit}
-            initialStatus={initialStatus} 
+            initialStatus={initialStatus}
+            initialDueDate={initialDueDate}
           />
         )}
         
