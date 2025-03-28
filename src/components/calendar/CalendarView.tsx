@@ -216,15 +216,15 @@ export function CalendarView() {
               showOutsideDays={true}
               className="rounded-md border w-full p-3"
               components={{
-                Day: ({ date, ...props }) => (
+                Day: ({ day, displayMonth, ...props }) => (
                   <button
                     {...props}
                     className={cn(
                       props.className,
-                      selectedDate && isSameDay(date, selectedDate) && "bg-primary text-primary-foreground font-semibold"
+                      selectedDate && isSameDay(day, selectedDate) && "bg-primary text-primary-foreground font-semibold"
                     )}
                   >
-                    {renderDate(date)}
+                    {renderDate(day)}
                   </button>
                 ),
               }}
