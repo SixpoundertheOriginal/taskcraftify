@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, isSameDay, parseISO, isValid } from 'date-fns';
 import { useTaskStore, useIntegrationStore } from '@/store';
@@ -26,6 +25,7 @@ import { DayContent, DayContentProps } from 'react-day-picker';
 import { CalendarSummary } from './CalendarSummary';
 import { WeeklyOverview } from './WeeklyOverview';
 import { TimeGroupedTasks } from './TimeGroupedTasks';
+import { FloatingActionButton } from '@/components/tasks';
 
 export function CalendarView() {
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
@@ -91,11 +91,6 @@ export function CalendarView() {
           }))
       );
     }
-  };
-  
-  const handleAddTaskClick = () => {
-    setSelectedTask(null);
-    setIsTaskFormOpen(true);
   };
   
   const handleOpenTaskForm = (task: Task) => {
@@ -304,10 +299,12 @@ export function CalendarView() {
                 <h3 className="font-medium">
                   {selectedDate ? formattedSelectedDate : 'Select a date'}
                 </h3>
-                <Button size="sm" onClick={handleAddTaskClick}>
-                  <CalendarPlus className="h-4 w-4 mr-2" />
-                  Add Task
-                </Button>
+                <FloatingActionButton 
+                  className="z-40" 
+                  onOpenChange={setIsTaskFormOpen} 
+                  open={isTaskFormOpen} 
+                  initialDueDate={selectedDate} 
+                />
               </div>
               
               {selectedDate && (
@@ -339,7 +336,7 @@ export function CalendarView() {
                           variant="outline" 
                           size="sm" 
                           className="mt-2"
-                          onClick={handleAddTaskClick}
+                          onClick={() => setIsTaskFormOpen(true)}
                         >
                           Add a task
                         </Button>
@@ -411,14 +408,6 @@ export function CalendarView() {
           </div>
         </div>
       )}
-      
-      <TaskForm 
-        open={isTaskFormOpen} 
-        onOpenChange={setIsTaskFormOpen} 
-        taskToEdit={selectedTask || undefined}
-        initialStatus={undefined}
-        initialDueDate={selectedDate}
-      />
       
       <Dialog open={eventDetailsOpen} onOpenChange={setEventDetailsOpen}>
         <DialogContent>

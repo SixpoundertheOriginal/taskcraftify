@@ -26,6 +26,7 @@ import { CalendarDays, List, KanbanSquare, Settings } from 'lucide-react';
 export default function Index() {
   const [activeView, setActiveView] = useState<ViewMode>('list');
   const [activeTab, setActiveTab] = useState<string>('tasks');
+  const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   
   return (
     <SidebarProvider>
@@ -131,7 +132,12 @@ export default function Index() {
               </TabsContent>
             </Tabs>
             
-            {activeTab === 'tasks' && <FloatingActionButton />}
+            {activeTab === 'tasks' && (
+              <FloatingActionButton 
+                open={isTaskFormOpen}
+                onOpenChange={setIsTaskFormOpen}
+              />
+            )}
           </div>
         </SidebarInset>
       </div>
