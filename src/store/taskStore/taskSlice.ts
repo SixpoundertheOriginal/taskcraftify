@@ -1,3 +1,4 @@
+
 import { StateCreator } from 'zustand';
 import { TaskService } from '@/services/taskService';
 import { 
@@ -62,6 +63,21 @@ export const createTaskSlice: StateCreator<TaskSlice, [], [], TaskSlice> = (set,
       }
       
       console.log(`Fetched ${result.data?.length || 0} tasks:`, result.data);
+      
+      // Debug: Output raw tasks with their dueDate values
+      console.log("Raw tasks with due dates:", 
+        result.data?.map(task => ({
+          id: task.id,
+          title: task.title,
+          dueDate: task.dueDate,
+          dueDateType: typeof task.dueDate,
+          dueDateValue: task.dueDate instanceof Date 
+            ? task.dueDate.toISOString() 
+            : typeof task.dueDate === 'string' 
+            ? task.dueDate 
+            : 'unknown format'
+        }))
+      );
       
       // Group tasks by projectId
       const tasksByProject: Record<string, number> = {};

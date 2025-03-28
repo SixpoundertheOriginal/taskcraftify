@@ -32,6 +32,25 @@ interface ServiceResult<T> {
   error: Error | null;
 }
 
+// Add this debug function at an appropriate location in the file:
+// For debugging purposes, let's examine how dueDate is being handled
+const debugTaskDateMapping = (apiTask: APITask, mappedTask: Task) => {
+  console.log(`Task mapping debug for "${apiTask.title}" (${apiTask.id}):`);
+  console.log(`  Raw due_date from API: ${apiTask.due_date} (${typeof apiTask.due_date})`);
+  console.log(`  Mapped dueDate: ${mappedTask.dueDate} (${typeof mappedTask.dueDate})`);
+  
+  if (apiTask.due_date) {
+    try {
+      const parsedDate = parseISO(apiTask.due_date);
+      console.log(`  Parsed due_date: ${parsedDate.toISOString()}`);
+    } catch (e) {
+      console.error(`  Error parsing due_date: ${e}`);
+    }
+  }
+  
+  return mappedTask;
+};
+
 export const TaskService = {
   async fetchTasks(): Promise<ServiceResult<Task[]>> {
     try {
@@ -52,22 +71,29 @@ export const TaskService = {
           title: task.title,
           project_id: task.project_id,
           project_id_type: typeof task.project_id,
-          project_id_value: task.project_id === null ? 'null' : task.project_id
+          project_id_value: task.project_id === null ? 'null' : task.project_id,
+          due_date: task.due_date,
+          due_date_type: typeof task.due_date
         }))
       );
       
-      const mappedTasks = (data as APITask[]).map(mapApiTaskToTask);
+      const mappedTasks = (data as APITask[]).map(apiTask => {
+        const task = mapApiTaskToTask(apiTask);
+        return debugTaskDateMapping(apiTask, task);
+      });
+      
       console.log(`Fetched ${mappedTasks.length} tasks`);
       
       // Enhanced debugging: Log mapped tasks with better type information
-      console.log('Mapped tasks with projectId values:', 
+      console.log('Mapped tasks with projectId and dueDate values:', 
         mappedTasks.map(t => ({ 
           id: t.id, 
           title: t.title, 
           projectId: t.projectId === undefined ? 'undefined' : 
                     t.projectId === null ? 'null' : t.projectId,
           projectIdType: typeof t.projectId,
-          projectIdValue: JSON.stringify(t.projectId)
+          dueDate: t.dueDate,
+          dueDateType: typeof t.dueDate
         }))
       );
       

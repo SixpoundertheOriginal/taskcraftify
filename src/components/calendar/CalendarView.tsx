@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from 'react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, isSameDay, parseISO, isValid } from 'date-fns';
 import { useTaskStore, useIntegrationStore } from '@/store';
@@ -69,6 +70,26 @@ export function CalendarView() {
   const handleDateSelect = (date: Date | undefined) => {
     setSelectedDate(date);
     setActiveTab("tasks");
+
+    // Debug: Log when date is selected
+    console.log("Date selected:", date ? format(date, 'yyyy-MM-dd') : 'undefined');
+    if (date) {
+      const tasksForDate = getTasksForDate(date);
+      console.log(`Found ${tasksForDate.length} tasks for selected date`, tasksForDate);
+      
+      // Debug: Check task due dates format
+      console.log("All tasks with due dates:", 
+        tasks
+          .filter(t => t.dueDate)
+          .map(t => ({
+            id: t.id,
+            title: t.title,
+            dueDate: t.dueDate,
+            dueDateType: typeof t.dueDate,
+            formattedDueDate: t.dueDate ? format(new Date(t.dueDate), 'yyyy-MM-dd') : 'none'
+          }))
+      );
+    }
   };
   
   const handleAddTaskClick = () => {
@@ -123,14 +144,34 @@ export function CalendarView() {
   const getTasksForDate = (date: Date | undefined) => {
     if (!date || !isValid(date)) return [];
     
-    return tasks.filter(task => {
-      if (!task.dueDate) return false;
+    // Debug: Format the selected date for comparison
+    const selectedDateStr = format(date, 'yyyy-MM-dd');
+    console.log(`Looking for tasks on date: ${selectedDateStr}`);
+    
+    const result = tasks.filter(task => {
+      if (!task.dueDate) {
+        return false;
+      }
+      
       try {
-        return isSameDay(parseISO(task.dueDate.toString()), date);
+        // Debug: Convert and format the task's due date
+        const taskDueDate = new Date(task.dueDate);
+        const taskDueDateStr = format(taskDueDate, 'yyyy-MM-dd');
+        
+        // Check if dates match
+        const matches = isSameDay(taskDueDate, date);
+        
+        console.log(`Task "${task.title}" (${task.id}): due date=${taskDueDateStr}, matches=${matches}`);
+        
+        return matches;
       } catch (e) {
+        console.error(`Error comparing dates for task ${task.id}:`, e);
         return false;
       }
     });
+    
+    console.log(`Found ${result.length} tasks for ${selectedDateStr}:`, result);
+    return result;
   };
   
   const getEventsForDate = (date: Date | undefined) => {
@@ -192,6 +233,25 @@ export function CalendarView() {
       </div>
     );
   };
+  
+  // Debug: Log all tasks and their due dates when tasks change
+  useEffect(() => {
+    console.log("All tasks:", tasks);
+    console.log("Tasks with due dates:", 
+      tasks.filter(task => task.dueDate).map(task => ({
+        id: task.id,
+        title: task.title,
+        dueDate: task.dueDate,
+        dueDateType: typeof task.dueDate
+      }))
+    );
+    
+    if (selectedDate) {
+      console.log(`Tasks for selected date (${format(selectedDate, 'yyyy-MM-dd')}):`, 
+        getTasksForDate(selectedDate)
+      );
+    }
+  }, [tasks, selectedDate]);
   
   return (
     <div className="space-y-6 animate-fade-in">
