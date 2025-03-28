@@ -308,21 +308,21 @@ export function ProjectList() {
       <SidebarMenuButton 
         isActive={selectedProjectId === project.id}
         onClick={() => handleSelectProject(project.id)}
-        className="group relative pl-6 pr-14 transition-all hover:pl-7"
+        className="group relative pl-6 pr-20 transition-all hover:pl-7"
       >
         <div className="relative">
           <div 
             className="absolute left-0 top-1/2 -ml-4 h-2 w-2 -translate-y-1/2 rounded-full transition-all group-hover:scale-110" 
             style={{ backgroundColor: project.color }}
           />
-          <span className="truncate max-w-[160px] inline-block">{project.name}</span>
+          <span className="truncate max-w-[120px] inline-block">{project.name}</span>
         </div>
         
-        <SidebarMenuBadge className="transition-all">
+        <SidebarMenuBadge className="absolute right-3 transition-all z-10">
           {taskCounts[project.id] || 0}
         </SidebarMenuBadge>
         
-        <div className="absolute right-2 flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 z-10 bg-card/80 rounded-full">
+        <div className="absolute right-2 flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 z-20 bg-card/80 rounded-full">
           {isFavorite ? (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -574,7 +574,7 @@ export function ProjectList() {
                         <SidebarMenuButton 
                           isActive={selectedProjectId === project.id}
                           onClick={() => handleSelectProject(project.id)}
-                          className="group relative pl-6"
+                          className="group relative pl-6 pr-20"
                         >
                           <div className="absolute left-0 top-1/2 h-[60%] w-0.5 -translate-y-1/2 rounded-r-full bg-primary/70 opacity-0 transition-opacity data-[active=true]:opacity-100" 
                             data-active={selectedProjectId === project.id}
@@ -584,13 +584,13 @@ export function ProjectList() {
                               className="absolute left-0 top-1/2 -ml-4 h-2 w-2 -translate-y-1/2 rounded-full" 
                               style={{ backgroundColor: project.color }}
                             />
-                            <span className="truncate">{project.name}</span>
+                            <span className="truncate max-w-[120px] inline-block">{project.name}</span>
                           </div>
-                          <div className="flex gap-1 ml-auto">
+                          <div className="flex gap-1 ml-auto absolute right-3 z-10">
                             <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                            <SidebarMenuBadge>
+                            <span className="tabular-nums">
                               {taskCounts[project.id] || 0}
-                            </SidebarMenuBadge>
+                            </span>
                           </div>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
