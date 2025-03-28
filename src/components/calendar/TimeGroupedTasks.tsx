@@ -1,22 +1,21 @@
 
 import { useMemo } from 'react';
+import { format, parseISO, isValid } from 'date-fns';
 import { Task, TaskStatus } from '@/types/task';
-import { format, parse, isValid } from 'date-fns';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clock, Sun, Sunset, Moon, Check, Edit, Trash2 } from 'lucide-react';
+import { Edit, Trash2, Check, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface TimeGroupedTasksProps {
   tasks: Task[];
-  onEdit: (task: Task) => void;
-  onDelete: (taskId: string) => void;
-  onComplete: (task: Task) => void;
+  onEdit?: (task: Task) => void;
+  onDelete?: (taskId: string) => void;
+  onComplete?: (task: Task) => void;
 }
 
-type TimeGroup = 'morning' | 'afternoon' | 'evening' | 'unspecified';
-
+// Define explicit interface for grouped tasks
 interface GroupedTasks {
   morning: Task[];
   afternoon: Task[];
@@ -26,6 +25,7 @@ interface GroupedTasks {
 
 export function TimeGroupedTasks({ tasks, onEdit, onDelete, onComplete }: TimeGroupedTasksProps) {
   const groupedTasks = useMemo(() => {
+    // Initialize groups with empty arrays
     const groups: GroupedTasks = {
       morning: [],
       afternoon: [],
@@ -41,22 +41,19 @@ export function TimeGroupedTasks({ tasks, onEdit, onDelete, onComplete }: TimeGr
       
       try {
         const date = new Date(task.dueDate);
-        
-        if (!isValid(date)) {
-          groups.unspecified.push(task);
-          return;
-        }
-        
         const hours = date.getHours();
         
-        if (hours < 12) {
+        if (hours >= 5 && hours < 12) {
           groups.morning.push(task);
-        } else if (hours < 17) {
+        } else if (hours >= 12 && hours < 17) {
           groups.afternoon.push(task);
-        } else {
+        } else if (hours >= 17 && hours < 24) {
           groups.evening.push(task);
+        } else {
+          groups.unspecified.push(task);
         }
       } catch (e) {
+        console.error('Error parsing date for task:', task);
         groups.unspecified.push(task);
       }
     });
@@ -64,109 +61,144 @@ export function TimeGroupedTasks({ tasks, onEdit, onDelete, onComplete }: TimeGr
     return groups;
   }, [tasks]);
   
-  const getTimeGroupInfo = (group: TimeGroup) => {
-    switch (group) {
-      case 'morning':
-        return { title: "Morning", icon: Sun, color: "text-amber-500" };
-      case 'afternoon':
-        return { title: "Afternoon", icon: Sunset, color: "text-orange-500" };
-      case 'evening':
-        return { title: "Evening", icon: Moon, color: "text-indigo-500" };
-      default:
-        return { title: "All Day", icon: Clock, color: "text-gray-500" };
-    }
-  };
+  const hasTimeSpecificTasks = useMemo(() => {
+    return (
+      groupedTasks.morning.length > 0 ||
+      groupedTasks.afternoon.length > 0 ||
+      groupedTasks.evening.length > 0
+    );
+  }, [groupedTasks.morning, groupedTasks.afternoon, groupedTasks.evening]);
   
-  const renderTaskGroup = (group: TimeGroup) => {
-    const tasks = groupedTasks[group];
-    if (tasks.length === 0) return null;
-    
-    const { title, icon: Icon, color } = getTimeGroupInfo(group);
+  const renderTaskCard = (task: Task) => {
+    const isCompleted = task.status === TaskStatus.DONE;
     
     return (
-      <div key={group} className="mb-4">
-        <div className="flex items-center gap-2 mb-2">
-          <Icon className={cn("h-4 w-4", color)} />
-          <h3 className="text-sm font-medium">{title}</h3>
-          <Badge variant="outline" className="text-xs ml-1">
-            {tasks.length}
-          </Badge>
-        </div>
-        
-        <div className="space-y-2">
-          {tasks.map(task => (
-            <Card key={task.id} className={cn(
-              "border-l-4",
-              task.status === TaskStatus.TODO && "border-l-orange-400",
-              task.status === TaskStatus.IN_PROGRESS && "border-l-blue-400",
-              task.status === TaskStatus.DONE && "border-l-green-400",
-              task.status === TaskStatus.ARCHIVED && "border-l-gray-400"
+      <Card key={task.id} className={cn(
+        "mb-2 hover:bg-muted/50 transition-colors cursor-default border-l-4 border-l-primary/60",
+        isCompleted && "border-l-green-500/60 bg-muted/30",
+      )}>
+        <div className="p-3">
+          <div className="flex items-start justify-between">
+            <div className={cn(
+              "flex-1",
+              isCompleted && "text-muted-foreground line-through"
             )}>
-              <CardHeader className="p-3 pb-2">
-                <CardTitle className="text-sm font-medium flex justify-between">
-                  <span className="truncate">{task.title}</span>
-                  <div className="flex items-center gap-1">
-                    <button 
-                      onClick={() => onEdit(task)}
-                      className="text-muted-foreground hover:text-primary transition-colors"
-                    >
-                      <Edit className="h-4 w-4" />
-                      <span className="sr-only">Edit</span>
-                    </button>
-                    <button 
-                      onClick={() => onDelete(task.id)}
-                      className="text-muted-foreground hover:text-destructive transition-colors"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      <span className="sr-only">Delete</span>
-                    </button>
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-3 pt-0">
-                {task.dueDate && (
-                  <div className="text-xs text-muted-foreground flex items-center mb-2">
-                    <Clock className="h-3 w-3 mr-1" />
-                    {format(new Date(task.dueDate), 'h:mm a')}
-                  </div>
-                )}
-                
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    {task.priority}
-                  </Badge>
-                  {task.tags?.map(tag => (
-                    <Badge key={tag} variant="secondary" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
+              <div className="font-medium text-sm">{task.title}</div>
+              {task.description && (
+                <div className="text-xs text-muted-foreground mt-1">
+                  {task.description.substring(0, 100)}
+                  {task.description.length > 100 && '...'}
                 </div>
-                
-                {task.status !== TaskStatus.DONE && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-xs mt-2 h-7 w-full justify-start"
-                    onClick={() => onComplete(task)}
-                  >
-                    <Check className="h-3 w-3 mr-1" />
-                    Mark Complete
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+              )}
+            </div>
+            <div className="flex gap-1 ml-2">
+              {onComplete && !isCompleted && (
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onComplete(task);
+                  }}
+                >
+                  <Check className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              {onEdit && (
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(task);
+                  }}
+                >
+                  <Edit className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              {onDelete && (
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(task.id);
+                  }}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+          </div>
+          
+          {task.dueDate && isValid(new Date(task.dueDate)) && (
+            <div className="flex items-center mt-2 text-xs text-muted-foreground">
+              <Clock className="h-3 w-3 mr-1" />
+              <span>{format(new Date(task.dueDate), 'h:mm a')}</span>
+            </div>
+          )}
         </div>
-      </div>
+      </Card>
     );
   };
   
   return (
-    <div className="space-y-2">
-      {renderTaskGroup('morning')}
-      {renderTaskGroup('afternoon')}
-      {renderTaskGroup('evening')}
-      {renderTaskGroup('unspecified')}
+    <div className="space-y-4">
+      {hasTimeSpecificTasks ? (
+        <>
+          {groupedTasks.morning.length > 0 && (
+            <div>
+              <h4 className="text-sm font-medium flex items-center">
+                <Badge variant="outline" className="mr-2 bg-amber-100 border-amber-200 text-amber-700 dark:bg-amber-950 dark:border-amber-900 dark:text-amber-200">Morning</Badge>
+                <span className="text-xs text-muted-foreground">5:00 AM - 11:59 AM</span>
+              </h4>
+              <div className="mt-2">
+                {groupedTasks.morning.map(task => renderTaskCard(task))}
+              </div>
+            </div>
+          )}
+          
+          {groupedTasks.afternoon.length > 0 && (
+            <div>
+              <h4 className="text-sm font-medium flex items-center">
+                <Badge variant="outline" className="mr-2 bg-blue-100 border-blue-200 text-blue-700 dark:bg-blue-950 dark:border-blue-900 dark:text-blue-200">Afternoon</Badge>
+                <span className="text-xs text-muted-foreground">12:00 PM - 4:59 PM</span>
+              </h4>
+              <div className="mt-2">
+                {groupedTasks.afternoon.map(task => renderTaskCard(task))}
+              </div>
+            </div>
+          )}
+          
+          {groupedTasks.evening.length > 0 && (
+            <div>
+              <h4 className="text-sm font-medium flex items-center">
+                <Badge variant="outline" className="mr-2 bg-indigo-100 border-indigo-200 text-indigo-700 dark:bg-indigo-950 dark:border-indigo-900 dark:text-indigo-200">Evening</Badge>
+                <span className="text-xs text-muted-foreground">5:00 PM - 11:59 PM</span>
+              </h4>
+              <div className="mt-2">
+                {groupedTasks.evening.map(task => renderTaskCard(task))}
+              </div>
+            </div>
+          )}
+        </>
+      ) : null}
+      
+      {groupedTasks.unspecified.length > 0 && (
+        <div>
+          {hasTimeSpecificTasks && (
+            <h4 className="text-sm font-medium flex items-center">
+              <Badge variant="outline" className="mr-2">No Time</Badge>
+            </h4>
+          )}
+          <div className="mt-2">
+            {groupedTasks.unspecified.map(task => renderTaskCard(task))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { Task } from '@/types/task';
 import { CalendarEvent } from '@/types/integration';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface WeeklyOverviewProps {
   tasks: Task[];
@@ -14,12 +15,17 @@ interface WeeklyOverviewProps {
 }
 
 export function WeeklyOverview({ tasks, events, selectedDate, onDateSelect }: WeeklyOverviewProps) {
+  const isMobile = useIsMobile();
+  
   const weekDays = useMemo(() => {
     if (!selectedDate) return [];
     
-    // Get 3 days before and 3 days after the selected date
+    // On mobile show fewer days to save space
+    const daysToShow = isMobile ? { before: 1, after: 1 } : { before: 3, after: 3 };
+    
+    // Get days before and after the selected date based on device
     const days = [];
-    for (let i = -3; i <= 3; i++) {
+    for (let i = -daysToShow.before; i <= daysToShow.after; i++) {
       const date = addDays(selectedDate, i);
       
       // Count tasks and events for this day
@@ -33,7 +39,7 @@ export function WeeklyOverview({ tasks, events, selectedDate, onDateSelect }: We
       
       days.push({
         date,
-        dayName: format(date, 'EEE'),
+        dayName: format(date, isMobile ? 'E' : 'EEE'), // Shorter format on mobile
         dayNumber: format(date, 'd'),
         taskCount: dayTasks.length,
         eventCount: dayEvents.length,
@@ -43,7 +49,7 @@ export function WeeklyOverview({ tasks, events, selectedDate, onDateSelect }: We
     }
     
     return days;
-  }, [selectedDate, tasks, events]);
+  }, [selectedDate, tasks, events, isMobile]);
   
   if (!selectedDate || weekDays.length === 0) return null;
   
@@ -55,15 +61,20 @@ export function WeeklyOverview({ tasks, events, selectedDate, onDateSelect }: We
           variant="ghost"
           size="sm"
           className={cn(
-            "flex flex-col items-center px-2 py-1 h-auto min-w-14 gap-1 rounded-lg",
+            "flex flex-col items-center px-2 py-1 h-auto min-w-0 gap-1 rounded-lg",
+            isMobile ? "flex-1 mx-1" : "min-w-14",
             day.isSelected && "bg-primary text-primary-foreground",
             day.isToday && !day.isSelected && "border border-primary"
           )}
           onClick={() => onDateSelect(day.date)}
         >
-          <span className="text-xs font-normal">{day.dayName}</span>
           <span className={cn(
-            "flex items-center justify-center w-7 h-7 rounded-full",
+            "text-xs font-normal",
+            isMobile && "text-[10px]"
+          )}>{day.dayName}</span>
+          <span className={cn(
+            "flex items-center justify-center rounded-full",
+            isMobile ? "w-6 h-6 text-xs" : "w-7 h-7",
             day.isSelected && "font-bold",
             day.isToday && !day.isSelected && "bg-primary/10 font-medium",
           )}>

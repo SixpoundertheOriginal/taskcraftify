@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from 'react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, isSameDay, parseISO, isValid } from 'date-fns';
 import { useTaskStore, useIntegrationStore } from '@/store';
@@ -16,7 +17,7 @@ import {
 import { TaskForm } from '@/components/tasks';
 import { Task, TaskStatus } from '@/types/task';
 import { CalendarEvent } from '@/types/integration';
-import { Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, CalendarPlus, Check, Clock, MapPin, Edit, Trash2 } from 'lucide-react';
+import { Loader2, ChevronLeft, ChevronRight, Calendar as CalendarIcon, CalendarPlus, Check, Clock, MapPin, Edit, Trash2, Smartphone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -26,6 +27,16 @@ import { CalendarSummary } from './CalendarSummary';
 import { WeeklyOverview } from './WeeklyOverview';
 import { TimeGroupedTasks } from './TimeGroupedTasks';
 import { FloatingActionButton } from '@/components/tasks';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { 
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerClose,
+} from '@/components/ui/drawer';
 
 export function CalendarView() {
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
@@ -35,6 +46,8 @@ export function CalendarView() {
   const [eventDetailsOpen, setEventDetailsOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [activeTab, setActiveTab] = useState<string>("tasks");
+  
+  const isMobile = useIsMobile();
   
   const { 
     tasks, 
@@ -241,6 +254,167 @@ export function CalendarView() {
       );
     }
   }, [tasks, selectedDate]);
+
+  // Render the details panel conditionally based on device type
+  const renderDetailsPanel = () => {
+    const detailsContent = (
+      <>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-medium">
+            {selectedDate ? formattedSelectedDate : 'Select a date'}
+          </h3>
+          <FloatingActionButton 
+            className="relative h-10 w-10 z-40" 
+            onOpenChange={setIsTaskFormOpen} 
+            open={isTaskFormOpen} 
+            initialDueDate={selectedDate} 
+          />
+        </div>
+        
+        {selectedDate && (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
+            <TabsList className="grid grid-cols-2 mb-4">
+              <TabsTrigger value="tasks" className="flex items-center gap-1">
+                Tasks {selectedDateTasks.length > 0 && `(${selectedDateTasks.length})`}
+              </TabsTrigger>
+              <TabsTrigger value="events" className="flex items-center gap-1">
+                Events {selectedDateEvents.length > 0 && `(${selectedDateEvents.length})`}
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="tasks" className="flex-1 overflow-y-auto">
+              {selectedDateTasks.length > 0 ? (
+                <TimeGroupedTasks 
+                  tasks={selectedDateTasks}
+                  onEdit={handleOpenTaskForm}
+                  onDelete={handleTaskDelete}
+                  onComplete={(task) => handleTaskStatusChange(task, TaskStatus.DONE)}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center h-40 text-center">
+                  <CalendarPlus className="h-10 w-10 text-muted-foreground/30 mb-2" />
+                  <p className="text-sm text-muted-foreground">
+                    No tasks scheduled for this day
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2"
+                    onClick={() => setIsTaskFormOpen(true)}
+                  >
+                    Add a task
+                  </Button>
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="events" className="flex-1 overflow-y-auto">
+              {selectedDateEvents.length > 0 ? (
+                <div className="space-y-3">
+                  {selectedDateEvents.map(event => (
+                    <Card 
+                      key={event.id} 
+                      className="border-l-4 border-l-primary/60 cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => handleEventClick(event)}
+                    >
+                      <CardHeader className="p-3 pb-2">
+                        <CardTitle className="text-sm font-medium">{event.title}</CardTitle>
+                        {event.description && (
+                          <CardDescription className="text-xs line-clamp-2">
+                            {event.description}
+                          </CardDescription>
+                        )}
+                      </CardHeader>
+                      <CardContent className="p-3 pt-0">
+                        <div className="flex flex-col gap-1 text-xs">
+                          {(event.startTime && event.endTime) && (
+                            <div className="flex items-center gap-1 text-muted-foreground">
+                              <Clock className="h-3 w-3" />
+                              <span>
+                                {event.allDay 
+                                  ? 'All day' 
+                                  : `${format(event.startTime, 'h:mm a')} - ${format(event.endTime, 'h:mm a')}`}
+                              </span>
+                            </div>
+                          )}
+                          {event.location && (
+                            <div className="flex items-center gap-1 text-muted-foreground">
+                              <MapPin className="h-3 w-3" />
+                              <span>{event.location}</span>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-40 text-center">
+                  <CalendarIcon className="h-10 w-10 text-muted-foreground/30 mb-2" />
+                  <p className="text-sm text-muted-foreground">
+                    No events scheduled for this day
+                  </p>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        )}
+        
+        {!selectedDate && (
+          <div className="flex flex-col items-center justify-center flex-1 text-center">
+            <CalendarIcon className="h-12 w-12 text-muted-foreground/30 mb-4" />
+            <p className="text-muted-foreground">
+              Select a date from the calendar to view tasks and events
+            </p>
+          </div>
+        )}
+      </>
+    );
+
+    // For mobile, use a drawer that slides up from the bottom
+    if (isMobile && selectedDate) {
+      return (
+        <>
+          <div className="fixed bottom-4 right-4 z-40">
+            <Button 
+              className="rounded-full h-14 w-14 shadow-lg flex items-center justify-center"
+              size="icon"
+              onClick={() => setEventDetailsOpen(true)}
+            >
+              <CalendarIcon className="h-6 w-6" />
+            </Button>
+          </div>
+          
+          <Drawer open={eventDetailsOpen} onOpenChange={setEventDetailsOpen}>
+            <DrawerContent className="px-4 pb-6 max-h-[85vh]">
+              <DrawerHeader className="px-0">
+                <DrawerTitle className="text-xl">
+                  {formattedSelectedDate}
+                </DrawerTitle>
+              </DrawerHeader>
+              <div className="h-full overflow-y-auto">
+                {detailsContent}
+              </div>
+              <DrawerFooter className="pt-2 px-0">
+                <DrawerClose asChild>
+                  <Button variant="outline">Close</Button>
+                </DrawerClose>
+              </DrawerFooter>
+            </DrawerContent>
+          </Drawer>
+        </>
+      );
+    }
+    
+    // For desktop, use the sidebar panel
+    return (
+      <div className="md:col-span-2 border rounded-md p-4">
+        <div className="flex flex-col h-full">
+          {detailsContent}
+        </div>
+      </div>
+    );
+  };
   
   return (
     <div className="space-y-6 animate-fade-in">
@@ -279,7 +453,7 @@ export function CalendarView() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-          <div className="md:col-span-5">
+          <div className={cn("md:col-span-5", isMobile ? "mb-20" : "")}>
             <Calendar
               mode="single"
               selected={selectedDate}
@@ -290,126 +464,52 @@ export function CalendarView() {
               components={{
                 DayContent: CustomDayContent
               }}
+              classNames={{
+                months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+                month: "space-y-4 w-full",
+                caption: "flex justify-center pt-1 relative items-center",
+                caption_label: "text-sm font-medium",
+                nav: "space-x-1 flex items-center",
+                nav_button: cn(
+                  "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
+                ),
+                table: "w-full border-collapse space-y-1",
+                head_row: "flex",
+                head_cell: cn(
+                  "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
+                  isMobile && "text-[0.7rem] w-8"
+                ),
+                row: "flex w-full mt-2",
+                cell: cn(
+                  "relative p-0 text-center text-sm focus-within:relative focus-within:z-20",
+                  isMobile ? "h-8 w-8" : "h-9 w-9",
+                  "[&:has([aria-selected].day-range-end)]:rounded-r-md",
+                  "[&:has([aria-selected].day-outside)]:bg-accent/50",
+                  "[&:has([aria-selected])]:bg-accent",
+                  "first:[&:has([aria-selected])]:rounded-l-md",
+                  "last:[&:has([aria-selected])]:rounded-r-md"
+                ),
+                day: cn(
+                  "h-9 w-9 p-0 font-normal aria-selected:opacity-100",
+                  isMobile && "h-8 w-8 text-xs"
+                ),
+                day_range_end: "day-range-end",
+                day_selected: "bg-primary text-primary-foreground",
+                day_today: "bg-accent text-accent-foreground",
+                day_outside: "text-muted-foreground opacity-50",
+                day_disabled: "text-muted-foreground opacity-50",
+                day_hidden: "invisible",
+              }}
             />
           </div>
           
-          <div className="md:col-span-2 border rounded-md p-4">
-            <div className="flex flex-col h-full">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-medium">
-                  {selectedDate ? formattedSelectedDate : 'Select a date'}
-                </h3>
-                <FloatingActionButton 
-                  className="z-40" 
-                  onOpenChange={setIsTaskFormOpen} 
-                  open={isTaskFormOpen} 
-                  initialDueDate={selectedDate} 
-                />
-              </div>
-              
-              {selectedDate && (
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
-                  <TabsList className="grid grid-cols-2 mb-4">
-                    <TabsTrigger value="tasks" className="flex items-center gap-1">
-                      Tasks {selectedDateTasks.length > 0 && `(${selectedDateTasks.length})`}
-                    </TabsTrigger>
-                    <TabsTrigger value="events" className="flex items-center gap-1">
-                      Events {selectedDateEvents.length > 0 && `(${selectedDateEvents.length})`}
-                    </TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="tasks" className="flex-1 overflow-y-auto">
-                    {selectedDateTasks.length > 0 ? (
-                      <TimeGroupedTasks 
-                        tasks={selectedDateTasks}
-                        onEdit={handleOpenTaskForm}
-                        onDelete={handleTaskDelete}
-                        onComplete={(task) => handleTaskStatusChange(task, TaskStatus.DONE)}
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-40 text-center">
-                        <CalendarPlus className="h-10 w-10 text-muted-foreground/30 mb-2" />
-                        <p className="text-sm text-muted-foreground">
-                          No tasks scheduled for this day
-                        </p>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="mt-2"
-                          onClick={() => setIsTaskFormOpen(true)}
-                        >
-                          Add a task
-                        </Button>
-                      </div>
-                    )}
-                  </TabsContent>
-                  
-                  <TabsContent value="events" className="flex-1 overflow-y-auto">
-                    {selectedDateEvents.length > 0 ? (
-                      <div className="space-y-3">
-                        {selectedDateEvents.map(event => (
-                          <Card 
-                            key={event.id} 
-                            className="border-l-4 border-l-primary/60 cursor-pointer hover:bg-muted/50 transition-colors"
-                            onClick={() => handleEventClick(event)}
-                          >
-                            <CardHeader className="p-3 pb-2">
-                              <CardTitle className="text-sm font-medium">{event.title}</CardTitle>
-                              {event.description && (
-                                <CardDescription className="text-xs line-clamp-2">
-                                  {event.description}
-                                </CardDescription>
-                              )}
-                            </CardHeader>
-                            <CardContent className="p-3 pt-0">
-                              <div className="flex flex-col gap-1 text-xs">
-                                {(event.startTime && event.endTime) && (
-                                  <div className="flex items-center gap-1 text-muted-foreground">
-                                    <Clock className="h-3 w-3" />
-                                    <span>
-                                      {event.allDay 
-                                        ? 'All day' 
-                                        : `${format(event.startTime, 'h:mm a')} - ${format(event.endTime, 'h:mm a')}`}
-                                    </span>
-                                  </div>
-                                )}
-                                {event.location && (
-                                  <div className="flex items-center gap-1 text-muted-foreground">
-                                    <MapPin className="h-3 w-3" />
-                                    <span>{event.location}</span>
-                                  </div>
-                                )}
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-40 text-center">
-                        <CalendarIcon className="h-10 w-10 text-muted-foreground/30 mb-2" />
-                        <p className="text-sm text-muted-foreground">
-                          No events scheduled for this day
-                        </p>
-                      </div>
-                    )}
-                  </TabsContent>
-                </Tabs>
-              )}
-              
-              {!selectedDate && (
-                <div className="flex flex-col items-center justify-center flex-1 text-center">
-                  <CalendarIcon className="h-12 w-12 text-muted-foreground/30 mb-4" />
-                  <p className="text-muted-foreground">
-                    Select a date from the calendar to view tasks and events
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
+          {!isMobile && renderDetailsPanel()}
         </div>
       )}
       
-      <Dialog open={eventDetailsOpen} onOpenChange={setEventDetailsOpen}>
+      {isMobile && renderDetailsPanel()}
+      
+      <Dialog open={selectedEvent !== null && !isMobile} onOpenChange={(open) => !open && setSelectedEvent(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{selectedEvent?.title}</DialogTitle>

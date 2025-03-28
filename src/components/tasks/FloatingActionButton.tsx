@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { TaskForm } from './TaskForm';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface FloatingActionButtonProps {
   className?: string;
@@ -20,6 +21,7 @@ export function FloatingActionButton({
 }: FloatingActionButtonProps) {
   // Use internal state if external state is not provided
   const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const isMobile = useIsMobile();
   
   // Determine if we should use internal or external state
   const isControlled = open !== undefined && onOpenChange !== undefined;
@@ -38,9 +40,10 @@ export function FloatingActionButton({
       <Button
         size="icon"
         className={cn(
-          "fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl",
+          "h-14 w-14 rounded-full shadow-lg hover:shadow-xl",
           "transition-all duration-200 hover:scale-105 active:scale-95 z-50",
           "bg-primary hover:bg-primary/90 text-primary-foreground",
+          isMobile ? "fixed bottom-6 right-6" : "relative",
           className
         )}
         onClick={() => handleOpenChange(true)}
