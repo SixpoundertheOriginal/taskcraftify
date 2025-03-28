@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, isSameDay, parseISO, isValid } from 'date-fns';
 import { useTaskStore, useIntegrationStore } from '@/store';
@@ -255,7 +254,6 @@ export function CalendarView() {
     }
   }, [tasks, selectedDate]);
 
-  // Render the details panel conditionally based on device type
   const renderDetailsPanel = () => {
     const detailsContent = (
       <>
@@ -263,12 +261,6 @@ export function CalendarView() {
           <h3 className="font-medium">
             {selectedDate ? formattedSelectedDate : 'Select a date'}
           </h3>
-          <FloatingActionButton 
-            className="relative h-10 w-10 z-40" 
-            onOpenChange={setIsTaskFormOpen} 
-            open={isTaskFormOpen} 
-            initialDueDate={selectedDate} 
-          />
         </div>
         
         {selectedDate && (
@@ -371,7 +363,6 @@ export function CalendarView() {
       </>
     );
 
-    // For mobile, use a drawer that slides up from the bottom
     if (isMobile && selectedDate) {
       return (
         <>
@@ -406,7 +397,6 @@ export function CalendarView() {
       );
     }
     
-    // For desktop, use the sidebar panel
     return (
       <div className="md:col-span-2 border rounded-md p-4">
         <div className="flex flex-col h-full">
@@ -418,7 +408,6 @@ export function CalendarView() {
   
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Task Summary Statistics */}
       <CalendarSummary tasks={tasks} selectedDate={selectedDate} />
       
       <div className="flex justify-between items-center mb-4">
@@ -439,7 +428,6 @@ export function CalendarView() {
         </div>
       </div>
       
-      {/* Weekly Overview */}
       <WeeklyOverview 
         tasks={tasks}
         events={calendarEvents}
