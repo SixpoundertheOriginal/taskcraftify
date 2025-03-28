@@ -14,7 +14,10 @@ import {
   SidebarGroupLabel, 
   SidebarGroupContent,
   SidebarInset,
-  SidebarFooter
+  SidebarFooter,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton
 } from '@/components/ui/sidebar';
 import { ProjectSelector, ProjectList } from '@/components/projects';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -38,6 +41,36 @@ export default function Index() {
             <div className="px-2 mb-4">
               <ProjectSelector />
             </div>
+            
+            <SidebarGroup>
+              <SidebarGroupLabel>
+                Navigation
+              </SidebarGroupLabel>
+              <SidebarGroupContent className="space-y-1">
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      className="flex items-center gap-2"
+                      isActive={activeTab === 'tasks'}
+                      onClick={() => setActiveTab('tasks')}
+                    >
+                      <List className="h-4 w-4" />
+                      <span>Tasks</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      className="flex items-center gap-2"
+                      isActive={activeTab === 'calendar'}
+                      onClick={() => setActiveTab('calendar')}
+                    >
+                      <CalendarDays className="h-4 w-4" />
+                      <span>Calendar</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
             
             <SidebarGroup>
               <SidebarGroupLabel>
