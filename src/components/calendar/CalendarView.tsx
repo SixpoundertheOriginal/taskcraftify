@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, isSameDay, parseISO, isValid } from 'date-fns';
 import { useTaskStore, useIntegrationStore } from '@/store';
@@ -22,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
+import { DayContent, DayContentProps } from 'react-day-picker';
 
 export function CalendarView() {
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
@@ -181,6 +181,18 @@ export function CalendarView() {
   const isLoading = tasksLoading || eventsLoading;
   const formattedSelectedDate = selectedDate ? format(selectedDate, 'EEEE, MMMM d, yyyy') : '';
   
+  const CustomDayContent = (props: DayContentProps) => {
+    const { date, activeModifiers } = props;
+    return (
+      <div className={cn(
+        "relative w-full h-full",
+        selectedDate && isSameDay(date, selectedDate) && "bg-primary text-primary-foreground font-semibold"
+      )}>
+        {renderDate(date)}
+      </div>
+    );
+  };
+  
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center mb-4">
@@ -216,17 +228,7 @@ export function CalendarView() {
               showOutsideDays={true}
               className="rounded-md border w-full p-3"
               components={{
-                Day: ({ day, displayMonth, ...props }) => (
-                  <button
-                    {...props}
-                    className={cn(
-                      props.className,
-                      selectedDate && isSameDay(day, selectedDate) && "bg-primary text-primary-foreground font-semibold"
-                    )}
-                  >
-                    {renderDate(day)}
-                  </button>
-                ),
+                DayContent: CustomDayContent
               }}
             />
           </div>
