@@ -2,11 +2,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { 
   Task, 
   CreateTaskDTO, 
-  UpdateTaskDTO, 
-  mapApiTaskToTask, 
-  TaskPriority,
-  TaskStatus,
+  UpdateTaskDTO,
   APITask,
+  mapApiTaskToTask,
   Subtask,
   CreateSubtaskDTO,
   UpdateSubtaskDTO,
@@ -16,6 +14,7 @@ import {
   ActivityItem,
   APIActivity
 } from '@/types/task';
+import { parseISO } from 'date-fns';
 import { Database } from '@/integrations/supabase/types';
 
 // Define the specific types from the database for type-safety

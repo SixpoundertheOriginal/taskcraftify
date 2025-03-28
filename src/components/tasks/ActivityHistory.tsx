@@ -1,133 +1,110 @@
-
-import { useEffect, useState } from 'react';
-import { useTaskStore } from '@/store';
+import React, { useState, useEffect } from 'react';
 import { ActivityItem } from '@/types/task';
-import { formatDistanceToNow, isSameDay, isYesterday, format } from 'date-fns';
-import { Loader2, Activity, CheckCircle, Edit, MessageSquare, Trash, Plus } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useTaskStore } from '@/store';
+import {
+  Check,
+  Clock,
+  Edit,
+  Flag,
+  Loader2,
+  MessageSquare,
+  Plus,
+  Tag,
+  Trash2,
+  User
+} from 'lucide-react';
+import { formatDistance } from 'date-fns';
 
 interface ActivityHistoryProps {
   taskId: string;
 }
 
-export function ActivityHistory({ taskId }: ActivityHistoryProps) {
-  const [isLoading, setIsLoading] = useState(false);
+export const ActivityHistory: React.FC<ActivityHistoryProps> = ({ taskId }) => {
   const { tasks, fetchActivities } = useTaskStore();
-  
-  const task = tasks.find(t => t.id === taskId);
+  const [loading, setLoading] = useState(true);
+  const task = tasks.find((task) => task.id === taskId);
   const activities = task?.activities || [];
-  
-  // Fetch activities on initial render
+
   useEffect(() => {
     const loadActivities = async () => {
-      setIsLoading(true);
+      setLoading(true);
       try {
         await fetchActivities(taskId);
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
-    
-    if (taskId) {
-      loadActivities();
-    }
+
+    loadActivities();
   }, [taskId, fetchActivities]);
-  
-  // Group activities by date
-  const groupedActivities: Record<string, ActivityItem[]> = {};
-  
-  const today = new Date();
-  
-  activities.forEach(activity => {
-    let dateGroup = '';
-    
-    if (isSameDay(activity.createdAt, today)) {
-      dateGroup = 'Today';
-    } else if (isYesterday(activity.createdAt)) {
-      dateGroup = 'Yesterday';
-    } else {
-      dateGroup = format(activity.createdAt, 'MMMM d, yyyy');
-    }
-    
-    if (!groupedActivities[dateGroup]) {
-      groupedActivities[dateGroup] = [];
-    }
-    
-    groupedActivities[dateGroup].push(activity);
-  });
-  
-  const getActivityIcon = (type: ActivityItem['type']) => {
-    switch (type) {
-      case 'status_change':
-        return <CheckCircle className="h-3.5 w-3.5 text-blue-500" />;
-      case 'edit':
-        return <Edit className="h-3.5 w-3.5 text-amber-500" />;
-      case 'comment_added':
-        return <MessageSquare className="h-3.5 w-3.5 text-green-500" />;
-      case 'comment_edited':
-        return <Edit className="h-3.5 w-3.5 text-green-500" />;
-      case 'comment_deleted':
-        return <Trash className="h-3.5 w-3.5 text-red-500" />;
-      case 'subtask_added':
-        return <Plus className="h-3.5 w-3.5 text-indigo-500" />;
-      case 'subtask_completed':
-        return <CheckCircle className="h-3.5 w-3.5 text-indigo-500" />;
-      case 'subtask_edited':
-        return <Edit className="h-3.5 w-3.5 text-indigo-500" />;
-      case 'subtask_deleted':
-        return <Trash className="h-3.5 w-3.5 text-red-500" />;
-      default:
-        return <Activity className="h-3.5 w-3.5 text-muted-foreground" />;
-    }
-  };
-  
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-4">
+        <Loader2 className="h-5 w-5 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!activities || activities.length === 0) {
+    return <div className="text-sm text-muted-foreground p-4">No activity yet.</div>;
+  }
+
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-medium mb-2">Activity History</h3>
-      
-      {isLoading && !activities.length ? (
-        <div className="flex items-center justify-center py-6">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        </div>
-      ) : activities.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-6 text-center">
-          <Activity className="h-8 w-8 text-muted-foreground/40 mb-2" />
-          <p className="text-sm text-muted-foreground">No activity yet</p>
-          <p className="text-xs text-muted-foreground">
-            Activity will be tracked as you make changes
-          </p>
-        </div>
-      ) : (
-        <div className={cn(
-          "space-y-4 transition-all",
-          isLoading ? "opacity-60" : ""
-        )}>
-          {Object.entries(groupedActivities).map(([dateGroup, items]) => (
-            <div key={dateGroup} className="space-y-2">
-              <h4 className="text-xs font-medium text-muted-foreground">
-                {dateGroup}
-              </h4>
-              <div className="border-l-2 border-muted pl-3 space-y-3">
-                {items.map(activity => (
-                  <div key={activity.id} className="flex items-start gap-2 -ml-1.5">
-                    <div className="bg-background rounded-full p-1 border mt-0.5">
-                      {getActivityIcon(activity.type)}
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm">
-                        {activity.description}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(activity.createdAt, { addSuffix: true })}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+      <h4 className="text-sm font-medium">Activity History</h4>
+      <div className="divide-y divide-border rounded-md border">
+        {activities.map((activity) => (
+          <div key={activity.id} className="flex items-center space-x-2 p-3">
+            {getActivityIcon(activity.type)}
+            <div>
+              <p className="text-sm text-gray-900">{activity.description}</p>
+              <p className="text-xs text-muted-foreground">
+                {formatDistance(new Date(activity.createdAt), new Date(), {
+                  addSuffix: true,
+                })}
+              </p>
             </div>
-          ))}
-        </div>
-      )}
+          </div>
+        ))}
+      </div>
     </div>
   );
+};
+
+function getActivityIcon(type: string) {
+  switch (type) {
+    case 'task_created':
+      return <Plus className="h-4 w-4 text-green-500" />;
+    case 'task_updated':
+      return <Edit className="h-4 w-4 text-blue-500" />;
+    case 'task_deleted':
+      return <Trash2 className="h-4 w-4 text-red-500" />;
+    case 'status_changed':
+      return <Check className="h-4 w-4 text-purple-500" />;
+    case 'priority_changed':
+      return <Flag className="h-4 w-4 text-orange-500" />;
+    case 'due_date_changed':
+      return <Clock className="h-4 w-4 text-yellow-500" />;
+    case 'subtask_added':
+      return <Plus className="h-4 w-4 text-lime-500" />;
+    case 'subtask_completed':
+      return <Check className="h-4 w-4 text-teal-500" />;
+    case 'subtask_edited':
+      return <Edit className="h-4 w-4 text-sky-500" />;
+    case 'subtask_deleted':
+      return <Trash2 className="h-4 w-4 text-rose-500" />;
+    case 'comment_added':
+      return <MessageSquare className="h-4 w-4 text-emerald-500" />;
+    case 'comment_edited':
+      return <Edit className="h-4 w-4 text-indigo-500" />;
+    case 'comment_deleted':
+      return <Trash2 className="h-4 w-4 text-violet-500" />;
+    case 'tag_added':
+      return <Tag className="h-4 w-4 text-amber-500" />;
+    case 'tag_removed':
+      return <Tag className="h-4 w-4 text-zinc-500" />;
+    default:
+      return <User className="h-4 w-4 text-gray-500" />;
+  }
 }
