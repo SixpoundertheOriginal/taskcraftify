@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, isSameDay, parseISO, isValid } from 'date-fns';
 import { useTaskStore, useIntegrationStore } from '@/store';
@@ -68,7 +67,6 @@ export function CalendarView() {
   
   const handleDateSelect = (date: Date | undefined) => {
     setSelectedDate(date);
-    // Reset the active tab to "tasks" when selecting a new date
     setActiveTab("tasks");
   };
   
@@ -121,7 +119,6 @@ export function CalendarView() {
     }
   };
   
-  // Helper function to get tasks for a specific date
   const getTasksForDate = (date: Date | undefined) => {
     if (!date || !isValid(date)) return [];
     
@@ -135,7 +132,6 @@ export function CalendarView() {
     });
   };
   
-  // Helper function to get events for a specific date
   const getEventsForDate = (date: Date | undefined) => {
     if (!date || !isValid(date)) return [];
     
@@ -145,7 +141,6 @@ export function CalendarView() {
     });
   };
   
-  // Memoize the tasks and events for the selected date
   const selectedDateTasks = useMemo(() => 
     selectedDate ? getTasksForDate(selectedDate) : [],
     [selectedDate, tasks]
@@ -156,7 +151,6 @@ export function CalendarView() {
     [selectedDate, calendarEvents]
   );
   
-  // Prepare date representation for the calendar component
   const renderDate = (date: Date) => {
     const dayTasks = getTasksForDate(date);
     const dayEvents = getEventsForDate(date);
@@ -217,8 +211,8 @@ export function CalendarView() {
               mode="single"
               selected={selectedDate}
               onSelect={handleDateSelect}
-              className="rounded-md border w-full p-3"
               month={currentMonth}
+              className="rounded-md border w-full p-3"
               components={{
                 Day: ({ date, ...props }) => (
                   <button
@@ -414,6 +408,7 @@ export function CalendarView() {
         onOpenChange={setIsTaskFormOpen} 
         taskToEdit={selectedTask || undefined}
         initialStatus={undefined}
+        initialDueDate={selectedDate}
       />
       
       <Dialog open={eventDetailsOpen} onOpenChange={setEventDetailsOpen}>

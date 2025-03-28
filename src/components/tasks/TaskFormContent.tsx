@@ -35,14 +35,15 @@ interface TaskFormContentProps {
   onSuccess: () => void;
   taskToEdit?: Task;
   initialStatus?: TaskStatus;
+  initialDueDate?: Date;
 }
 
-export function TaskFormContent({ onSuccess, taskToEdit, initialStatus }: TaskFormContentProps) {
+export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialDueDate }: TaskFormContentProps) {
   const { createTask, updateTask, isLoading, error } = useTaskStore();
   const { projects, selectedProjectId } = useProjectStore();
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>(taskToEdit?.tags || []);
-  const [dueDate, setDueDate] = useState<Date | undefined>(taskToEdit?.dueDate);
+  const [dueDate, setDueDate] = useState<Date | undefined>(taskToEdit?.dueDate || initialDueDate);
   const [projectId, setProjectId] = useState<string | undefined>(taskToEdit?.projectId || selectedProjectId || undefined);
   const [projectSelectorOpen, setProjectSelectorOpen] = useState(false);
   
@@ -93,7 +94,6 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus }: TaskFo
       };
       
       if (taskToEdit) {
-        // Update existing task
         await updateTask({
           id: taskToEdit.id,
           ...taskData
@@ -103,7 +103,6 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus }: TaskFo
           description: "Your task has been updated successfully.",
         });
       } else {
-        // Create new task
         await createTask(taskData);
         toast({
           title: "Task created",
@@ -111,7 +110,6 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus }: TaskFo
         });
       }
       
-      // Reset form
       reset();
       setTags([]);
       setDueDate(undefined);
