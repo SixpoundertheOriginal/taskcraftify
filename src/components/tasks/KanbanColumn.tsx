@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { TaskForm } from './TaskForm';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useDroppable } from '@dnd-kit/core';
 
 interface KanbanColumnProps {
   id: string;
@@ -21,8 +22,15 @@ export function KanbanColumn({ id, title, tasks, status, className }: KanbanColu
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const isMobile = useIsMobile();
   
+  // Set up this column as a droppable area
+  const { setNodeRef, isOver } = useDroppable({
+    id: id
+  });
+  
+  // Add styles for when a drag is over this column
   const columnClass = cn(
     "flex flex-col h-full rounded-lg border bg-card transition-all duration-200",
+    isOver ? "border-primary border-dashed bg-primary/5" : "border-border/40",
     className
   );
   
@@ -32,6 +40,7 @@ export function KanbanColumn({ id, title, tasks, status, className }: KanbanColu
   
   return (
     <div 
+      ref={setNodeRef}
       className={columnClass}
       aria-label={`${title} column`}
       role="region"

@@ -1,4 +1,3 @@
-
 import { useState, useCallback, memo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +18,7 @@ import {
   Trash,
   ListChecks,
   MessageSquare,
+  GripVertical
 } from 'lucide-react';
 import { Task, TaskStatus, TaskPriority, countCompletedSubtasks } from '@/types/task';
 import { 
@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/hover-card";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { TaskForm } from './TaskForm';
+import { useDraggable } from '@dnd-kit/core';
 
 interface TaskCardProps {
   task: Task;
@@ -54,6 +55,20 @@ function TaskCardComponent({ task, isCompact = false }: TaskCardProps) {
   const { updateTask, deleteTask } = useTaskStore();
   const { projects } = useProjectStore();
   const isMobile = useIsMobile();
+  
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: task.id,
+    data: {
+      task
+    }
+  });
+  
+  const style = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+    zIndex: 999,
+    opacity: 0.8,
+    boxShadow: '0 5px 10px rgba(0, 0, 0, 0.15)'
+  } : undefined;
   
   const project = task.projectId ? projects.find(p => p.id === task.projectId) : null;
   
@@ -109,6 +124,7 @@ function TaskCardComponent({ task, isCompact = false }: TaskCardProps) {
 
   const handleCardClick = useCallback((e: React.MouseEvent) => {
     if (
+      !isDragging && 
       e.target instanceof Element && 
       !e.target.closest('button') && 
       !e.target.closest('select') && 
@@ -117,11 +133,12 @@ function TaskCardComponent({ task, isCompact = false }: TaskCardProps) {
       !e.target.closest('[role="combobox"]') && 
       !e.target.closest('[data-radix-popper-content-wrapper]') &&
       !e.target.closest('[role="tab"]') &&
-      !e.target.closest('label')
+      !e.target.closest('label') &&
+      !e.target.closest('.drag-handle')
     ) {
       setIsTaskModalOpen(true);
     }
-  }, []);
+  }, [isDragging]);
 
   const titleClassName = cn(
     "font-medium text-base text-balance mr-2",
@@ -131,10 +148,15 @@ function TaskCardComponent({ task, isCompact = false }: TaskCardProps) {
   return (
     <>
       <Card 
-        style={project ? { borderLeftColor: project.color } : {}}
+        ref={setNodeRef}
+        style={{ 
+          ...style,
+          ...(project ? { borderLeftColor: project.color } : {})
+        }}
         className={cn(
           "group w-full transition-all duration-200 border border-border/40 shadow-sm hover:shadow-md hover:border-border/80 cursor-pointer",
           project ? `border-l-4` : '',
+          isDragging ? "shadow-lg opacity-80" : "",
           (isUpdating || isDeleting) ? 'opacity-70' : ''
         )}
         onClick={handleCardClick}
@@ -169,7 +191,15 @@ function TaskCardComponent({ task, isCompact = false }: TaskCardProps) {
                     {task.title}
                   </h3>
                 </div>
-                <div className="flex items-center gap-1 z-10 ml-auto shrink-0">      
+                <div className="flex items-center gap-1 z-10 ml-auto shrink-0">
+                  <div 
+                    className="drag-handle h-6 flex items-center justify-center cursor-grab opacity-50 hover:opacity-100 pr-1"
+                    {...attributes}
+                    {...listeners}
+                  >
+                    <GripVertical className="h-4 w-4" />
+                  </div>
+                  
                   {(isUpdating || isDeleting) ? (
                     <Loader2 className="h-4 w-4 animate-spin ml-1" />
                   ) : (
