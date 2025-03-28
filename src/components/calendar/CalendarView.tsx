@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from 'react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, isSameDay, parseISO, isValid } from 'date-fns';
 import { useTaskStore, useIntegrationStore } from '@/store';
@@ -213,6 +214,7 @@ export function CalendarView() {
               onSelect={handleDateSelect}
               month={currentMonth}
               className="rounded-md border w-full p-3"
+              showOutsideDays
               components={{
                 Day: ({ date, ...props }) => (
                   <button
