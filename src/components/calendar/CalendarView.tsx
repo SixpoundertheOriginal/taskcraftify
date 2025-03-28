@@ -213,8 +213,8 @@ export function CalendarView() {
               selected={selectedDate}
               onSelect={handleDateSelect}
               month={currentMonth}
+              showOutsideDays={true}
               className="rounded-md border w-full p-3"
-              showOutsideDays
               components={{
                 Day: ({ date, ...props }) => (
                   <button
