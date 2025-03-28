@@ -18,7 +18,10 @@ interface TimeGroupedTasksProps {
 type TimeGroup = 'morning' | 'afternoon' | 'evening' | 'unspecified';
 
 interface GroupedTasks {
-  [key in TimeGroup]: Task[];
+  morning: Task[];
+  afternoon: Task[];
+  evening: Task[];
+  unspecified: Task[];
 }
 
 export function TimeGroupedTasks({ tasks, onEdit, onDelete, onComplete }: TimeGroupedTasksProps) {
