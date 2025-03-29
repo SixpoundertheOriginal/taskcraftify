@@ -35,20 +35,25 @@ interface TaskFormProps {
   onOpenChange: (open: boolean) => void;
   initialTask?: Partial<Task>;
   initialDueDate?: Date;
+  initialStatus?: TaskStatus;
+  taskToEdit?: Task;
 }
 
-export function TaskForm({ open, onOpenChange, initialTask, initialDueDate }: TaskFormProps) {
-  const { createTask, isLoading, uploadAttachment } = useTaskStore();
+export function TaskForm({ open, onOpenChange, initialTask, initialDueDate, initialStatus, taskToEdit }: TaskFormProps) {
+  const { createTask, updateTask, isLoading, uploadAttachment } = useTaskStore();
   const [submitting, setSubmitting] = useState(false);
+  
+  // Merge initialTask with taskToEdit to have a single source of initial values
+  const combinedInitialTask = taskToEdit || initialTask || {};
   
   // Initialize the form with default values or the initialTask if provided
   const form = useForm({
     defaultValues: {
-      title: initialTask?.title || '',
-      description: initialTask?.description || '',
-      status: initialTask?.status || TaskStatus.TODO,
-      priority: initialTask?.priority || TaskPriority.MEDIUM,
-      dueDate: initialTask?.dueDate || initialDueDate || undefined,
+      title: combinedInitialTask?.title || '',
+      description: combinedInitialTask?.description || '',
+      status: initialStatus || combinedInitialTask?.status || TaskStatus.TODO,
+      priority: combinedInitialTask?.priority || TaskPriority.MEDIUM,
+      dueDate: combinedInitialTask?.dueDate || initialDueDate || undefined,
     },
   });
   
@@ -60,38 +65,66 @@ export function TaskForm({ open, onOpenChange, initialTask, initialDueDate }: Ta
   useEffect(() => {
     if (open) {
       form.reset({
-        title: initialTask?.title || '',
-        description: initialTask?.description || '',
-        status: initialTask?.status || TaskStatus.TODO,
-        priority: initialTask?.priority || TaskPriority.MEDIUM,
-        dueDate: initialTask?.dueDate || initialDueDate || undefined,
+        title: combinedInitialTask?.title || '',
+        description: combinedInitialTask?.description || '',
+        status: initialStatus || combinedInitialTask?.status || TaskStatus.TODO,
+        priority: combinedInitialTask?.priority || TaskPriority.MEDIUM,
+        dueDate: combinedInitialTask?.dueDate || initialDueDate || undefined,
       });
       setFiles([]);
     }
-  }, [open, initialTask, initialDueDate, form]);
+  }, [open, combinedInitialTask, initialDueDate, initialStatus, form]);
   
   // Handle form submission
   const onSubmit = async (data: any) => {
     setSubmitting(true);
     
     try {
-      // Create the task first
-      const newTask = await createTask({
-        title: data.title,
-        description: data.description,
-        status: data.status as TaskStatus,
-        priority: data.priority as TaskPriority,
-        dueDate: data.dueDate,
-      });
+      let taskId: string;
       
-      // Then upload any attachments
-      if (files.length > 0 && newTask) {
+      // Determine if we're creating or updating
+      if (taskToEdit) {
+        // Update existing task
+        await updateTask({
+          id: taskToEdit.id,
+          title: data.title,
+          description: data.description,
+          status: data.status as TaskStatus,
+          priority: data.priority as TaskPriority,
+          dueDate: data.dueDate,
+        });
+        taskId = taskToEdit.id;
+        
+        toast({
+          title: "Task updated",
+          description: `"${data.title}" has been updated successfully.`,
+        });
+      } else {
+        // Create new task
+        const newTask = await createTask({
+          title: data.title,
+          description: data.description,
+          status: data.status as TaskStatus,
+          priority: data.priority as TaskPriority,
+          dueDate: data.dueDate,
+        });
+        
+        taskId = newTask.id;
+        
+        toast({
+          title: "Task created",
+          description: `"${data.title}" has been created successfully.`,
+        });
+      }
+      
+      // Upload any attachments if there are any
+      if (files.length > 0 && taskId) {
         setIsUploading(true);
         
         // Upload each file sequentially
         for (const file of files) {
           await uploadAttachment({
-            taskId: newTask.id,
+            taskId: taskId,
             file,
             onProgress: (progress) => {
               console.log(`Uploading ${file.name}: ${progress}%`);
@@ -100,19 +133,19 @@ export function TaskForm({ open, onOpenChange, initialTask, initialDueDate }: Ta
         }
         
         setIsUploading(false);
+        
+        toast({
+          title: "Attachments uploaded",
+          description: `${files.length} file(s) have been attached to the task.`,
+        });
       }
-      
-      toast({
-        title: "Task created",
-        description: `"${data.title}" has been created successfully${files.length > 0 ? ' with attachments' : ''}.`,
-      });
       
       // Close the dialog
       onOpenChange(false);
     } catch (error) {
-      console.error('Error creating task:', error);
+      console.error('Error with task:', error);
       toast({
-        title: "Error creating task",
+        title: taskToEdit ? "Error updating task" : "Error creating task",
         description: error instanceof Error ? error.message : "An unexpected error occurred",
         variant: "destructive",
       });
@@ -133,7 +166,7 @@ export function TaskForm({ open, onOpenChange, initialTask, initialDueDate }: Ta
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Create New Task</DialogTitle>
+          <DialogTitle>{taskToEdit ? 'Edit Task' : 'Create New Task'}</DialogTitle>
         </DialogHeader>
         
         <Form {...form}>
@@ -308,7 +341,7 @@ export function TaskForm({ open, onOpenChange, initialTask, initialDueDate }: Ta
                 {(submitting || isLoading || isUploading) && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                {isUploading ? 'Uploading attachments...' : 'Create Task'}
+                {isUploading ? 'Uploading attachments...' : taskToEdit ? 'Update Task' : 'Create Task'}
               </Button>
             </DialogFooter>
           </form>
