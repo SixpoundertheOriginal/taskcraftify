@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { 
   Paperclip, 
   File, 
@@ -12,7 +12,11 @@ import {
   Trash2, 
   Loader2,
   Eye,
-  AlertCircle
+  AlertCircle,
+  Search,
+  Filter,
+  X,
+  SlidersHorizontal
 } from 'lucide-react';
 import { useTaskStore } from '@/store';
 import { Attachment } from '@/types/attachment';
@@ -20,6 +24,12 @@ import { FileUpload } from '@/components/ui/file-upload';
 import { Button } from '@/components/ui/button';
 import { FilePreview } from '@/components/ui/file-preview';
 import { toast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,11 +46,29 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import { cn } from '@/lib/utils';
 
 interface TaskAttachmentsProps {
   taskId: string;
 }
+
+type FileTypeFilter = 'all' | 'image' | 'document' | 'spreadsheet' | 'archive' | 'other';
 
 export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
   const { 
@@ -52,10 +80,18 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
     deleteAttachment, 
     getAttachmentUrl 
   } = useTaskStore();
+  
+  // State for attachment management
   const [attachmentToDelete, setAttachmentToDelete] = useState<Attachment | null>(null);
   const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  
+  // State for search and filtering
+  const [searchQuery, setSearchQuery] = useState('');
+  const [fileTypeFilter, setFileTypeFilter] = useState<FileTypeFilter>('all');
+  const [sortBy, setSortBy] = useState<'date' | 'name' | 'size'>('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   
   // Get attachments for this task
   const attachmentsForTask = taskAttachments[taskId] || [];
@@ -159,6 +195,86 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
     setPreviewAttachment(attachment);
   };
   
+  // Helper for checking if a file matches the selected file type filter
+  const matchesFileTypeFilter = (fileType: string): boolean => {
+    if (fileTypeFilter === 'all') return true;
+    
+    switch (fileTypeFilter) {
+      case 'image':
+        return fileType.startsWith('image/');
+      case 'document':
+        return fileType.includes('pdf') || fileType.includes('text') || fileType.includes('document');
+      case 'spreadsheet':
+        return fileType.includes('spreadsheet') || fileType.includes('excel') || fileType.includes('csv');
+      case 'archive':
+        return fileType.includes('zip') || fileType.includes('compressed');
+      case 'other':
+        return !(
+          fileType.startsWith('image/') ||
+          fileType.includes('pdf') ||
+          fileType.includes('text') ||
+          fileType.includes('document') ||
+          fileType.includes('spreadsheet') ||
+          fileType.includes('excel') ||
+          fileType.includes('csv') ||
+          fileType.includes('zip') ||
+          fileType.includes('compressed')
+        );
+      default:
+        return true;
+    }
+  };
+  
+  // Filter and sort the attachments
+  const filteredAndSortedAttachments = useMemo(() => {
+    return attachmentsForTask
+      .filter(attachment => {
+        // Apply search query filter
+        const matchesSearch = searchQuery === '' || 
+          attachment.originalName.toLowerCase().includes(searchQuery.toLowerCase());
+        
+        // Apply file type filter
+        const matchesType = matchesFileTypeFilter(attachment.fileType);
+        
+        return matchesSearch && matchesType;
+      })
+      .sort((a, b) => {
+        // Apply sorting
+        if (sortBy === 'date') {
+          return sortOrder === 'asc' 
+            ? a.createdAt.getTime() - b.createdAt.getTime()
+            : b.createdAt.getTime() - a.createdAt.getTime();
+        } else if (sortBy === 'name') {
+          return sortOrder === 'asc'
+            ? a.originalName.localeCompare(b.originalName)
+            : b.originalName.localeCompare(a.originalName);
+        } else if (sortBy === 'size') {
+          return sortOrder === 'asc'
+            ? a.fileSize - b.fileSize
+            : b.fileSize - a.fileSize;
+        }
+        return 0;
+      });
+  }, [attachmentsForTask, searchQuery, fileTypeFilter, sortBy, sortOrder]);
+  
+  // Format file size for display
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return bytes + ' bytes';
+    else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    else return (bytes / 1048576).toFixed(1) + ' MB';
+  };
+  
+  const clearFilters = () => {
+    setSearchQuery('');
+    setFileTypeFilter('all');
+    setSortBy('date');
+    setSortOrder('desc');
+  };
+  
+  const toggleSortOrder = () => {
+    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+  };
+  
   const renderAttachmentList = () => {
     if (isAttachmentLoading && attachmentsForTask.length === 0) {
       return (
@@ -179,9 +295,25 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
       );
     }
     
+    if (filteredAndSortedAttachments.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+          <AlertCircle className="h-8 w-8 mb-2" />
+          <p>No matching attachments</p>
+          <Button 
+            variant="link" 
+            className="text-sm" 
+            onClick={clearFilters}
+          >
+            Clear filters
+          </Button>
+        </div>
+      );
+    }
+    
     return (
       <div className="space-y-2 mt-4">
-        {attachmentsForTask.map((attachment) => (
+        {filteredAndSortedAttachments.map((attachment) => (
           <div 
             key={attachment.id} 
             className="flex items-center gap-3 p-2 rounded-md border group hover:bg-muted/40 transition-colors"
@@ -191,7 +323,7 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">{attachment.originalName}</p>
               <p className="text-xs text-muted-foreground">
-                {(attachment.fileSize / 1024).toFixed(1)} KB · {new Date(attachment.createdAt).toLocaleDateString()}
+                {formatFileSize(attachment.fileSize)} · {new Date(attachment.createdAt).toLocaleDateString()}
               </p>
             </div>
             
@@ -241,18 +373,130 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
     uploadProgressForFileUpload[fileName] = data.progress;
   });
   
+  // Count active filters
+  const activeFilterCount = (
+    (searchQuery ? 1 : 0) + 
+    (fileTypeFilter !== 'all' ? 1 : 0)
+  );
+  
   return (
     <div className={cn(
       "space-y-4 transition-all duration-300", 
       isDraggingOver && "scale-[1.02] ring-2 ring-primary/40 rounded-lg p-4 bg-muted/10"
     )}>
-      <div className="flex items-center gap-2 mb-4">
-        <Paperclip className={cn(
-          "h-5 w-5 transition-transform",
-          isDraggingOver && "text-primary animate-bounce"
-        )} />
-        <h3 className="text-lg font-medium">Attachments</h3>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Paperclip className={cn(
+            "h-5 w-5 transition-transform",
+            isDraggingOver && "text-primary animate-bounce"
+          )} />
+          <h3 className="text-lg font-medium">Attachments</h3>
+        </div>
+        
+        {attachmentsForTask.length > 0 && (
+          <Badge variant="outline">
+            {attachmentsForTask.length} {attachmentsForTask.length === 1 ? 'file' : 'files'}
+          </Badge>
+        )}
       </div>
+      
+      {/* Search and filters */}
+      {attachmentsForTask.length > 0 && (
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="relative flex-grow">
+            <Search className="h-4 w-4 absolute left-2.5 top-2.5 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search files..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-8"
+            />
+            {searchQuery && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 top-1 h-7 w-7 opacity-70 hover:opacity-100"
+                onClick={() => setSearchQuery('')}
+              >
+                <X className="h-4 w-4" />
+                <span className="sr-only">Clear search</span>
+              </Button>
+            )}
+          </div>
+          
+          <div className="flex gap-2">
+            {/* File type filter */}
+            <Select value={fileTypeFilter} onValueChange={(value) => setFileTypeFilter(value as FileTypeFilter)}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="File Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="image">Images</SelectItem>
+                <SelectItem value="document">Documents</SelectItem>
+                <SelectItem value="spreadsheet">Spreadsheets</SelectItem>
+                <SelectItem value="archive">Archives</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            {/* Sort control */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="icon" className="h-10 w-10">
+                  <SlidersHorizontal className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[200px] p-3">
+                <div className="space-y-2">
+                  <h4 className="font-medium text-sm">Sort by</h4>
+                  <Select value={sortBy} onValueChange={(value) => setSortBy(value as any)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="date">Date Added</SelectItem>
+                      <SelectItem value="name">File Name</SelectItem>
+                      <SelectItem value="size">File Size</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <div className="pt-2">
+                    <Button 
+                      variant="outline" 
+                      className="w-full text-xs justify-between"
+                      onClick={toggleSortOrder}
+                    >
+                      {sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+                      <span className="text-muted-foreground">
+                        {sortOrder === 'asc' ? '(A → Z)' : '(Z → A)'}
+                      </span>
+                    </Button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+            
+            {/* Clear filters button (only shown when filters are active) */}
+            {activeFilterCount > 0 && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={clearFilters}
+                className="relative h-10 w-10"
+              >
+                <Filter className="h-4 w-4" />
+                <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
+                  {activeFilterCount}
+                </span>
+                <span className="sr-only">Clear filters</span>
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
       
       <FileUpload
         onUpload={handleUpload}
