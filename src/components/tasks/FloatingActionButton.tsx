@@ -43,7 +43,7 @@ export function FloatingActionButton({
           "h-14 w-14 rounded-full shadow-lg hover:shadow-xl",
           "transition-all duration-200 hover:scale-105 active:scale-95 z-50",
           "bg-primary hover:bg-primary/90 text-primary-foreground",
-          isMobile ? "fixed bottom-6 right-6" : "relative",
+          "fixed bottom-6 right-6", // Always fixed position for all screen sizes
           className
         )}
         onClick={() => handleOpenChange(true)}
