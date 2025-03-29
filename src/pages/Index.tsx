@@ -21,12 +21,13 @@ import {
 } from '@/components/ui/sidebar';
 import { ProjectSelector, EnhancedProjectList } from '@/components/projects';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CalendarDays, List, KanbanSquare, Settings } from 'lucide-react';
+import { CalendarDays, List, KanbanSquare, Settings, User } from 'lucide-react';
 import { QuickAddButton } from '@/components/quick-add';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { InsightsPanel } from '@/components/insights';
 import { PersonalizedGreeting } from '@/components/insights/PersonalizedGreeting';
 import { useAuth } from '@/auth/AuthContext';
+import { Link } from 'react-router-dom';
 
 export default function Index() {
   const [activeView, setActiveView] = useState<ViewMode>('list');
@@ -108,7 +109,19 @@ export default function Index() {
                       onClick={() => setActiveTab('integrations')}
                     >
                       <Settings className="h-4 w-4" />
-                      <span className="font-medium">Settings</span>
+                      <span className="font-medium">Integrations</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <div className="sidebar-item-indicator" />
+                    <SidebarMenuButton 
+                      className="flex items-center gap-2"
+                      asChild
+                    >
+                      <Link to="/settings">
+                        <User className="h-4 w-4" />
+                        <span className="font-medium">Settings</span>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>

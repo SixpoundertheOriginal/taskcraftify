@@ -8,6 +8,7 @@ import { OAuthCallback } from '@/components/auth/OAuthCallback';
 import Index from '@/pages/Index';
 import Auth from '@/pages/Auth';
 import NotFound from '@/pages/NotFound';
+import Settings from '@/pages/Settings';
 import { useTaskStore, useProjectStore, useIntegrationStore } from '@/store';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 
@@ -75,6 +76,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Index />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/settings" 
+              element={
+                <ProtectedRoute>
+                  <Settings />
                 </ProtectedRoute>
               } 
             />
