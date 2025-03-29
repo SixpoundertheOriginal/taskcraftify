@@ -10,12 +10,14 @@ import {
   Archive, 
   Download, 
   Trash2, 
-  Loader2 
+  Loader2,
+  Eye 
 } from 'lucide-react';
 import { useTaskStore } from '@/store';
 import { Attachment } from '@/types/attachment';
 import { FileUpload } from '@/components/ui/file-upload';
 import { Button } from '@/components/ui/button';
+import { FilePreview } from '@/components/ui/file-preview';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +28,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from '@/lib/utils';
 
 interface TaskAttachmentsProps {
@@ -43,6 +51,7 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
     getAttachmentUrl 
   } = useTaskStore();
   const [attachmentToDelete, setAttachmentToDelete] = useState<Attachment | null>(null);
+  const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   
   // Get attachments for this task
@@ -93,6 +102,10 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
     window.open(url, '_blank');
   };
   
+  const openPreview = (attachment: Attachment) => {
+    setPreviewAttachment(attachment);
+  };
+  
   const renderAttachmentList = () => {
     if (isAttachmentLoading && attachmentsForTask.length === 0) {
       return (
@@ -130,6 +143,17 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
             </div>
             
             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full"
+                onClick={() => openPreview(attachment)}
+              >
+                <Eye className="h-4 w-4" />
+                <span className="sr-only">Preview</span>
+              </Button>
+              
               <Button
                 type="button"
                 variant="ghost"
@@ -178,6 +202,7 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
         label="Drag and drop files here, or click to browse"
         className={cn(isAttachmentLoading && "opacity-70 pointer-events-none")}
         disabled={isAttachmentLoading}
+        showPreviews={true}
       />
       
       {renderAttachmentList()}
@@ -210,6 +235,24 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {/* Full-screen preview dialog */}
+      <Dialog open={!!previewAttachment} onOpenChange={(open) => !open && setPreviewAttachment(null)}>
+        <DialogContent className="sm:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>{previewAttachment?.originalName}</DialogTitle>
+          </DialogHeader>
+          
+          <div className="mt-4 max-h-[70vh] overflow-auto">
+            {previewAttachment && (
+              <FilePreview 
+                file={getAttachmentUrl(previewAttachment.storagePath)} 
+                maxHeight={600} 
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

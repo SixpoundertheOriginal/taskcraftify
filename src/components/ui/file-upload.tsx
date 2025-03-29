@@ -1,10 +1,16 @@
 
 import * as React from "react";
 import { useDropzone, FileRejection, DropzoneOptions } from "react-dropzone";
-import { Upload, X, File, FileImage, FileText, FileSpreadsheet, Archive, FileBox } from "lucide-react";
+import { Upload, X, File, FileImage, FileText, FileSpreadsheet, Archive, FileBox, FileAudio, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { FilePreview } from "@/components/ui/file-preview";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 export interface FileUploadProps extends Omit<DropzoneOptions, "onDrop"> {
   className?: string;
@@ -16,6 +22,7 @@ export interface FileUploadProps extends Omit<DropzoneOptions, "onDrop"> {
   maxFiles?: number;
   label?: string;
   disabled?: boolean;
+  showPreviews?: boolean;
 }
 
 export const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
@@ -31,9 +38,11 @@ export const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
     onChange,
     label = "Drag & drop files here, or click to browse",
     disabled = false,
+    showPreviews = true,
     ...props
   }, ref) => {
     const [files, setFiles] = React.useState<File[]>(value);
+    const [previewFile, setPreviewFile] = React.useState<File | null>(null);
     
     React.useEffect(() => {
       if (value !== files) {
@@ -94,6 +103,8 @@ export const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
         return <FileSpreadsheet className="h-6 w-6 text-green-500" />;
       } else if (type.includes("zip") || type.includes("compressed")) {
         return <Archive className="h-6 w-6 text-orange-500" />;
+      } else if (type.includes("audio")) {
+        return <FileAudio className="h-6 w-6 text-purple-500" />;
       } else if (type.includes("text")) {
         return <FileText className="h-6 w-6 text-gray-500" />;
       } else {
@@ -135,7 +146,7 @@ export const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
             {files.map((file, i) => (
               <div
                 key={`${file.name}-${i}`}
-                className="flex items-center gap-2 rounded-md border p-2"
+                className="flex items-center gap-2 rounded-md border p-2 group"
               >
                 {getFileIcon(file)}
                 <div className="flex-1 overflow-hidden">
@@ -144,16 +155,36 @@ export const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
                     {(file.size / 1024).toFixed(1)} KB
                   </p>
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => removeFile(file)}
-                  className="h-7 w-7 rounded-full"
-                >
-                  <X className="h-4 w-4" />
-                  <span className="sr-only">Remove file</span>
-                </Button>
+                <div className="flex items-center gap-1">
+                  {showPreviews && (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 rounded-full"
+                        >
+                          <Eye className="h-4 w-4" />
+                          <span className="sr-only">Preview file</span>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent side="right" align="center" className="w-80 p-2">
+                        <FilePreview file={file} maxHeight={300} />
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeFile(file)}
+                    className="h-7 w-7 rounded-full"
+                  >
+                    <X className="h-4 w-4" />
+                    <span className="sr-only">Remove file</span>
+                  </Button>
+                </div>
               </div>
             ))}
             
