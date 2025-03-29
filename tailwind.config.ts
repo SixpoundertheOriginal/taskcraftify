@@ -62,6 +62,19 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				status: {
+					todo: 'hsl(var(--status-todo))',
+					'in-progress': 'hsl(var(--status-in-progress))',
+					done: 'hsl(var(--status-done))',
+					archived: 'hsl(var(--status-archived))',
+					backlog: 'hsl(var(--status-backlog))'
+				},
+				priority: {
+					low: 'hsl(var(--priority-low))',
+					medium: 'hsl(var(--priority-medium))',
+					high: 'hsl(var(--priority-high))',
+					urgent: 'hsl(var(--priority-urgent))'
 				}
 			},
 			fontFamily: {

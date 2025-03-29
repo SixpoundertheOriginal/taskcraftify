@@ -56,7 +56,7 @@ export function WeeklyOverview({ tasks, events, selectedDate, onDateSelect }: We
   
   return (
     <div className={cn(
-      "flex justify-between mb-6 overflow-x-auto pb-1 bg-card/50 rounded-lg p-3",
+      "flex justify-between mb-6 overflow-x-auto pb-1 bg-card/30 backdrop-blur-sm rounded-lg p-3 border border-border/30 shadow-sm",
       isMobile && "mb-20" // Add bottom margin on mobile to prevent overlap with floating button
     )}>
       {weekDays.map((day) => (
@@ -68,7 +68,7 @@ export function WeeklyOverview({ tasks, events, selectedDate, onDateSelect }: We
             "flex flex-col items-center px-2 py-3 h-auto min-w-0 gap-1 rounded-lg transition-all",
             isMobile ? "flex-1 mx-1" : "min-w-16",
             day.isSelected ? "bg-primary text-primary-foreground shadow-md" : 
-              day.isToday ? "border border-primary bg-primary/5" : "",
+              day.isToday ? "border border-primary/50 bg-primary/5 text-primary" : "",
             "hover:bg-primary/10"
           )}
           onClick={() => onDateSelect(day.date)}
@@ -80,7 +80,7 @@ export function WeeklyOverview({ tasks, events, selectedDate, onDateSelect }: We
           )}>{day.dayName}</span>
           
           <span className={cn(
-            "flex items-center justify-center rounded-full",
+            "flex items-center justify-center rounded-full transition-all",
             isMobile ? "w-7 h-7 text-sm" : "w-8 h-8 text-base",
             day.isSelected ? "bg-primary-foreground text-primary font-bold" : 
               day.isToday ? "bg-primary/20 text-primary font-medium" : "",
@@ -92,7 +92,10 @@ export function WeeklyOverview({ tasks, events, selectedDate, onDateSelect }: We
             <div className="flex flex-col items-center mt-1 gap-1">
               {day.taskCount > 0 && (
                 <div className="flex items-center gap-1 text-xs">
-                  <CheckCircle2 className="h-3 w-3" />
+                  <CheckCircle2 className={cn(
+                    "h-3 w-3",
+                    day.isSelected ? "text-primary-foreground" : "text-status-done"
+                  )} />
                   <span className={cn(
                     day.isSelected ? "text-primary-foreground" : "text-muted-foreground"
                   )}>
@@ -103,7 +106,10 @@ export function WeeklyOverview({ tasks, events, selectedDate, onDateSelect }: We
               
               {day.eventCount > 0 && (
                 <div className="flex items-center gap-1 text-xs">
-                  <Calendar className="h-3 w-3" />
+                  <Calendar className={cn(
+                    "h-3 w-3",
+                    day.isSelected ? "text-primary-foreground" : "text-status-in-progress"
+                  )} />
                   <span className={cn(
                     day.isSelected ? "text-primary-foreground" : "text-muted-foreground"
                   )}>

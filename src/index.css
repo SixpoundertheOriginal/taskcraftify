@@ -14,7 +14,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
 
-    --primary: 240 5.9% 10%;
+    --primary: 246 80% 60%;
     --primary-foreground: 0 0% 98%;
 
     --secondary: 240 4.8% 95.9%;
@@ -31,18 +31,30 @@
 
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
+    --ring: 246 80% 60%;
 
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary: 246 80% 60%;
     --sidebar-primary-foreground: 0 0% 98%;
     --sidebar-accent: 240 4.8% 95.9%;
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 246 80% 60%;
+
+    /* New task status and priority colors */
+    --status-todo: 221 83% 53%;
+    --status-in-progress: 35 92% 51%;
+    --status-done: 171 68% 41%;
+    --status-archived: 262 80% 56%;
+    --status-backlog: 220 14% 75%;
+
+    --priority-low: 221 83% 53%;
+    --priority-medium: 171 68% 41%;
+    --priority-high: 35 92% 51%;
+    --priority-urgent: 0 84% 60%;
   }
 
   .dark {
@@ -55,8 +67,8 @@
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
+    --primary: 246 80% 60%;
+    --primary-foreground: 0 0% 98%;
 
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
@@ -72,16 +84,28 @@
 
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
+    --ring: 246 80% 60%;
     
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary: 246 80% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 240 3.7% 15.9%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 246 80% 60%;
+
+    /* New task status and priority colors - adjusted for dark mode */
+    --status-todo: 213 94% 68%;
+    --status-in-progress: 38 95% 64%;
+    --status-done: 166 73% 46%;
+    --status-archived: 263 85% 74%;
+    --status-backlog: 220 13% 69%;
+
+    --priority-low: 213 94% 68%;
+    --priority-medium: 166 73% 46%;
+    --priority-high: 38 95% 64%;
+    --priority-urgent: 0 91% 71%;
   }
 }
 
