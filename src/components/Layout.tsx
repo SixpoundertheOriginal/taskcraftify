@@ -11,7 +11,7 @@ export function Layout({ children }: LayoutProps) {
     <div className="min-h-screen flex flex-col bg-background transition-colors">
       <Header />
       <main className="flex-1 w-full animate-fade-in">
-        <div className="container py-6 md:py-10">
+        <div className="container py-6">
           {children}
         </div>
       </main>

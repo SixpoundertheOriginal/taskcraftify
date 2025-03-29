@@ -1,6 +1,5 @@
 
 import { useState } from 'react';
-import { Layout } from '@/components/Layout';
 import { TaskList, KanbanBoard, ViewToggle, FloatingActionButton } from '@/components/tasks';
 import { CalendarView } from '@/components/calendar';
 import { IntegrationsSettings } from '@/components/settings';
@@ -22,15 +21,17 @@ import {
 } from '@/components/ui/sidebar';
 import { ProjectSelector, EnhancedProjectList } from '@/components/projects';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CalendarDays, List, KanbanSquare, Settings, PanelLeft } from 'lucide-react';
+import { CalendarDays, List, KanbanSquare, Settings } from 'lucide-react';
 import { QuickAddButton } from '@/components/quick-add';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { InsightsPanel } from '@/components/insights';
+import { useAuth } from '@/auth/AuthContext';
 
 export default function Index() {
   const [activeView, setActiveView] = useState<ViewMode>('list');
   const [activeTab, setActiveTab] = useState<string>('tasks');
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
+  const { user } = useAuth();
   
   return (
     <SidebarProvider>
@@ -121,8 +122,8 @@ export default function Index() {
         <SidebarInset className="p-6 bg-background">
           <div className="w-full max-w-5xl mx-auto">
             <Tabs defaultValue="tasks" value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <div className="flex justify-between items-center mb-8">
-                <h1 className="text-3xl font-bold">
+              <div className="flex justify-between items-center mb-6">
+                <h1 className="text-2xl font-bold">
                   {activeTab === 'tasks' && 'My Tasks'}
                   {activeTab === 'calendar' && 'Calendar'}
                   {activeTab === 'integrations' && 'Integrations'}
