@@ -7,3 +7,4 @@ export { FloatingActionButton } from './FloatingActionButton';
 export { KanbanBoard } from './KanbanBoard';
 export { ActiveFiltersDisplay } from './ActiveFiltersDisplay';
 export { TaskAttachments } from './TaskAttachments';
+export { StatsChart } from './StatsChart';
