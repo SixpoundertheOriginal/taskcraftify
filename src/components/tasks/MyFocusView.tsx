@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useTaskStore } from '@/store';
 import { Task, TaskStatus, TaskPriority } from '@/types/task';
@@ -10,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { isToday, isTomorrow, isThisWeek, addDays, format, isPast, startOfDay } from 'date-fns';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Skeleton } from '@/components/ui/skeleton';
-import { StatsChart } from './StatsChart';
+import { FocusOverview } from '@/components/insights';
 
 export function MyFocusView() {
   const { tasks, isLoading, error } = useTaskStore();
@@ -99,15 +98,6 @@ export function MyFocusView() {
     )
   );
   
-  // Calculate stats for progress chart
-  const focusTaskCounts = [
-    { name: 'Overdue', value: overdueTasks.length, color: 'var(--red-500)' },
-    { name: 'Today', value: todayTasks.length, color: 'var(--amber-500)' },
-    { name: 'Tomorrow', value: tomorrowTasks.length, color: 'var(--blue-500)' },
-    { name: 'This Week', value: thisWeekTasks.length, color: 'var(--indigo-500)' },
-    { name: 'High Priority', value: highPriorityTasks.length, color: 'var(--purple-500)' }
-  ].filter(item => item.value > 0);
-  
   // If there are no tasks to display, show empty state
   const hasNoFocusTasks = 
     overdueTasks.length === 0 && 
@@ -124,16 +114,7 @@ export function MyFocusView() {
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Focus Overview */}
-      {focusTaskCounts.length > 0 && (
-        <div className="px-4 py-5 bg-muted/30 border rounded-lg">
-          <h3 className="text-base font-medium mb-4">Focus Overview</h3>
-          <StatsChart 
-            data={focusTaskCounts}
-            title=""
-            height={120}
-          />
-        </div>
-      )}
+      <FocusOverview />
       
       {/* Task Groups */}
       <div className="space-y-6">
