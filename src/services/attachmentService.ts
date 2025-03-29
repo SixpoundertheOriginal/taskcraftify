@@ -35,22 +35,25 @@ export const AttachmentService = {
       
       // The path where the file will be stored: user_id/task_id/filename
       const storagePath = `${userId}/${taskId}/${fileName}`;
+
+      // Since onUploadProgress is not supported in FileOptions, we'll use a simpler approach
+      // Call the progress callback with a starting value
+      if (onProgress) {
+        onProgress(10); // Start with 10% progress indication
+      }
       
       // Upload file to Supabase Storage
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from('task-attachments')
         .upload(storagePath, file, {
           cacheControl: '3600',
-          upsert: false,
-          // Handle progress using the available progress event
-          onUploadProgress: (event) => {
-            // Call the progress callback if provided
-            if (onProgress && event.total) {
-              const percent = Math.round((event.loaded / event.total) * 100);
-              onProgress(percent);
-            }
-          }
+          upsert: false
         });
+      
+      // Indicate upload is complete
+      if (onProgress) {
+        onProgress(100);
+      }
       
       if (uploadError) {
         throw new Error(`Upload error: ${uploadError.message}`);
