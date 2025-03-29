@@ -279,6 +279,7 @@ export function TaskForm({ open, onOpenChange, initialTask, initialDueDate, init
                             "pl-3 text-left font-normal",
                             !field.value && "text-muted-foreground"
                           )}
+                          type="button"
                         >
                           {field.value ? (
                             format(field.value, "PPP")
