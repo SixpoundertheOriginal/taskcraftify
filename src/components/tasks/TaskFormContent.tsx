@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -58,7 +58,7 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
   const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(undefined);
   
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<CreateTaskDTO>({
+  const { register, handleSubmit, reset, setValue, watch, control, formState: { errors } } = useForm<CreateTaskDTO>({
     defaultValues: taskToEdit ? {
       title: taskToEdit.title,
       description: taskToEdit.description,
@@ -268,36 +268,54 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
           <label htmlFor="status" className="text-sm font-medium">
             Status <span className="text-destructive">*</span>
           </label>
-          <Select defaultValue={taskToEdit?.status || initialStatus || TaskStatus.TODO} {...register('status', { required: true })}>
-            <SelectTrigger id="status">
-              <SelectValue placeholder="Select status" />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.values(TaskStatus).map((status) => (
-                <SelectItem key={status} value={status}>
-                  {getStatusLabel(status)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Controller
+            control={control}
+            name="status"
+            render={({ field }) => (
+              <Select 
+                onValueChange={field.onChange}
+                value={field.value}
+              >
+                <SelectTrigger id="status">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.values(TaskStatus).map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {getStatusLabel(status)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
         </div>
         
         <div className="space-y-2">
           <label htmlFor="priority" className="text-sm font-medium">
             Priority <span className="text-destructive">*</span>
           </label>
-          <Select defaultValue={taskToEdit?.priority || TaskPriority.MEDIUM} {...register('priority', { required: true })}>
-            <SelectTrigger id="priority">
-              <SelectValue placeholder="Select priority" />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.values(TaskPriority).map((priority) => (
-                <SelectItem key={priority} value={priority}>
-                  {getPriorityLabel(priority)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Controller
+            control={control}
+            name="priority"
+            render={({ field }) => (
+              <Select 
+                onValueChange={field.onChange}
+                value={field.value}
+              >
+                <SelectTrigger id="priority">
+                  <SelectValue placeholder="Select priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.values(TaskPriority).map((priority) => (
+                    <SelectItem key={priority} value={priority}>
+                      {getPriorityLabel(priority)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
         </div>
       </div>
       

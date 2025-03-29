@@ -41,7 +41,7 @@ export function TaskForm({ open, onOpenChange, initialDueDate }: TaskFormProps) 
   const [tags, setTags] = useState<string[]>([]);
   const [dueDate, setDueDate] = useState<Date | undefined>(initialDueDate);
   
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateTaskDTO>({
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<CreateTaskDTO>({
     defaultValues: {
       title: '',
       description: '',
@@ -49,6 +49,9 @@ export function TaskForm({ open, onOpenChange, initialDueDate }: TaskFormProps) 
       priority: TaskPriority.MEDIUM
     }
   });
+  
+  const titleValue = watch('title');
+  const descriptionValue = watch('description');
   
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
@@ -119,7 +122,8 @@ export function TaskForm({ open, onOpenChange, initialDueDate }: TaskFormProps) 
             <Input
               id="title"
               placeholder="Task title"
-              {...register('title', { required: 'Title is required' })}
+              value={titleValue}
+              onChange={(e) => setValue('title', e.target.value)}
               className="w-full"
             />
             {errors.title && (
@@ -132,7 +136,8 @@ export function TaskForm({ open, onOpenChange, initialDueDate }: TaskFormProps) 
             <Textarea
               id="description"
               placeholder="Add details about this task..."
-              {...register('description')}
+              value={descriptionValue}
+              onChange={(e) => setValue('description', e.target.value)}
               className="min-h-[100px]"
             />
           </div>
@@ -142,7 +147,7 @@ export function TaskForm({ open, onOpenChange, initialDueDate }: TaskFormProps) 
               <label htmlFor="status" className="text-sm font-medium">
                 Status <span className="text-destructive">*</span>
               </label>
-              <Select defaultValue={TaskStatus.TODO} onValueChange={(value) => register('status').onChange({ target: { value } } as any)}>
+              <Select defaultValue={TaskStatus.TODO} onValueChange={(value) => setValue('status', value as TaskStatus)}>
                 <SelectTrigger id="status">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
@@ -160,7 +165,7 @@ export function TaskForm({ open, onOpenChange, initialDueDate }: TaskFormProps) 
               <label htmlFor="priority" className="text-sm font-medium">
                 Priority <span className="text-destructive">*</span>
               </label>
-              <Select defaultValue={TaskPriority.MEDIUM} onValueChange={(value) => register('priority').onChange({ target: { value } } as any)}>
+              <Select defaultValue={TaskPriority.MEDIUM} onValueChange={(value) => setValue('priority', value as TaskPriority)}>
                 <SelectTrigger id="priority">
                   <SelectValue placeholder="Select priority" />
                 </SelectTrigger>
@@ -228,6 +233,7 @@ export function TaskForm({ open, onOpenChange, initialDueDate }: TaskFormProps) 
                       size="icon"
                       className="h-4 w-4 p-0 hover:bg-transparent"
                       onClick={() => handleRemoveTag(tag)}
+                      type="button"
                     >
                       <X className="h-3 w-3" />
                       <span className="sr-only">Remove tag</span>
