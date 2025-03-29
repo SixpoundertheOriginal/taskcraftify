@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { 
@@ -27,6 +28,7 @@ import { CreateTaskDTO, Task, TaskPriority, TaskStatus } from '@/types/task';
 import { useTaskStore } from '@/store';
 import { toast } from '@/hooks/use-toast';
 import { TaskLog } from '@/components/tasks/TaskLog';
+import { RichTextInput } from '@/components/ui/rich-text-input';
 
 interface TaskFormProps {
   open: boolean;
@@ -43,15 +45,17 @@ export function UnifiedTaskForm({
   initialDueDate, 
   initialStatus 
 }: TaskFormProps) {
-  const { createTask, updateTask, isLoading } = useTaskStore();
+  const { createTask, updateTask, isLoading, uploadAttachment } = useTaskStore();
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>(initialTask?.tags || []);
   const [dueDate, setDueDate] = useState<Date | undefined>(
     initialTask?.dueDate || initialDueDate
   );
   const [activeTab, setActiveTab] = useState<string>("details");
+  const [descriptionFiles, setDescriptionFiles] = useState<File[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const { register, handleSubmit, reset, control, formState: { errors } } = useForm<CreateTaskDTO>({
+  const { register, handleSubmit, reset, control, formState: { errors }, watch, setValue } = useForm<CreateTaskDTO>({
     defaultValues: initialTask ? {
       title: initialTask.title,
       description: initialTask.description,
@@ -64,6 +68,8 @@ export function UnifiedTaskForm({
       priority: TaskPriority.MEDIUM,
     }
   });
+  
+  const description = watch('description');
   
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
@@ -83,13 +89,21 @@ export function UnifiedTaskForm({
     }
   };
   
+  const handleDescriptionFilesChange = (files: File[]) => {
+    setDescriptionFiles(files);
+  };
+  
   const onSubmit = async (data: CreateTaskDTO) => {
     try {
+      setIsSubmitting(true);
+      
       const taskData: CreateTaskDTO = {
         ...data,
         dueDate,
         tags,
       };
+      
+      let taskId: string;
       
       if (initialTask) {
         await updateTask({
@@ -97,12 +111,16 @@ export function UnifiedTaskForm({
           ...taskData
         });
         
+        taskId = initialTask.id;
+        
         toast({
           title: "Task updated",
           description: "Your task has been updated successfully.",
         });
       } else {
-        await createTask(taskData);
+        const newTask = await createTask(taskData);
+        
+        taskId = newTask.id;
         
         toast({
           title: "Task created",
@@ -110,10 +128,29 @@ export function UnifiedTaskForm({
         });
       }
       
+      // Upload description embedded files if there are any
+      if (descriptionFiles.length > 0 && taskId) {
+        for (const file of descriptionFiles) {
+          await uploadAttachment({
+            taskId: taskId,
+            file,
+            onProgress: (progress) => {
+              console.log(`Uploading ${file.name}: ${progress}%`);
+            }
+          });
+        }
+        
+        toast({
+          title: "Files uploaded",
+          description: `${descriptionFiles.length} file(s) have been attached to the task.`,
+        });
+      }
+      
       // Reset form
       reset();
       setTags([]);
       setDueDate(undefined);
+      setDescriptionFiles([]);
       onOpenChange(false);
     } catch (error) {
       toast({
@@ -121,6 +158,8 @@ export function UnifiedTaskForm({
         description: error instanceof Error ? error.message : "An unexpected error occurred.",
         variant: "destructive"
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
@@ -129,12 +168,13 @@ export function UnifiedTaskForm({
     reset();
     setTags([]);
     setDueDate(undefined);
+    setDescriptionFiles([]);
     onOpenChange(false);
   };
   
   useEffect(() => {
     if (initialTask) {
-      setActiveTab("log");
+      setActiveTab("details");
     } else {
       setActiveTab("details");
     }
@@ -299,17 +339,17 @@ export function UnifiedTaskForm({
                   )}
                 </div>
                 
-                {!initialTask && (
-                  <div className="space-y-2">
-                    <label htmlFor="description" className="text-sm font-medium">Description</label>
-                    <textarea
-                      id="description"
-                      placeholder="Add details about this task..."
-                      {...register('description')}
-                      className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
-                    />
-                  </div>
-                )}
+                <div className="space-y-2">
+                  <label htmlFor="description" className="text-sm font-medium">Description</label>
+                  <RichTextInput
+                    id="description"
+                    placeholder="Add details about this task..."
+                    value={description}
+                    onChange={(e) => setValue('description', e.target.value)}
+                    files={descriptionFiles}
+                    onFilesChange={handleDescriptionFilesChange}
+                  />
+                </div>
               </TabsContent>
               
               <TabsContent value="log" className="flex-1 overflow-auto">
@@ -449,11 +489,13 @@ export function UnifiedTaskForm({
               
               <div className="space-y-2">
                 <label htmlFor="description" className="text-sm font-medium">Description</label>
-                <textarea
+                <RichTextInput
                   id="description"
                   placeholder="Add details about this task..."
-                  {...register('description')}
-                  className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+                  value={description}
+                  onChange={(e) => setValue('description', e.target.value)}
+                  files={descriptionFiles}
+                  onFilesChange={handleDescriptionFilesChange}
                 />
               </div>
             </div>
@@ -463,8 +505,8 @@ export function UnifiedTaskForm({
             <DialogClose asChild>
               <Button type="button" variant="outline">Cancel</Button>
             </DialogClose>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? (
+            <Button type="submit" disabled={isLoading || isSubmitting}>
+              {(isLoading || isSubmitting) ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   {initialTask ? 'Updating...' : 'Creating...'}
