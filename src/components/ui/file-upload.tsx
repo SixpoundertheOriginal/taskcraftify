@@ -31,6 +31,8 @@ export interface FileUploadProps extends Omit<DropzoneOptions, "onDrop"> {
   label?: string;
   disabled?: boolean;
   showPreviews?: boolean;
+  children?: React.ReactNode;
+  showPreviewsInDropzone?: boolean;
 }
 
 export const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(

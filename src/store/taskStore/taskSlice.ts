@@ -1,4 +1,3 @@
-
 import { StateCreator } from 'zustand';
 import { 
   Task, 
@@ -484,6 +483,84 @@ export const createTaskSlice: StateCreator<
       return result.data;
     } catch (error) {
       console.error('Error fetching activities:', error);
+      throw error;
+    }
+  },
+  
+  setTaskStatus: async (taskId, status) => {
+    set({ isLoading: true, error: null });
+    
+    try {
+      const result = await TaskService.updateTask({
+        id: taskId,
+        status: status
+      });
+      
+      if (result.error) {
+        throw result.error;
+      }
+      
+      if (!result.data) {
+        throw new Error('No task data returned');
+      }
+      
+      set(state => ({
+        tasks: state.tasks.map(task => 
+          task.id === taskId ? result.data! : task
+        ),
+        currentTask: state.currentTask?.id === taskId 
+          ? result.data 
+          : state.currentTask,
+        isLoading: false
+      }));
+      
+      return result.data;
+    } catch (error) {
+      console.error('Error updating task status:', error);
+      set({ 
+        isLoading: false, 
+        error: error instanceof Error ? error.message : 'An unknown error occurred' 
+      });
+      throw error;
+    }
+  },
+  
+  toggleSubtaskCompletion: async (subtaskId, completed) => {
+    try {
+      const result = await TaskService.updateSubtask({
+        id: subtaskId,
+        completed
+      });
+      
+      if (result.error) {
+        throw result.error;
+      }
+      
+      if (!result.data) {
+        throw new Error('No subtask data returned');
+      }
+      
+      // Update the current task if applicable
+      set(state => {
+        if (state.currentTask && state.currentTask.subtasks) {
+          const updatedSubtasks = state.currentTask.subtasks.map(subtask => 
+            subtask.id === subtaskId ? result.data! : subtask
+          );
+          
+          return {
+            currentTask: {
+              ...state.currentTask,
+              subtasks: updatedSubtasks
+            }
+          };
+        }
+        
+        return {};
+      });
+      
+      return result.data;
+    } catch (error) {
+      console.error('Error toggling subtask completion:', error);
       throw error;
     }
   }

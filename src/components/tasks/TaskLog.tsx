@@ -26,6 +26,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { AttachmentService } from '@/services/attachmentService';
 
 interface TaskLogProps {
   task: Task;
@@ -164,7 +165,8 @@ export function TaskLog({ task, maxHeight = 500 }: TaskLogProps) {
   };
   
   const renderAttachmentPreview = (attachment: Attachment) => {
-    const fileUrl = attachment.url;
+    // Get the file URL from the attachment
+    const fileUrl = AttachmentService.getAttachmentUrl(attachment.storagePath);
     
     return (
       <Collapsible className="w-full">
@@ -221,7 +223,6 @@ export function TaskLog({ task, maxHeight = 500 }: TaskLogProps) {
           <FileUpload
             onUpload={handleFileUpload}
             maxSize={5 * 1024 * 1024} // 5MB
-            showPreviewsInDropzone={false}
             accept={{
               'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.svg'],
               'application/pdf': ['.pdf'],
