@@ -1,6 +1,7 @@
+
 import { useState, useEffect, useMemo } from 'react';
 import { useProjectStore, useTaskStore } from '@/store';
-import { Task, TaskPriority, TaskStatus, countTasksByProject } from '@/types/task';
+import { Task, TaskPriority, TaskStatus } from '@/types/task';
 import { Project } from '@/types/project';
 import { 
   SidebarMenu, 
@@ -15,9 +16,7 @@ import {
   FolderPlus, 
   Pencil, 
   Trash2,
-  FileQuestion,
   RefreshCw,
-  Database,
   ChevronDown,
   ChevronRight,
   Plus,
@@ -25,7 +24,6 @@ import {
   Clock,
   Info,
   Filter,
-  CheckCircle,
   AlertTriangle,
   AlertCircle
 } from 'lucide-react';
@@ -58,24 +56,25 @@ export function EnhancedProjectList() {
   const [projectToEdit, setProjectToEdit] = useState<string | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [pinnedOpen, setPinnedOpen] = useState(true);
   const [recentOpen, setRecentOpen] = useState(true);
-  const [favoriteOpen, setFavoriteOpen] = useState(true);
   const [allProjectsOpen, setAllProjectsOpen] = useState(true);
   const [projectInfoId, setProjectInfoId] = useState<string | null>(null);
   
   const { projects, selectedProjectId, selectProject, deleteProject } = useProjectStore();
-  const { filters, setFilters, tasks, refreshTaskCounts, fetchTasks, diagnosticDatabaseQuery } = useTaskStore();
+  const { filters, setFilters, tasks, refreshTaskCounts, fetchTasks } = useTaskStore();
   
   const [recentProjects, setRecentProjects] = useState<string[]>(() => {
     const saved = localStorage.getItem('recentProjects');
     return saved ? JSON.parse(saved) : [];
   });
   
-  const [favoriteProjects, setFavoriteProjects] = useState<string[]>(() => {
+  const [pinnedProjects, setPinnedProjects] = useState<string[]>(() => {
     const saved = localStorage.getItem('favoriteProjects');
     return saved ? JSON.parse(saved) : [];
   });
   
+  // Update recent projects when selected project changes
   useEffect(() => {
     if (selectedProjectId && selectedProjectId !== 'none') {
       setRecentProjects(prev => {
@@ -87,12 +86,14 @@ export function EnhancedProjectList() {
     }
   }, [selectedProjectId]);
   
+  // Save pinned projects to localStorage when changed
   useEffect(() => {
-    localStorage.setItem('favoriteProjects', JSON.stringify(favoriteProjects));
-  }, [favoriteProjects]);
+    localStorage.setItem('favoriteProjects', JSON.stringify(pinnedProjects));
+  }, [pinnedProjects]);
   
   const { items: sortedProjects, onDragEnd } = useDndSortable(projects);
   
+  // Calculate project stats for display
   const projectStats = useMemo(() => {
     const stats: Record<string, {
       total: number,
@@ -115,35 +116,35 @@ export function EnhancedProjectList() {
     });
     
     stats['all'] = { total: 0, urgent: 0, high: 0, done: 0, inProgress: 0, completion: 0 };
-    stats['none'] = { total: 0, urgent: 0, high: 0, done: 0, inProgress: 0, completion: 0 };
     
     tasks.forEach((task: Task) => {
       const projectId = task.projectId ?? 'none';
       
       stats['all'].total++;
-      if (stats[projectId]) stats[projectId].total++;
+      if (projectId !== 'none' && stats[projectId]) stats[projectId].total++;
       
       if (task.priority === TaskPriority.URGENT) {
         stats['all'].urgent++;
-        if (stats[projectId]) stats[projectId].urgent++;
+        if (projectId !== 'none' && stats[projectId]) stats[projectId].urgent++;
       }
       
       if (task.priority === TaskPriority.HIGH) {
         stats['all'].high++;
-        if (stats[projectId]) stats[projectId].high++;
+        if (projectId !== 'none' && stats[projectId]) stats[projectId].high++;
       }
       
       if (task.status === TaskStatus.DONE) {
         stats['all'].done++;
-        if (stats[projectId]) stats[projectId].done++;
+        if (projectId !== 'none' && stats[projectId]) stats[projectId].done++;
       }
       
       if (task.status === TaskStatus.IN_PROGRESS) {
         stats['all'].inProgress++;
-        if (stats[projectId]) stats[projectId].inProgress++;
+        if (projectId !== 'none' && stats[projectId]) stats[projectId].inProgress++;
       }
     });
     
+    // Calculate completion percentages
     Object.keys(stats).forEach(id => {
       if (stats[id].total > 0) {
         stats[id].completion = Math.round((stats[id].done / stats[id].total) * 100);
@@ -155,10 +156,6 @@ export function EnhancedProjectList() {
   
   const totalTaskCount = useMemo(() => {
     return projectStats['all']?.total || 0;
-  }, [projectStats]);
-  
-  const noProjectTaskCount = useMemo(() => {
-    return projectStats['none']?.total || 0;
   }, [projectStats]);
   
   const handleSelectProject = (projectId: string | null) => {
@@ -188,8 +185,8 @@ export function EnhancedProjectList() {
         handleSelectProject(null);
       }
       
-      if (favoriteProjects.includes(projectToDelete)) {
-        setFavoriteProjects(prev => prev.filter(id => id !== projectToDelete));
+      if (pinnedProjects.includes(projectToDelete)) {
+        setPinnedProjects(prev => prev.filter(id => id !== projectToDelete));
       }
       
       if (recentProjects.includes(projectToDelete)) {
@@ -222,7 +219,7 @@ export function EnhancedProjectList() {
         description: "Project statistics have been updated.",
       });
     } catch (error) {
-      console.error("Error during manual refresh:", error);
+      console.error("Error during refresh:", error);
       toast({
         title: "Refresh failed",
         description: "There was a problem refreshing the task counts.",
@@ -233,30 +230,8 @@ export function EnhancedProjectList() {
     }
   };
   
-  const handleDiagnosticQuery = async () => {
-    setIsRefreshing(true);
-    
-    try {
-      await diagnosticDatabaseQuery();
-      
-      toast({
-        title: "Database diagnostic completed",
-        description: "Database diagnostic query has been executed.",
-      });
-    } catch (error) {
-      console.error("Error during database diagnostic:", error);
-      toast({
-        title: "Diagnostic failed",
-        description: "There was a problem running the diagnostic query.",
-        variant: "destructive"
-      });
-    } finally {
-      setTimeout(() => setIsRefreshing(false), 1000);
-    }
-  };
-  
-  const toggleFavorite = (projectId: string) => {
-    setFavoriteProjects(prev => {
+  const togglePinned = (projectId: string) => {
+    setPinnedProjects(prev => {
       if (prev.includes(projectId)) {
         return prev.filter(id => id !== projectId);
       } else {
@@ -269,18 +244,22 @@ export function EnhancedProjectList() {
     return projects.find(p => p.id === id);
   };
   
+  // Keyboard shortcut handlers
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Skip if in an input field
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }
       
+      // Ctrl+N for new project
       if (e.ctrlKey && e.key === 'n') {
         e.preventDefault();
         setCreateDialogOpen(true);
         return;
       }
       
+      // Alt+Up/Down for navigating projects
       if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
         e.preventDefault();
         
@@ -304,10 +283,9 @@ export function EnhancedProjectList() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedProjectId, sortedProjects, handleSelectProject]);
   
+  // Renders task statistics badges and counts
   const renderTaskStats = (id: string) => {
-    const stats = id === 'all' ? projectStats['all'] : 
-                  id === 'none' ? projectStats['none'] : 
-                  projectStats[id];
+    const stats = id === 'all' ? projectStats['all'] : projectStats[id];
     
     if (!stats) return null;
     
@@ -361,28 +339,30 @@ export function EnhancedProjectList() {
           </Tooltip>
         )}
         
-        <span className="ml-1.5 tabular-nums text-xs font-medium">
+        <span className="ml-1.5 tabular-nums text-xs font-medium text-muted-foreground">
           {stats.total}
         </span>
       </div>
     );
   };
   
+  // Renders progress bar for project completion
   const renderProgressBar = (id: string) => {
     const stats = projectStats[id];
     if (!stats || stats.total === 0) return null;
     
     return (
-      <div className="mt-1 progress-bar">
+      <div className="mt-1 h-1 bg-muted/40 rounded-full overflow-hidden">
         <div 
-          className="progress-bar-fill" 
+          className="h-full bg-sidebar-primary/70" 
           style={{ width: `${stats.completion}%` }}
         />
       </div>
     );
   };
   
-  const renderProjectItem = (project: Project, isFavorite = false) => (
+  // Renders a single project item with actions
+  const renderProjectItem = (project: Project, isPinned = false) => (
     <SidebarMenuItem 
       key={project.id} 
       className="group relative transition-all duration-200"
@@ -412,7 +392,7 @@ export function EnhancedProjectList() {
         {renderTaskStats(project.id)}
         
         <div className="absolute right-2 flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 z-20 bg-sidebar/80 backdrop-blur-sm rounded-full p-0.5">
-          {isFavorite ? (
+          {isPinned ? (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button 
@@ -421,15 +401,15 @@ export function EnhancedProjectList() {
                   className="h-6 w-6 rounded-full p-0 text-yellow-400 hover:text-yellow-500"
                   onClick={(e) => {
                     e.stopPropagation();
-                    toggleFavorite(project.id);
+                    togglePinned(project.id);
                   }}
                 >
-                  <Star className="h-3.5 w-3.5" />
-                  <span className="sr-only">Unfavorite</span>
+                  <Star className="h-3.5 w-3.5 fill-current" />
+                  <span className="sr-only">Unpin</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Remove from favorites</p>
+                <p>Remove from pinned</p>
               </TooltipContent>
             </Tooltip>
           ) : (
@@ -441,15 +421,15 @@ export function EnhancedProjectList() {
                   className="h-6 w-6 rounded-full p-0 text-muted-foreground hover:text-foreground"
                   onClick={(e) => {
                     e.stopPropagation();
-                    toggleFavorite(project.id);
+                    togglePinned(project.id);
                   }}
                 >
                   <Star className="h-3.5 w-3.5" />
-                  <span className="sr-only">Favorite</span>
+                  <span className="sr-only">Pin</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Add to favorites</p>
+                <p>Add to pinned</p>
               </TooltipContent>
             </Tooltip>
           )}
@@ -526,6 +506,30 @@ export function EnhancedProjectList() {
     </SidebarMenuItem>
   );
   
+  // Filter projects for different sections
+  const pinnedProjectItems = useMemo(() => 
+    pinnedProjects
+      .map(id => projects.find(p => p.id === id))
+      .filter(Boolean) as Project[],
+    [pinnedProjects, projects]
+  );
+  
+  const recentProjectItems = useMemo(() => 
+    recentProjects
+      .filter(id => !pinnedProjects.includes(id)) // Don't show pinned projects in recent
+      .map(id => projects.find(p => p.id === id))
+      .filter(Boolean) as Project[],
+    [recentProjects, pinnedProjects, projects]
+  );
+  
+  const otherProjects = useMemo(() => 
+    projects.filter(p => 
+      !pinnedProjects.includes(p.id) && 
+      !recentProjects.includes(p.id)
+    ),
+    [projects, pinnedProjects, recentProjects]
+  );
+  
   return (
     <TooltipProvider delayDuration={300}>
       <>
@@ -537,22 +541,6 @@ export function EnhancedProjectList() {
         </div>
         
         <div className="flex gap-1 px-2 mb-3">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="icon" 
-                className="h-7 w-7 border-dashed border-sidebar-border text-sidebar-foreground/70 hover:text-sidebar-primary" 
-                onClick={handleDiagnosticQuery}
-                disabled={isRefreshing}
-              >
-                <Database className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-                <span className="sr-only">Database Diagnostic</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right">Database Diagnostic</TooltipContent>
-          </Tooltip>
-          
           <Tooltip>
             <TooltipTrigger asChild>
               <Button 
@@ -617,31 +605,15 @@ export function EnhancedProjectList() {
               </SidebarMenuButton>
               {renderProgressBar('all')}
             </SidebarMenuItem>
-            
-            <SidebarMenuItem>
-              <div className="sidebar-item-indicator" data-active={selectedProjectId === 'none'} />
-              <SidebarMenuButton 
-                isActive={selectedProjectId === 'none'}
-                onClick={() => handleSelectProject('none')}
-                className={cn(
-                  "group relative pl-6 transition-all",
-                  selectedProjectId === 'none' && "sidebar-item-active"
-                )}
-              >
-                <FileQuestion className="w-4 h-4 mr-2" />
-                <span className="font-medium">No Project</span>
-                {renderTaskStats('none')}
-              </SidebarMenuButton>
-              {renderProgressBar('none')}
-            </SidebarMenuItem>
           </SidebarMenu>
           
-          <SidebarSeparator />
+          <SidebarSeparator className="my-2" />
           
-          {favoriteProjects.length > 0 && (
+          {/* Pinned Projects Section */}
+          {pinnedProjectItems.length > 0 && (
             <Collapsible 
-              open={favoriteOpen} 
-              onOpenChange={setFavoriteOpen}
+              open={pinnedOpen} 
+              onOpenChange={setPinnedOpen}
               className="space-y-1 mb-2"
             >
               <div className="flex items-center px-2">
@@ -651,33 +623,33 @@ export function EnhancedProjectList() {
                     size="sm" 
                     className="h-6 px-1 py-1 gap-1 -ml-1 text-sidebar-foreground hover:text-sidebar-foreground hover:bg-transparent"
                   >
-                    {favoriteOpen ? 
+                    {pinnedOpen ? 
                       <ChevronDown className="h-3.5 w-3.5 text-sidebar-foreground/70" /> : 
                       <ChevronRight className="h-3.5 w-3.5 text-sidebar-foreground/70" />
                     }
-                    <span className="text-xs font-semibold">Favorites</span>
+                    <span className="text-xs font-semibold">Pinned</span>
                   </Button>
                 </CollapsibleTrigger>
                 <Badge 
                   variant="outline" 
                   className="ml-auto h-5 text-[10px] font-normal py-0 px-1.5 border-sidebar-border"
                 >
-                  {favoriteProjects.length}
+                  {pinnedProjectItems.length}
                 </Badge>
               </div>
               
               <CollapsibleContent className="space-y-1">
                 <SidebarMenu className="pl-3">
-                  {favoriteProjects.map(id => {
-                    const project = getProjectById(id);
-                    return project ? renderProjectItem(project, true) : null;
-                  })}
+                  {pinnedProjectItems.map(project => 
+                    renderProjectItem(project, true)
+                  )}
                 </SidebarMenu>
               </CollapsibleContent>
             </Collapsible>
           )}
           
-          {recentProjects.length > 0 && (
+          {/* Recent Projects Section */}
+          {recentProjectItems.length > 0 && (
             <Collapsible 
               open={recentOpen} 
               onOpenChange={setRecentOpen}
@@ -701,51 +673,47 @@ export function EnhancedProjectList() {
                   variant="outline" 
                   className="ml-auto h-5 text-[10px] font-normal py-0 px-1.5 border-sidebar-border"
                 >
-                  {recentProjects.length}
+                  {recentProjectItems.length}
                 </Badge>
               </div>
               
               <CollapsibleContent className="space-y-1">
                 <SidebarMenu className="pl-3">
-                  {recentProjects.map(id => {
-                    const project = getProjectById(id);
-                    if (!project) return null;
-                    
-                    return (
-                      <SidebarMenuItem key={project.id}>
-                        <div 
-                          className="sidebar-item-indicator" 
-                          data-active={selectedProjectId === project.id}
-                        />
-                        <SidebarMenuButton 
-                          isActive={selectedProjectId === project.id}
-                          onClick={() => handleSelectProject(project.id)}
-                          className={cn(
-                            "group relative pl-6 transition-all",
-                            selectedProjectId === project.id && "sidebar-item-active"
-                          )}
-                        >
-                          <div className="relative flex items-center">
-                            <div 
-                              className="absolute left-0 top-1/2 -ml-4 h-2 w-2 -translate-y-1/2 rounded-full" 
-                              style={{ backgroundColor: project.color }}
-                            />
-                            <Clock className="h-3.5 w-3.5 text-muted-foreground mr-2" />
-                            <span className="truncate max-w-[100px] inline-block">
-                              {project.name}
-                            </span>
-                          </div>
-                          {renderTaskStats(project.id)}
-                        </SidebarMenuButton>
-                        {renderProgressBar(project.id)}
-                      </SidebarMenuItem>
-                    );
-                  })}
+                  {recentProjectItems.map(project => (
+                    <SidebarMenuItem key={project.id}>
+                      <div 
+                        className="sidebar-item-indicator" 
+                        data-active={selectedProjectId === project.id}
+                      />
+                      <SidebarMenuButton 
+                        isActive={selectedProjectId === project.id}
+                        onClick={() => handleSelectProject(project.id)}
+                        className={cn(
+                          "group relative pl-6 transition-all",
+                          selectedProjectId === project.id && "sidebar-item-active"
+                        )}
+                      >
+                        <div className="relative flex items-center">
+                          <div 
+                            className="absolute left-0 top-1/2 -ml-4 h-2 w-2 -translate-y-1/2 rounded-full" 
+                            style={{ backgroundColor: project.color }}
+                          />
+                          <Clock className="h-3.5 w-3.5 text-muted-foreground mr-2" />
+                          <span className="truncate max-w-[100px] inline-block">
+                            {project.name}
+                          </span>
+                        </div>
+                        {renderTaskStats(project.id)}
+                      </SidebarMenuButton>
+                      {renderProgressBar(project.id)}
+                    </SidebarMenuItem>
+                  ))}
                 </SidebarMenu>
               </CollapsibleContent>
             </Collapsible>
           )}
           
+          {/* All Projects Section */}
           <Collapsible 
             open={allProjectsOpen} 
             onOpenChange={setAllProjectsOpen}
@@ -795,7 +763,14 @@ export function EnhancedProjectList() {
                 </div>
               ) : (
                 <SidebarMenu className="pl-3">
-                  {sortedProjects.map(project => renderProjectItem(project, favoriteProjects.includes(project.id)))}
+                  {/* Show other projects (not pinned or recent) */}
+                  {otherProjects.length > 0 ? (
+                    otherProjects.map(project => renderProjectItem(project))
+                  ) : (
+                    <div className="text-xs text-muted-foreground py-2 px-4">
+                      All your projects are in the Pinned or Recent sections above.
+                    </div>
+                  )}
                   
                   <SidebarMenuItem>
                     <SidebarMenuButton 
@@ -812,6 +787,7 @@ export function EnhancedProjectList() {
           </Collapsible>
         </div>
         
+        {/* Project creation and editing dialogs */}
         <ProjectDialog 
           open={createDialogOpen}
           onOpenChange={setCreateDialogOpen}
@@ -827,6 +803,7 @@ export function EnhancedProjectList() {
           />
         )}
         
+        {/* Project deletion confirmation dialog */}
         <AlertDialog 
           open={Boolean(projectToDelete)} 
           onOpenChange={(open) => {
