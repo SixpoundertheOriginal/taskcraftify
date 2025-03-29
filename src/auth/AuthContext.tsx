@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { 
   Session, 
@@ -17,11 +16,17 @@ type AuthState = {
   error: AuthError | null;
 };
 
+type ProfileUpdateParams = {
+  name?: string;
+  avatar_url?: string;
+};
+
 type AuthContextType = AuthState & {
   signUp: (email: string, password: string) => Promise<AuthResponse>;
   signIn: (email: string, password: string) => Promise<AuthResponse>;
   signOut: () => Promise<void>;
   refreshSession: () => Promise<Session | null>;
+  updateProfile: (params: ProfileUpdateParams) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -36,9 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
   const { toast } = useToast();
 
-  // Handle auth state changes
   useEffect(() => {
-    // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('Auth state changed:', event);
@@ -66,7 +69,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // Get initial session
     const initializeAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -90,7 +92,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initializeAuth();
 
-    // Clean up subscription on unmount
     return () => subscription.unsubscribe();
   }, [toast]);
 
@@ -230,13 +231,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Create a memoized value of the context
+  const updateProfile = async (params: ProfileUpdateParams) => {
+    try {
+      setAuthState(prevState => ({ ...prevState, isLoading: true }));
+      
+      if (!authState.user) {
+        throw new Error('User not authenticated');
+      }
+      
+      const { error } = await supabase.auth.updateUser({
+        data: params
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      setAuthState(prevState => ({
+        ...prevState,
+        user: prevState.user ? {
+          ...prevState.user,
+          user_metadata: {
+            ...prevState.user.user_metadata,
+            ...params
+          }
+        } : null,
+        isLoading: false
+      }));
+      
+    } catch (error) {
+      console.error('Update profile error:', error);
+      setAuthState(prevState => ({ 
+        ...prevState, 
+        error: error as AuthError, 
+        isLoading: false 
+      }));
+      throw error;
+    }
+  };
+
   const contextValue = useMemo(() => ({
     ...authState,
     signUp,
     signIn,
     signOut,
-    refreshSession
+    refreshSession,
+    updateProfile
   }), [authState]);
 
   return (
