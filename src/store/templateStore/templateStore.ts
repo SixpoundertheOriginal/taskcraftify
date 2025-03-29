@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { CreateTemplateDTO, TaskTemplate, UpdateTemplateDTO } from '@/types/template';
 import { templateService } from '@/services/templateService';
+import { createTemplateSuggestionsSlice, TemplateSuggestionsState } from './suggestionsSlice';
 
 interface TemplateState {
   templates: TaskTemplate[];
@@ -18,9 +19,10 @@ interface TemplateState {
   recordTemplateUsage: (templateId: string, taskId: string) => Promise<void>;
 }
 
-export const useTemplateStore = create<TemplateState>()(
+export const useTemplateStore = create<TemplateState & TemplateSuggestionsState>()(
   devtools(
-    (set, get) => ({
+    (...args) => ({
+      // Base template state
       templates: [],
       isLoading: false,
       error: null,
@@ -132,7 +134,13 @@ export const useTemplateStore = create<TemplateState>()(
           console.error('Error recording template usage:', error);
           // Don't throw or set error - non-critical operation
         }
-      }
-    })
+      },
+      
+      // Add the suggestions slice
+      ...createTemplateSuggestionsSlice(...args)
+    }),
+    { name: 'template-store' }
   )
 );
+
+const set = useTemplateStore.setState;

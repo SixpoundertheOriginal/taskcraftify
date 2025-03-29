@@ -29,10 +29,10 @@ import {
   CommandSeparator
 } from '@/components/ui/command';
 import { Check, ChevronDown } from 'lucide-react';
-import { TaskTemplateSelector } from './TaskTemplateSelector';
 import { SaveTemplateDialog } from './SaveTemplateDialog';
 import { TaskTemplate } from '@/types/template';
 import { templateService } from '@/services/templateService';
+import { SmartTemplateSelector } from './SmartTemplateSelector';
 
 interface TaskFormContentProps {
   onSuccess: () => void;
@@ -69,10 +69,8 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
     }
   });
   
-  // Get all form values for template operations
   const formValues = watch();
   
-  // Load templates when form opens
   useEffect(() => {
     fetchTemplates().catch(err => {
       console.error("Failed to load templates:", err);
@@ -108,10 +106,8 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
   };
   
   const handleSelectTemplate = async (template: TaskTemplate) => {
-    // Store the selected template ID for later use
     setSelectedTemplateId(template.id);
     
-    // Apply template to form
     if (template.structure.title) {
       setValue('title', template.structure.title);
     }
@@ -140,7 +136,6 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
       setProjectId(template.structure.projectId);
     }
     
-    // Increment template usage
     await useTemplate(template.id);
     
     toast({
@@ -188,13 +183,11 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
         const newTask = await createTask(taskData);
         taskId = newTask.id;
         
-        // If the task was created from a template, record the usage
         if (selectedTemplateId) {
           try {
             await templateService.recordTemplateUsage(selectedTemplateId, taskId);
           } catch (err) {
             console.error("Failed to record template usage:", err);
-            // Non-critical error, don't show toast to user
           }
         }
         
@@ -223,7 +216,7 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
       {!taskToEdit && (
-        <TaskTemplateSelector 
+        <SmartTemplateSelector 
           onSelectTemplate={handleSelectTemplate}
           currentTask={getCurrentFormData()}
           onSaveAsTemplate={handleSaveAsTemplate}
