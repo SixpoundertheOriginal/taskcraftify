@@ -42,10 +42,11 @@ export const AttachmentService = {
         .upload(storagePath, file, {
           cacheControl: '3600',
           upsert: false,
-          onUploadProgress: (progress) => {
+          // Handle progress using the available progress event
+          onUploadProgress: (event) => {
             // Call the progress callback if provided
-            if (onProgress) {
-              const percent = Math.round((progress.loaded / progress.total) * 100);
+            if (onProgress && event.total) {
+              const percent = Math.round((event.loaded / event.total) * 100);
               onProgress(percent);
             }
           }

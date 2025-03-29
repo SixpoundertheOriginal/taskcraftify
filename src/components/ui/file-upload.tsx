@@ -1,7 +1,7 @@
 
 import * as React from "react";
 import { useDropzone, FileRejection, DropzoneOptions } from "react-dropzone";
-import { Upload, X, File, FileImage, FileText, FileSpreadsheet, FilePdf, FileArchive } from "lucide-react";
+import { Upload, X, File, FileImage, FileText, FileSpreadsheet, Archive, FileBox } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
@@ -89,11 +89,11 @@ export const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
       if (type.startsWith("image/")) {
         return <FileImage className="h-6 w-6 text-blue-500" />;
       } else if (type.includes("pdf")) {
-        return <FilePdf className="h-6 w-6 text-red-500" />;
+        return <FileBox className="h-6 w-6 text-red-500" />;
       } else if (type.includes("spreadsheet") || type.includes("excel") || type.includes("csv")) {
         return <FileSpreadsheet className="h-6 w-6 text-green-500" />;
       } else if (type.includes("zip") || type.includes("compressed")) {
-        return <FileArchive className="h-6 w-6 text-orange-500" />;
+        return <Archive className="h-6 w-6 text-orange-500" />;
       } else if (type.includes("text")) {
         return <FileText className="h-6 w-6 text-gray-500" />;
       } else {

@@ -5,9 +5,9 @@ import {
   File, 
   FileImage, 
   FileText, 
-  FilePdf, 
+  FileBox, 
   FileSpreadsheet, 
-  FileArchive, 
+  Archive, 
   Download, 
   Trash2, 
   Loader2 
@@ -76,11 +76,11 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
     if (fileType.startsWith("image/")) {
       return <FileImage className="h-5 w-5 text-blue-500" />;
     } else if (fileType.includes("pdf")) {
-      return <FilePdf className="h-5 w-5 text-red-500" />;
+      return <FileBox className="h-5 w-5 text-red-500" />;
     } else if (fileType.includes("spreadsheet") || fileType.includes("excel") || fileType.includes("csv")) {
       return <FileSpreadsheet className="h-5 w-5 text-green-500" />;
     } else if (fileType.includes("zip") || fileType.includes("compressed")) {
-      return <FileArchive className="h-5 w-5 text-orange-500" />;
+      return <Archive className="h-5 w-5 text-orange-500" />;
     } else if (fileType.includes("text")) {
       return <FileText className="h-5 w-5 text-gray-500" />;
     } else {
@@ -158,6 +158,12 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
     );
   };
   
+  // Convert attachmentUploads object to format expected by FileUpload component
+  const uploadProgressForFileUpload: Record<string, number> = {};
+  Object.entries(attachmentUploads).forEach(([fileName, data]) => {
+    uploadProgressForFileUpload[fileName] = data.progress;
+  });
+  
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-4">
@@ -167,7 +173,7 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
       
       <FileUpload
         onUpload={handleUpload}
-        uploadProgress={attachmentUploads}
+        uploadProgress={uploadProgressForFileUpload}
         maxSize={5 * 1024 * 1024} // 5MB
         label="Drag and drop files here, or click to browse"
         className={cn(isAttachmentLoading && "opacity-70 pointer-events-none")}

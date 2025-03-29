@@ -6,4 +6,4 @@ export { ViewToggle } from './ViewToggle';
 export { FloatingActionButton } from './FloatingActionButton';
 export { KanbanBoard } from './KanbanBoard';
 export { ActiveFiltersDisplay } from './ActiveFiltersDisplay';
-
+export { TaskAttachments } from './TaskAttachments';
