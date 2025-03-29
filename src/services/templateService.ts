@@ -10,7 +10,10 @@ const prepareStructureForStorage = (structure: Partial<CreateTaskDTO>): Record<s
   
   // Convert Date objects to ISO strings for JSON compatibility
   if (jsonSafeStructure.dueDate instanceof Date) {
-    jsonSafeStructure.dueDate = jsonSafeStructure.dueDate.toISOString();
+    // Convert to string instead of assigning directly to avoid type error
+    const dueDateString = jsonSafeStructure.dueDate.toISOString();
+    // Using type assertion to tell TypeScript this is intentional
+    (jsonSafeStructure as any).dueDate = dueDateString;
   }
   
   return jsonSafeStructure;
