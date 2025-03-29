@@ -4,7 +4,8 @@ import { Task, TaskStatus, TaskPriority } from '@/types/task';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { CircleCheck, Clock, BarChart, Zap, CalendarDays } from 'lucide-react';
-import { formatDate, isOverdue } from '@/lib/utils';
+import { formatDate, isOverdue, cn } from '@/lib/utils';
+import { useTaskStore } from '@/store';
 
 interface CalendarSummaryProps {
   tasks: Task[];
@@ -12,6 +13,8 @@ interface CalendarSummaryProps {
 }
 
 export function CalendarSummary({ tasks, selectedDate }: CalendarSummaryProps) {
+  const { filters, setFilters } = useTaskStore();
+  
   const stats = useMemo(() => {
     if (!tasks.length) return null;
     
@@ -56,6 +59,38 @@ export function CalendarSummary({ tasks, selectedDate }: CalendarSummaryProps) {
     };
   }, [tasks]);
   
+  const handleStatusFilterClick = (status: TaskStatus) => {
+    setFilters({ ...filters, status: [status] });
+  };
+  
+  const handlePriorityFilterClick = (priority: TaskPriority) => {
+    setFilters({ ...filters, priority: [priority] });
+  };
+  
+  const handleOverdueFilterClick = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    setFilters({ 
+      ...filters, 
+      dueDateTo: today,
+      status: [TaskStatus.TODO, TaskStatus.IN_PROGRESS]
+    });
+  };
+  
+  const handleDueTodayFilterClick = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    setFilters({ 
+      ...filters, 
+      dueDateFrom: today,
+      dueDateTo: tomorrow,
+      status: [TaskStatus.TODO, TaskStatus.IN_PROGRESS]
+    });
+  };
+  
   if (!stats) return null;
   
   return (
@@ -70,7 +105,17 @@ export function CalendarSummary({ tasks, selectedDate }: CalendarSummaryProps) {
             </div>
             
             <div className="grid grid-cols-2 gap-2">
-              <div className="flex flex-col gap-1 bg-blue-50/50 rounded-md p-2">
+              <div 
+                className={cn(
+                  "flex flex-col gap-1 bg-blue-50/50 rounded-md p-2 cursor-pointer transition-all hover:bg-blue-100/70 hover:scale-[1.02]",
+                  "border border-transparent hover:border-blue-200/50"
+                )}
+                onClick={() => handleStatusFilterClick(TaskStatus.TODO)}
+                tabIndex={0}
+                role="button"
+                aria-label="Filter by To Do status"
+                onKeyDown={(e) => e.key === 'Enter' && handleStatusFilterClick(TaskStatus.TODO)}
+              >
                 <span className="text-xs text-muted-foreground">To Do</span>
                 <div className="flex items-baseline gap-1">
                   <span className="text-lg font-semibold">{stats.todo}</span>
@@ -78,7 +123,17 @@ export function CalendarSummary({ tasks, selectedDate }: CalendarSummaryProps) {
                 </div>
               </div>
               
-              <div className="flex flex-col gap-1 bg-amber-50/50 rounded-md p-2">
+              <div 
+                className={cn(
+                  "flex flex-col gap-1 bg-amber-50/50 rounded-md p-2 cursor-pointer transition-all hover:bg-amber-100/70 hover:scale-[1.02]",
+                  "border border-transparent hover:border-amber-200/50"
+                )}
+                onClick={() => handleStatusFilterClick(TaskStatus.IN_PROGRESS)}
+                tabIndex={0}
+                role="button"
+                aria-label="Filter by In Progress status"
+                onKeyDown={(e) => e.key === 'Enter' && handleStatusFilterClick(TaskStatus.IN_PROGRESS)}
+              >
                 <span className="text-xs text-muted-foreground">In Progress</span>
                 <div className="flex items-baseline gap-1">
                   <span className="text-lg font-semibold">{stats.inProgress}</span>
@@ -86,7 +141,17 @@ export function CalendarSummary({ tasks, selectedDate }: CalendarSummaryProps) {
                 </div>
               </div>
               
-              <div className="flex flex-col gap-1 bg-green-50/50 rounded-md p-2">
+              <div 
+                className={cn(
+                  "flex flex-col gap-1 bg-green-50/50 rounded-md p-2 cursor-pointer transition-all hover:bg-green-100/70 hover:scale-[1.02]",
+                  "border border-transparent hover:border-green-200/50"
+                )}
+                onClick={() => handleStatusFilterClick(TaskStatus.DONE)}
+                tabIndex={0}
+                role="button"
+                aria-label="Filter by Completed status"
+                onKeyDown={(e) => e.key === 'Enter' && handleStatusFilterClick(TaskStatus.DONE)}
+              >
                 <span className="text-xs text-muted-foreground">Completed</span>
                 <div className="flex items-baseline gap-1">
                   <span className="text-lg font-semibold">{stats.completed}</span>
@@ -94,7 +159,17 @@ export function CalendarSummary({ tasks, selectedDate }: CalendarSummaryProps) {
                 </div>
               </div>
               
-              <div className="flex flex-col gap-1 bg-gray-50/50 rounded-md p-2">
+              <div 
+                className={cn(
+                  "flex flex-col gap-1 bg-gray-50/50 rounded-md p-2 cursor-pointer transition-all hover:bg-gray-100/70 hover:scale-[1.02]",
+                  "border border-transparent hover:border-gray-200/50"
+                )}
+                onClick={() => setFilters({ ...filters, status: undefined })}
+                tabIndex={0}
+                role="button"
+                aria-label="Show all tasks"
+                onKeyDown={(e) => e.key === 'Enter' && setFilters({ ...filters, status: undefined })}
+              >
                 <span className="text-xs text-muted-foreground">Total</span>
                 <div className="flex items-baseline gap-1">
                   <span className="text-lg font-semibold">{stats.total}</span>
@@ -112,7 +187,17 @@ export function CalendarSummary({ tasks, selectedDate }: CalendarSummaryProps) {
             </div>
             
             <div className="grid grid-cols-2 gap-2">
-              <div className="flex flex-col gap-1 bg-red-50/50 rounded-md p-2">
+              <div 
+                className={cn(
+                  "flex flex-col gap-1 bg-red-50/50 rounded-md p-2 cursor-pointer transition-all hover:bg-red-100/70 hover:scale-[1.02]",
+                  "border border-transparent hover:border-red-200/50"
+                )}
+                onClick={() => handlePriorityFilterClick(TaskPriority.URGENT)}
+                tabIndex={0}
+                role="button"
+                aria-label="Filter by Urgent priority"
+                onKeyDown={(e) => e.key === 'Enter' && handlePriorityFilterClick(TaskPriority.URGENT)}
+              >
                 <span className="text-xs text-muted-foreground">Urgent</span>
                 <div className="flex items-baseline gap-1">
                   <span className="text-lg font-semibold">{stats.urgent}</span>
@@ -120,7 +205,17 @@ export function CalendarSummary({ tasks, selectedDate }: CalendarSummaryProps) {
                 </div>
               </div>
               
-              <div className="flex flex-col gap-1 bg-orange-50/50 rounded-md p-2">
+              <div 
+                className={cn(
+                  "flex flex-col gap-1 bg-orange-50/50 rounded-md p-2 cursor-pointer transition-all hover:bg-orange-100/70 hover:scale-[1.02]",
+                  "border border-transparent hover:border-orange-200/50"
+                )}
+                onClick={() => handlePriorityFilterClick(TaskPriority.HIGH)}
+                tabIndex={0}
+                role="button"
+                aria-label="Filter by High priority"
+                onKeyDown={(e) => e.key === 'Enter' && handlePriorityFilterClick(TaskPriority.HIGH)}
+              >
                 <span className="text-xs text-muted-foreground">High</span>
                 <div className="flex items-baseline gap-1">
                   <span className="text-lg font-semibold">{stats.high}</span>
@@ -128,7 +223,17 @@ export function CalendarSummary({ tasks, selectedDate }: CalendarSummaryProps) {
                 </div>
               </div>
               
-              <div className="flex flex-col gap-1 bg-red-50/50 rounded-md p-2">
+              <div 
+                className={cn(
+                  "flex flex-col gap-1 bg-red-50/50 rounded-md p-2 cursor-pointer transition-all hover:bg-red-100/70 hover:scale-[1.02]",
+                  "border border-transparent hover:border-red-200/50"
+                )}
+                onClick={handleOverdueFilterClick}
+                tabIndex={0}
+                role="button"
+                aria-label="Filter by Overdue tasks"
+                onKeyDown={(e) => e.key === 'Enter' && handleOverdueFilterClick()}
+              >
                 <span className="text-xs text-muted-foreground">Overdue</span>
                 <div className="flex items-baseline gap-1">
                   <span className="text-lg font-semibold">{stats.overdue}</span>
@@ -136,7 +241,17 @@ export function CalendarSummary({ tasks, selectedDate }: CalendarSummaryProps) {
                 </div>
               </div>
               
-              <div className="flex flex-col gap-1 bg-blue-50/50 rounded-md p-2">
+              <div 
+                className={cn(
+                  "flex flex-col gap-1 bg-blue-50/50 rounded-md p-2 cursor-pointer transition-all hover:bg-blue-100/70 hover:scale-[1.02]",
+                  "border border-transparent hover:border-blue-200/50"
+                )}
+                onClick={handleDueTodayFilterClick}
+                tabIndex={0}
+                role="button"
+                aria-label="Filter by Due Today tasks"
+                onKeyDown={(e) => e.key === 'Enter' && handleDueTodayFilterClick()}
+              >
                 <span className="text-xs text-muted-foreground">Due Today</span>
                 <div className="flex items-baseline gap-1">
                   <span className="text-lg font-semibold">{stats.dueToday}</span>

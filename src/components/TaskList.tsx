@@ -6,12 +6,21 @@ import { Input } from '@/components/ui/input';
 import { TaskFilters, TaskStatus, TaskPriority } from '@/types/task';
 import { debounce } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CheckCircle, Search } from 'lucide-react';
+import { CheckCircle, Search, FilterX } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 export function TaskList() {
   const { tasks, filters, setFilters, getFilteredTasks } = useTaskStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<string>('all');
+  
+  // Initialize searchQuery from filters
+  useEffect(() => {
+    if (filters.searchQuery) {
+      setSearchQuery(filters.searchQuery);
+    }
+  }, []);
   
   // Apply debounced search
   const debouncedSearch = debounce((query: string) => {
@@ -43,8 +52,37 @@ export function TaskList() {
     }
   };
   
+  // Clear specific filters
+  const clearStatusFilter = () => {
+    const { status, ...restFilters } = filters;
+    setFilters(restFilters);
+    setActiveTab('all');
+  };
+  
+  const clearPriorityFilter = () => {
+    const { priority, ...restFilters } = filters;
+    setFilters(restFilters);
+  };
+  
+  const clearDateFilters = () => {
+    const { dueDateFrom, dueDateTo, ...restFilters } = filters;
+    setFilters(restFilters);
+  };
+  
+  // Clear all filters
+  const clearAllFilters = () => {
+    setFilters({});
+    setSearchQuery('');
+    setActiveTab('all');
+  };
+  
   // Get filtered tasks based on current filters
   const filteredTasks = getFilteredTasks();
+  
+  // Determine if there are active filters
+  const hasActiveFilters = Object.keys(filters).some(key => 
+    key !== 'searchQuery' || (key === 'searchQuery' && filters.searchQuery && filters.searchQuery.trim() !== '')
+  );
   
   return (
     <div className="space-y-6 animate-fade-in">
@@ -57,6 +95,67 @@ export function TaskList() {
           onChange={handleSearchChange}
         />
       </div>
+      
+      {/* Active Filters */}
+      {hasActiveFilters && (
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-xs text-muted-foreground">Active filters:</span>
+          
+          {filters.status && (
+            <Badge variant="outline" className="flex items-center gap-1 bg-blue-50 text-blue-700">
+              Status: {filters.status.map(s => TaskStatus[s]).join(', ')}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-4 w-4 p-0 ml-1 hover:bg-blue-100" 
+                onClick={clearStatusFilter}
+              >
+                <FilterX className="h-2.5 w-2.5" />
+                <span className="sr-only">Clear status filter</span>
+              </Button>
+            </Badge>
+          )}
+          
+          {filters.priority && (
+            <Badge variant="outline" className="flex items-center gap-1 bg-orange-50 text-orange-700">
+              Priority: {filters.priority.map(p => TaskPriority[p]).join(', ')}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-4 w-4 p-0 ml-1 hover:bg-orange-100" 
+                onClick={clearPriorityFilter}
+              >
+                <FilterX className="h-2.5 w-2.5" />
+                <span className="sr-only">Clear priority filter</span>
+              </Button>
+            </Badge>
+          )}
+          
+          {(filters.dueDateFrom || filters.dueDateTo) && (
+            <Badge variant="outline" className="flex items-center gap-1 bg-green-50 text-green-700">
+              Due date: {filters.dueDateFrom?.toLocaleDateString() || '*'} - {filters.dueDateTo?.toLocaleDateString() || '*'}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-4 w-4 p-0 ml-1 hover:bg-green-100" 
+                onClick={clearDateFilters}
+              >
+                <FilterX className="h-2.5 w-2.5" />
+                <span className="sr-only">Clear date filters</span>
+              </Button>
+            </Badge>
+          )}
+          
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-7 px-2 text-xs ml-auto" 
+            onClick={clearAllFilters}
+          >
+            Clear all filters
+          </Button>
+        </div>
+      )}
       
       <Tabs defaultValue="all" value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="w-full mb-6 bg-muted/50 backdrop-blur-sm">

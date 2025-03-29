@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor, DragStartEvent } from '@dnd-kit/core';
 import { KanbanDragOverlay } from './KanbanDragOverlay';
+import { ActiveFiltersDisplay } from './ActiveFiltersDisplay';
 
 export function KanbanBoard() {
   const { 
@@ -18,7 +19,8 @@ export function KanbanBoard() {
     error, 
     filters, 
     getFilteredTasks,
-    setTaskStatus
+    setTaskStatus,
+    setFilters
   } = useTaskStore();
   
   const [activeColumnIndex, setActiveColumnIndex] = useState(0);
@@ -49,6 +51,27 @@ export function KanbanBoard() {
       },
     })
   );
+  
+  // Clear specific filters
+  const clearStatusFilter = () => {
+    const { status, ...restFilters } = filters;
+    setFilters(restFilters);
+  };
+  
+  const clearPriorityFilter = () => {
+    const { priority, ...restFilters } = filters;
+    setFilters(restFilters);
+  };
+  
+  const clearDateFilters = () => {
+    const { dueDateFrom, dueDateTo, ...restFilters } = filters;
+    setFilters(restFilters);
+  };
+  
+  // Clear all filters
+  const clearAllFilters = () => {
+    setFilters({});
+  };
   
   // Handle drag start - set the active task
   const handleDragStart = (event: DragStartEvent) => {
@@ -157,6 +180,15 @@ export function KanbanBoard() {
             <Loader2 className="h-5 w-5 animate-spin text-primary" />
           </div>
         )}
+        
+        {/* Active Filters Display */}
+        <ActiveFiltersDisplay 
+          filters={filters}
+          onClearStatusFilter={clearStatusFilter}
+          onClearPriorityFilter={clearPriorityFilter}
+          onClearDateFilters={clearDateFilters}
+          onClearAllFilters={clearAllFilters}
+        />
         
         {/* Screen reader announcement for operations */}
         <div 
