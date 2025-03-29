@@ -5,8 +5,9 @@ import { TaskSlice, createTaskSlice } from './taskSlice';
 import { FilterSlice, createFilterSlice } from './filterSlice';
 import { SubscriptionSlice, createSubscriptionSlice } from './subscriptionSlice';
 import { StatsSlice, createStatsSlice } from './statsSlice';
+import { AttachmentSlice, createAttachmentSlice } from './attachmentSlice';
 
-export type TaskStore = TaskSlice & FilterSlice & SubscriptionSlice & StatsSlice;
+export type TaskStore = TaskSlice & FilterSlice & SubscriptionSlice & StatsSlice & AttachmentSlice;
 
 export const useTaskStore = create<TaskStore>()(
   devtools(
@@ -15,6 +16,7 @@ export const useTaskStore = create<TaskStore>()(
       ...createFilterSlice(...a),
       ...createSubscriptionSlice(...a),
       ...createStatsSlice(...a),
+      ...createAttachmentSlice(...a),
     })
   )
 );

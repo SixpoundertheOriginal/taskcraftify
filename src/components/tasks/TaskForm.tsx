@@ -17,6 +17,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { SubtaskList } from './SubtaskList';
 import { CommentList } from './CommentList';
 import { ActivityHistory } from './ActivityHistory';
+import { TaskAttachments } from './TaskAttachments';
 
 interface TaskFormProps {
   open: boolean;
@@ -61,6 +62,9 @@ export function TaskForm({ open, onOpenChange, taskToEdit, initialStatus, initia
               isMobile && "flex-wrap overflow-x-auto"
             )}>
               <TabsTrigger value="details" className="text-sm">Details</TabsTrigger>
+              <TabsTrigger value="attachments" className="text-sm">
+                Attachments
+              </TabsTrigger>
               <TabsTrigger value="subtasks" className="text-sm">
                 Subtasks
                 {taskToEdit.subtasks && taskToEdit.subtasks.length > 0 && (
@@ -86,6 +90,10 @@ export function TaskForm({ open, onOpenChange, taskToEdit, initialStatus, initia
                 taskToEdit={taskToEdit}
                 initialDueDate={initialDueDate}
               />
+            </TabsContent>
+            
+            <TabsContent value="attachments" className="mt-0 pt-1 min-h-[300px] overflow-x-auto">
+              <TaskAttachments taskId={taskToEdit.id} />
             </TabsContent>
             
             <TabsContent value="subtasks" className="mt-0 pt-1 min-h-[300px] overflow-x-auto">
