@@ -8,7 +8,7 @@ export interface StatsSlice {
   getCompletionRate: () => number;
   getCompletionTrend: (days: number) => { date: Date; count: number }[];
   getTasksByPriority: () => Record<TaskPriority, number>;
-  getTasksByStatus: () => Record<TaskStatus, number>;
+  getTasksCountByStatus: () => Record<TaskStatus, number>;
   getAverageCompletionTime: () => number | null;
   
   // Analysis methods
@@ -67,7 +67,7 @@ export const createStatsSlice: StateCreator<
     return result;
   },
   
-  getTasksByStatus: () => {
+  getTasksCountByStatus: () => {
     const { tasks } = get();
     const result: Record<TaskStatus, number> = {
       [TaskStatus.BACKLOG]: 0,

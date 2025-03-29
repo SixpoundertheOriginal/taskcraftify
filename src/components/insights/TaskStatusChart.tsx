@@ -8,17 +8,10 @@ import { getStatusLabel } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 
 export function TaskStatusChart() {
-  const { tasks } = useTaskStore();
+  const { getTasksCountByStatus } = useTaskStore();
   
-  // Group tasks by status
-  const statusCounts = tasks.reduce((acc, task) => {
-    const status = task.status;
-    if (!acc[status]) {
-      acc[status] = 0;
-    }
-    acc[status]++;
-    return acc;
-  }, {} as Record<TaskStatus, number>);
+  // Get status counts from the store
+  const statusCounts = getTasksCountByStatus();
   
   // Convert to array for recharts
   const chartData = Object.entries(statusCounts).map(([status, count]) => ({
@@ -36,8 +29,19 @@ export function TaskStatusChart() {
     [TaskStatus.ARCHIVED]: '#6b7280', // gray-500
   };
   
+  // Chart configuration for the ChartContainer
+  const chartConfig = {
+    status: {
+      label: 'Task Status',
+      theme: {
+        light: '#1e293b',  // slate-800
+        dark: '#f8fafc',   // slate-50
+      }
+    }
+  };
+  
   // No tasks case
-  if (chartData.length === 0) {
+  if (chartData.every(item => item.value === 0)) {
     return (
       <div className="h-32 w-full flex items-center justify-center text-muted-foreground text-sm">
         No task data available
@@ -47,7 +51,7 @@ export function TaskStatusChart() {
   
   return (
     <div className="h-36 w-full">
-      <ChartContainer className="h-full">
+      <ChartContainer className="h-full" config={chartConfig}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
