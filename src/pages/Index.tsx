@@ -33,6 +33,9 @@ export default function Index() {
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const { user } = useAuth();
   
+  // Don't show insights panel on integrations tab
+  const showInsightsPanel = activeTab !== 'integrations';
+  
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -151,7 +154,7 @@ export default function Index() {
               </div>
               
               {/* Add InsightsPanel here, only for tasks and calendar tabs */}
-              {(activeTab === 'tasks' || activeTab === 'calendar') && (
+              {showInsightsPanel && (
                 <InsightsPanel />
               )}
               

@@ -12,6 +12,8 @@ import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor, DragSta
 import { KanbanDragOverlay } from './KanbanDragOverlay';
 import { ActiveFiltersDisplay } from './ActiveFiltersDisplay';
 import { FilterSidebar } from './FilterSidebar';
+import { MyFocusView } from './MyFocusView';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   SidebarProvider,
   SidebarInset,
@@ -39,6 +41,7 @@ export function KanbanBoard() {
   const [isDragging, setIsDragging] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('kanban');
   const isMobile = useIsMobile();
   
   // Get all unique tags from tasks
@@ -99,6 +102,11 @@ export function KanbanBoard() {
   const clearAllFilters = () => {
     setFilters({});
     setSearchQuery('');
+  };
+  
+  // Handle tab change
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
   };
   
   // Handle drag start - set the active task
@@ -176,7 +184,7 @@ export function KanbanBoard() {
     setActiveColumnIndex(prev => Math.max(prev - 1, 0));
   };
   
-  if (error) {
+  if (error && activeTab !== 'focus') {
     return (
       <Alert variant="destructive" className="mb-6">
         <AlertTitle>Error loading tasks</AlertTitle>
@@ -187,7 +195,7 @@ export function KanbanBoard() {
     );
   }
   
-  if (isLoading && tasks.length === 0) {
+  if (isLoading && tasks.length === 0 && activeTab !== 'focus') {
     return (
       <div className="flex flex-col items-center justify-center h-60">
         <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
@@ -240,127 +248,141 @@ export function KanbanBoard() {
           </div>
           
           <SidebarInset className="flex-1 p-0">
-            <DndContext 
-              sensors={sensors} 
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-            >
-              <div className="p-6 space-y-6">
-                <div className="flex items-center gap-2">
-                  <SidebarTrigger className="hidden md:flex" />
-                  <h1 className="text-2xl font-bold">Kanban Board</h1>
-                  {Object.keys(filters).length > 0 && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="ml-auto text-xs"
-                      onClick={clearAllFilters}
-                    >
-                      <FilterX className="h-3.5 w-3.5 mr-1" />
-                      Clear all filters
-                    </Button>
-                  )}
-                </div>
-                
-                {isLoading && tasks.length > 0 && (
-                  <div className="flex justify-center mb-4">
-                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                  </div>
+            <div className="p-6 space-y-6">
+              <div className="flex items-center gap-2">
+                <SidebarTrigger className="hidden md:flex" />
+                <h1 className="text-2xl font-bold">Tasks</h1>
+                {Object.keys(filters).length > 0 && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="ml-auto text-xs"
+                    onClick={clearAllFilters}
+                  >
+                    <FilterX className="h-3.5 w-3.5 mr-1" />
+                    Clear all filters
+                  </Button>
                 )}
+              </div>
+              
+              <Tabs defaultValue="kanban" value={activeTab} onValueChange={handleTabChange} className="w-full">
+                <TabsList className="w-full mb-6 bg-muted/50 backdrop-blur-sm">
+                  <TabsTrigger value="focus" className="flex-1">My Focus</TabsTrigger>
+                  <TabsTrigger value="kanban" className="flex-1">Kanban</TabsTrigger>
+                </TabsList>
                 
-                {/* Active Filters Display */}
-                <ActiveFiltersDisplay 
-                  filters={filters}
-                  onClearStatusFilter={clearStatusFilter}
-                  onClearPriorityFilter={clearPriorityFilter}
-                  onClearDateFilters={clearDateFilters}
-                  onClearSearchFilter={clearSearchFilter}
-                  onClearTagsFilter={clearTagsFilter}
-                  onClearAllFilters={clearAllFilters}
-                />
+                {/* My Focus Tab */}
+                <TabsContent value="focus" className="mt-0">
+                  <MyFocusView />
+                </TabsContent>
                 
-                {/* Screen reader announcement for operations */}
-                <div 
-                  id="drag-announcement" 
-                  role="status" 
-                  aria-live="assertive" 
-                  className="sr-only"
-                ></div>
-                
-                {/* Mobile View with Column Navigation */}
-                {isMobile && (
-                  <div className="block sm:hidden w-full">
-                    <div className="flex justify-between items-center mb-2">
-                      <Button 
-                        variant="outline" 
-                        size="icon" 
-                        onClick={prevColumn}
-                        disabled={activeColumnIndex === 0}
-                        className="h-8 w-8"
-                        aria-label="Previous column"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      <span className="text-sm font-medium">
-                        {columns[activeColumnIndex].title} 
-                        <span className="ml-1 text-xs text-muted-foreground">
-                          ({activeColumnIndex + 1}/{columns.length})
-                        </span>
-                      </span>
-                      <Button 
-                        variant="outline" 
-                        size="icon" 
-                        onClick={nextColumn}
-                        disabled={activeColumnIndex === columns.length - 1}
-                        className="h-8 w-8"
-                        aria-label="Next column"
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
+                {/* Kanban Board Tab */}
+                <TabsContent value="kanban" className="mt-0">
+                  <ActiveFiltersDisplay 
+                    filters={filters}
+                    onClearStatusFilter={clearStatusFilter}
+                    onClearPriorityFilter={clearPriorityFilter}
+                    onClearDateFilters={clearDateFilters}
+                    onClearSearchFilter={clearSearchFilter}
+                    onClearTagsFilter={clearTagsFilter}
+                    onClearAllFilters={clearAllFilters}
+                  />
+                  
+                  <DndContext 
+                    sensors={sensors} 
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                  >
+                    {/* Screen reader announcement for operations */}
+                    <div 
+                      id="drag-announcement" 
+                      role="status" 
+                      aria-live="assertive" 
+                      className="sr-only"
+                    ></div>
+                    
+                    {isLoading && tasks.length > 0 && (
+                      <div className="flex justify-center mb-4">
+                        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      </div>
+                    )}
+                    
+                    {/* Mobile View with Column Navigation */}
+                    {isMobile && (
+                      <div className="block sm:hidden w-full">
+                        <div className="flex justify-between items-center mb-2">
+                          <Button 
+                            variant="outline" 
+                            size="icon" 
+                            onClick={prevColumn}
+                            disabled={activeColumnIndex === 0}
+                            className="h-8 w-8"
+                            aria-label="Previous column"
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          <span className="text-sm font-medium">
+                            {columns[activeColumnIndex].title} 
+                            <span className="ml-1 text-xs text-muted-foreground">
+                              ({activeColumnIndex + 1}/{columns.length})
+                            </span>
+                          </span>
+                          <Button 
+                            variant="outline" 
+                            size="icon" 
+                            onClick={nextColumn}
+                            disabled={activeColumnIndex === columns.length - 1}
+                            className="h-8 w-8"
+                            aria-label="Next column"
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        
+                        <div className="w-full">
+                          <KanbanColumn
+                            key={columns[activeColumnIndex].id}
+                            id={columns[activeColumnIndex].id}
+                            title={columns[activeColumnIndex].title}
+                            tasks={columns[activeColumnIndex].tasks}
+                            status={columns[activeColumnIndex].status}
+                            className="h-[calc(100vh-16rem)]"
+                          />
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Desktop View with All Columns */}
+                    <div className={`${isMobile ? 'hidden' : 'block'} w-full overflow-x-auto pb-4`}>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 min-w-[600px] lg:min-w-0">
+                        {columns.map((column) => (
+                          <KanbanColumn
+                            key={column.id}
+                            id={column.id}
+                            title={column.title}
+                            tasks={column.tasks}
+                            status={column.status}
+                          />
+                        ))}
+                      </div>
                     </div>
                     
-                    <div className="w-full">
-                      <KanbanColumn
-                        key={columns[activeColumnIndex].id}
-                        id={columns[activeColumnIndex].id}
-                        title={columns[activeColumnIndex].title}
-                        tasks={columns[activeColumnIndex].tasks}
-                        status={columns[activeColumnIndex].status}
-                        className="h-[calc(100vh-16rem)]"
-                      />
-                    </div>
-                  </div>
-                )}
-                
-                {/* Desktop View with All Columns */}
-                <div className={`${isMobile ? 'hidden' : 'block'} w-full overflow-x-auto pb-4`}>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 min-w-[600px] lg:min-w-0">
-                    {columns.map((column) => (
-                      <KanbanColumn
-                        key={column.id}
-                        id={column.id}
-                        title={column.title}
-                        tasks={column.tasks}
-                        status={column.status}
-                      />
-                    ))}
-                  </div>
-                </div>
-                
-                {getFilteredTasks().length === 0 && (
-                  <div className="flex flex-col items-center justify-center h-60 text-center mt-8">
-                    <CheckCircle className="h-12 w-12 text-muted-foreground/30 mb-4" />
-                    <h3 className="text-lg font-medium">No tasks found</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {Object.keys(filters).length > 0 ? 'Try different filters' : 'Create your first task to get started'}
-                    </p>
-                  </div>
-                )}
-                
-                {/* Drag Overlay */}
-                <KanbanDragOverlay activeTask={activeTask} isDragging={isDragging} />
-              </div>
-            </DndContext>
+                    {getFilteredTasks().length === 0 && (
+                      <div className="flex flex-col items-center justify-center h-60 text-center mt-8">
+                        <CheckCircle className="h-12 w-12 text-muted-foreground/30 mb-4" />
+                        <h3 className="text-lg font-medium">No tasks found</h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {Object.keys(filters).length > 0 ? 'Try different filters' : 'Create your first task to get started'}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {/* Drag Overlay */}
+                    <KanbanDragOverlay activeTask={activeTask} isDragging={isDragging} />
+                  </DndContext>
+                </TabsContent>
+              </Tabs>
+            </div>
           </SidebarInset>
         </div>
       </SidebarProvider>

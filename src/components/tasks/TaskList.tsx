@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useTaskStore } from '@/store/taskStore/taskStore';
 import { TaskCard } from './TaskCard';
@@ -9,6 +8,7 @@ import { CheckCircle, Loader2, Filter, FilterX } from 'lucide-react';
 import { ActiveFiltersDisplay } from './ActiveFiltersDisplay';
 import { FilterSidebar } from './FilterSidebar';
 import { TaskStatus } from '@/types/task';
+import { MyFocusView } from './MyFocusView';
 import {
   SidebarProvider,
   SidebarInset,
@@ -23,7 +23,7 @@ import {
 export function TaskList() {
   const { tasks, filters, setFilters, getFilteredTasks, fetchTasks, isLoading, error, setupTaskSubscription } = useTaskStore();
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<string>('focus');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   
   // Get all unique tags from tasks
@@ -58,6 +58,8 @@ export function TaskList() {
       setFilters({ ...filters, status: [TaskStatus.DONE] });
     } else if (tab === 'archived') {
       setFilters({ ...filters, status: [TaskStatus.ARCHIVED] });
+    } else if (tab === 'focus') {
+      setFilters({});
     }
   };
   
@@ -91,12 +93,12 @@ export function TaskList() {
   const clearAllFilters = () => {
     setFilters({});
     setSearchQuery('');
-    setActiveTab('all');
+    setActiveTab('focus');
   };
   
   const filteredTasks = getFilteredTasks();
   
-  if (error) {
+  if (error && activeTab !== 'focus') {
     return (
       <Alert variant="destructive" className="mb-6">
         <AlertTitle>Error loading tasks</AlertTitle>
@@ -107,7 +109,7 @@ export function TaskList() {
     );
   }
   
-  if (isLoading && tasks.length === 0) {
+  if (isLoading && tasks.length === 0 && activeTab !== 'focus') {
     return (
       <div className="flex flex-col items-center justify-center h-60">
         <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
@@ -187,20 +189,27 @@ export function TaskList() {
                 onClearAllFilters={clearAllFilters}
               />
               
-              <Tabs defaultValue="all" value={activeTab} onValueChange={handleTabChange} className="w-full">
+              <Tabs defaultValue="focus" value={activeTab} onValueChange={handleTabChange} className="w-full">
                 <TabsList className="w-full mb-6 bg-muted/50 backdrop-blur-sm">
+                  <TabsTrigger value="focus" className="flex-1">My Focus</TabsTrigger>
                   <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
                   <TabsTrigger value="active" className="flex-1">Active</TabsTrigger>
                   <TabsTrigger value="completed" className="flex-1">Completed</TabsTrigger>
                   <TabsTrigger value="archived" className="flex-1">Archived</TabsTrigger>
                 </TabsList>
                 
-                {isLoading && tasks.length > 0 && (
+                {isLoading && tasks.length > 0 && activeTab !== 'focus' && (
                   <div className="flex justify-center mb-4">
                     <Loader2 className="h-5 w-5 animate-spin text-primary" />
                   </div>
                 )}
                 
+                {/* My Focus Tab */}
+                <TabsContent value="focus" className="mt-0">
+                  <MyFocusView />
+                </TabsContent>
+                
+                {/* All Tab */}
                 <TabsContent value="all" className="mt-0">
                   {filteredTasks.length > 0 ? (
                     <div className="grid grid-cols-1 gap-4">
@@ -219,6 +228,7 @@ export function TaskList() {
                   )}
                 </TabsContent>
                 
+                {/* Keep existing code for active, completed, and archived tabs */}
                 <TabsContent value="active" className="mt-0">
                   {filteredTasks.length > 0 ? (
                     <div className="grid grid-cols-1 gap-4">
