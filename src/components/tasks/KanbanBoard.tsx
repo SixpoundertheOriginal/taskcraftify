@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { CheckCircle, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CheckCircle, Loader2, ChevronLeft, ChevronRight, Filter, FilterX } from 'lucide-react';
 import { useTaskStore } from '@/store';
 import { Task, TaskStatus } from '@/types/task';
 import { KanbanColumn } from './KanbanColumn';
@@ -11,6 +11,17 @@ import { toast } from '@/hooks/use-toast';
 import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor, DragStartEvent } from '@dnd-kit/core';
 import { KanbanDragOverlay } from './KanbanDragOverlay';
 import { ActiveFiltersDisplay } from './ActiveFiltersDisplay';
+import { FilterSidebar } from './FilterSidebar';
+import {
+  SidebarProvider,
+  SidebarInset,
+  SidebarTrigger,
+} from '@/components/ui/sidebar';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 
 export function KanbanBoard() {
   const { 
@@ -26,7 +37,12 @@ export function KanbanBoard() {
   const [activeColumnIndex, setActiveColumnIndex] = useState(0);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
+  
+  // Get all unique tags from tasks
+  const allTags = Array.from(new Set(tasks.flatMap(task => task.tags || []))).sort();
   
   // Filter tasks by status
   const todoTasks = getFilteredTasks().filter(task => task.status === TaskStatus.TODO);
@@ -68,9 +84,21 @@ export function KanbanBoard() {
     setFilters(restFilters);
   };
   
+  const clearSearchFilter = () => {
+    setSearchQuery('');
+    const { searchQuery, ...restFilters } = filters;
+    setFilters(restFilters);
+  };
+  
+  const clearTagsFilter = () => {
+    const { tags, ...restFilters } = filters;
+    setFilters(restFilters);
+  };
+  
   // Clear all filters
   const clearAllFilters = () => {
     setFilters({});
+    setSearchQuery('');
   };
   
   // Handle drag start - set the active task
@@ -169,108 +197,173 @@ export function KanbanBoard() {
   }
   
   return (
-    <DndContext 
-      sensors={sensors} 
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="space-y-6 animate-fade-in">
-        {isLoading && tasks.length > 0 && (
-          <div className="flex justify-center mb-4">
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
-          </div>
-        )}
-        
-        {/* Active Filters Display */}
-        <ActiveFiltersDisplay 
-          filters={filters}
-          onClearStatusFilter={clearStatusFilter}
-          onClearPriorityFilter={clearPriorityFilter}
-          onClearDateFilters={clearDateFilters}
-          onClearAllFilters={clearAllFilters}
-        />
-        
-        {/* Screen reader announcement for operations */}
-        <div 
-          id="drag-announcement" 
-          role="status" 
-          aria-live="assertive" 
-          className="sr-only"
-        ></div>
-        
-        {/* Mobile View with Column Navigation */}
-        {isMobile && (
-          <div className="block sm:hidden w-full">
-            <div className="flex justify-between items-center mb-2">
-              <Button 
-                variant="outline" 
-                size="icon" 
-                onClick={prevColumn}
-                disabled={activeColumnIndex === 0}
-                className="h-8 w-8"
-                aria-label="Previous column"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="text-sm font-medium">
-                {columns[activeColumnIndex].title} 
-                <span className="ml-1 text-xs text-muted-foreground">
-                  ({activeColumnIndex + 1}/{columns.length})
+    <div className="animate-fade-in">
+      {/* Mobile sheet for filters */}
+      <div className="md:hidden mb-4">
+        <Sheet open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen}>
+          <SheetTrigger asChild>
+            <Button variant="outline" className="flex items-center gap-2">
+              <Filter className="h-4 w-4" />
+              <span>Filters</span>
+              {Object.keys(filters).length > 0 && (
+                <span className="ml-1 bg-primary text-primary-foreground rounded-full w-5 h-5 text-xs flex items-center justify-center">
+                  {Object.keys(filters).length}
                 </span>
-              </span>
-              <Button 
-                variant="outline" 
-                size="icon" 
-                onClick={nextColumn}
-                disabled={activeColumnIndex === columns.length - 1}
-                className="h-8 w-8"
-                aria-label="Next column"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-            
-            <div className="w-full">
-              <KanbanColumn
-                key={columns[activeColumnIndex].id}
-                id={columns[activeColumnIndex].id}
-                title={columns[activeColumnIndex].title}
-                tasks={columns[activeColumnIndex].tasks}
-                status={columns[activeColumnIndex].status}
-                className="h-[calc(100vh-16rem)]"
-              />
-            </div>
-          </div>
-        )}
-        
-        {/* Desktop View with All Columns */}
-        <div className={`${isMobile ? 'hidden' : 'block'} w-full overflow-x-auto pb-4`}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 min-w-[600px] lg:min-w-0">
-            {columns.map((column) => (
-              <KanbanColumn
-                key={column.id}
-                id={column.id}
-                title={column.title}
-                tasks={column.tasks}
-                status={column.status}
-              />
-            ))}
-          </div>
-        </div>
-        
-        {getFilteredTasks().length === 0 && (
-          <div className="flex flex-col items-center justify-center h-60 text-center mt-8">
-            <CheckCircle className="h-12 w-12 text-muted-foreground/30 mb-4" />
-            <h3 className="text-lg font-medium">No tasks found</h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              {filters.searchQuery || (filters.tags && filters.tags.length > 0) ? 'Try different filters' : 'Create your first task to get started'}
-            </p>
-          </div>
-        )}
-        
-        {/* Drag Overlay */}
-        <KanbanDragOverlay activeTask={activeTask} isDragging={isDragging} />
+              )}
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="p-0 w-[80%] max-w-sm">
+            <FilterSidebar
+              filters={filters}
+              setFilters={setFilters}
+              allTags={allTags}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              clearAllFilters={clearAllFilters}
+            />
+          </SheetContent>
+        </Sheet>
       </div>
-    </DndContext>
+      
+      {/* Desktop view with sidebar and Kanban board */}
+      <SidebarProvider defaultOpen={false}>
+        <div className="flex w-full">
+          <div className="hidden md:block">
+            <FilterSidebar
+              filters={filters}
+              setFilters={setFilters}
+              allTags={allTags}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              clearAllFilters={clearAllFilters}
+            />
+          </div>
+          
+          <SidebarInset className="flex-1 p-0">
+            <DndContext 
+              sensors={sensors} 
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            >
+              <div className="p-6 space-y-6">
+                <div className="flex items-center gap-2">
+                  <SidebarTrigger className="hidden md:flex" />
+                  <h1 className="text-2xl font-bold">Kanban Board</h1>
+                  {Object.keys(filters).length > 0 && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="ml-auto text-xs"
+                      onClick={clearAllFilters}
+                    >
+                      <FilterX className="h-3.5 w-3.5 mr-1" />
+                      Clear all filters
+                    </Button>
+                  )}
+                </div>
+                
+                {isLoading && tasks.length > 0 && (
+                  <div className="flex justify-center mb-4">
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  </div>
+                )}
+                
+                {/* Active Filters Display */}
+                <ActiveFiltersDisplay 
+                  filters={filters}
+                  onClearStatusFilter={clearStatusFilter}
+                  onClearPriorityFilter={clearPriorityFilter}
+                  onClearDateFilters={clearDateFilters}
+                  onClearSearchFilter={clearSearchFilter}
+                  onClearTagsFilter={clearTagsFilter}
+                  onClearAllFilters={clearAllFilters}
+                />
+                
+                {/* Screen reader announcement for operations */}
+                <div 
+                  id="drag-announcement" 
+                  role="status" 
+                  aria-live="assertive" 
+                  className="sr-only"
+                ></div>
+                
+                {/* Mobile View with Column Navigation */}
+                {isMobile && (
+                  <div className="block sm:hidden w-full">
+                    <div className="flex justify-between items-center mb-2">
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        onClick={prevColumn}
+                        disabled={activeColumnIndex === 0}
+                        className="h-8 w-8"
+                        aria-label="Previous column"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <span className="text-sm font-medium">
+                        {columns[activeColumnIndex].title} 
+                        <span className="ml-1 text-xs text-muted-foreground">
+                          ({activeColumnIndex + 1}/{columns.length})
+                        </span>
+                      </span>
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        onClick={nextColumn}
+                        disabled={activeColumnIndex === columns.length - 1}
+                        className="h-8 w-8"
+                        aria-label="Next column"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    <div className="w-full">
+                      <KanbanColumn
+                        key={columns[activeColumnIndex].id}
+                        id={columns[activeColumnIndex].id}
+                        title={columns[activeColumnIndex].title}
+                        tasks={columns[activeColumnIndex].tasks}
+                        status={columns[activeColumnIndex].status}
+                        className="h-[calc(100vh-16rem)]"
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                {/* Desktop View with All Columns */}
+                <div className={`${isMobile ? 'hidden' : 'block'} w-full overflow-x-auto pb-4`}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 min-w-[600px] lg:min-w-0">
+                    {columns.map((column) => (
+                      <KanbanColumn
+                        key={column.id}
+                        id={column.id}
+                        title={column.title}
+                        tasks={column.tasks}
+                        status={column.status}
+                      />
+                    ))}
+                  </div>
+                </div>
+                
+                {getFilteredTasks().length === 0 && (
+                  <div className="flex flex-col items-center justify-center h-60 text-center mt-8">
+                    <CheckCircle className="h-12 w-12 text-muted-foreground/30 mb-4" />
+                    <h3 className="text-lg font-medium">No tasks found</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {Object.keys(filters).length > 0 ? 'Try different filters' : 'Create your first task to get started'}
+                    </p>
+                  </div>
+                )}
+                
+                {/* Drag Overlay */}
+                <KanbanDragOverlay activeTask={activeTask} isDragging={isDragging} />
+              </div>
+            </DndContext>
+          </SidebarInset>
+        </div>
+      </SidebarProvider>
+    </div>
   );
 }
