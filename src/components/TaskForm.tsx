@@ -41,7 +41,14 @@ export function TaskForm({ open, onOpenChange, initialDueDate }: TaskFormProps) 
   const [tags, setTags] = useState<string[]>([]);
   const [dueDate, setDueDate] = useState<Date | undefined>(initialDueDate);
   
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateTaskDTO>();
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateTaskDTO>({
+    defaultValues: {
+      title: '',
+      description: '',
+      status: TaskStatus.TODO,
+      priority: TaskPriority.MEDIUM
+    }
+  });
   
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
@@ -135,7 +142,7 @@ export function TaskForm({ open, onOpenChange, initialDueDate }: TaskFormProps) 
               <label htmlFor="status" className="text-sm font-medium">
                 Status <span className="text-destructive">*</span>
               </label>
-              <Select defaultValue={TaskStatus.TODO} {...register('status', { required: true })}>
+              <Select defaultValue={TaskStatus.TODO} onValueChange={(value) => register('status').onChange({ target: { value } } as any)}>
                 <SelectTrigger id="status">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
@@ -153,7 +160,7 @@ export function TaskForm({ open, onOpenChange, initialDueDate }: TaskFormProps) 
               <label htmlFor="priority" className="text-sm font-medium">
                 Priority <span className="text-destructive">*</span>
               </label>
-              <Select defaultValue={TaskPriority.MEDIUM} {...register('priority', { required: true })}>
+              <Select defaultValue={TaskPriority.MEDIUM} onValueChange={(value) => register('priority').onChange({ target: { value } } as any)}>
                 <SelectTrigger id="priority">
                   <SelectValue placeholder="Select priority" />
                 </SelectTrigger>
@@ -176,6 +183,7 @@ export function TaskForm({ open, onOpenChange, initialDueDate }: TaskFormProps) 
                   variant="outline"
                   className="w-full justify-start text-left font-normal"
                   id="dueDate"
+                  type="button"
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {dueDate ? format(dueDate, 'PPP') : <span className="text-muted-foreground">Select due date</span>}

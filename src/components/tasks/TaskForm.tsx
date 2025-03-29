@@ -218,6 +218,7 @@ export function TaskForm({ open, onOpenChange, initialTask, initialDueDate, init
                     <Select 
                       onValueChange={field.onChange} 
                       defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -245,6 +246,7 @@ export function TaskForm({ open, onOpenChange, initialTask, initialDueDate, init
                     <Select 
                       onValueChange={field.onChange} 
                       defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
