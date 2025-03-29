@@ -41,7 +41,7 @@ export function TaskForm({ open, onOpenChange, initialDueDate }: TaskFormProps) 
   const [tags, setTags] = useState<string[]>([]);
   const [dueDate, setDueDate] = useState<Date | undefined>(initialDueDate);
   
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors }, control } = useForm<CreateTaskDTO>({
+  const { register, handleSubmit, reset, control, formState: { errors } } = useForm<CreateTaskDTO>({
     defaultValues: {
       title: '',
       description: '',
@@ -49,9 +49,6 @@ export function TaskForm({ open, onOpenChange, initialDueDate }: TaskFormProps) 
       priority: TaskPriority.MEDIUM
     }
   });
-  
-  const titleValue = watch('title');
-  const descriptionValue = watch('description');
   
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
@@ -123,7 +120,6 @@ export function TaskForm({ open, onOpenChange, initialDueDate }: TaskFormProps) 
               id="title"
               placeholder="Task title"
               {...register('title', { required: 'Title is required' })}
-              className="w-full"
             />
             {errors.title && (
               <p className="text-xs text-destructive">{errors.title.message}</p>
@@ -152,6 +148,7 @@ export function TaskForm({ open, onOpenChange, initialDueDate }: TaskFormProps) 
                   <Select 
                     onValueChange={field.onChange}
                     value={field.value}
+                    defaultValue={TaskStatus.TODO}
                   >
                     <SelectTrigger id="status">
                       <SelectValue placeholder="Select status" />
@@ -179,6 +176,7 @@ export function TaskForm({ open, onOpenChange, initialDueDate }: TaskFormProps) 
                   <Select 
                     onValueChange={field.onChange}
                     value={field.value}
+                    defaultValue={TaskPriority.MEDIUM}
                   >
                     <SelectTrigger id="priority">
                       <SelectValue placeholder="Select priority" />
@@ -231,7 +229,6 @@ export function TaskForm({ open, onOpenChange, initialDueDate }: TaskFormProps) 
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyDown={handleTagInputKeyDown}
-                className="w-full"
               />
               <Button type="button" size="icon" onClick={handleAddTag}>
                 <Plus className="h-4 w-4" />
