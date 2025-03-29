@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { useProjectStore, useTaskStore } from '@/store';
 import { Task, TaskPriority, TaskStatus, countTasksByProject } from '@/types/task';
@@ -94,7 +93,6 @@ export function EnhancedProjectList() {
   
   const { items: sortedProjects, onDragEnd } = useDndSortable(projects);
   
-  // Task counts by status and priority for each project
   const projectStats = useMemo(() => {
     const stats: Record<string, {
       total: number,
@@ -116,43 +114,36 @@ export function EnhancedProjectList() {
       };
     });
     
-    // Also track stats for "All" and "None" pseudo-projects
     stats['all'] = { total: 0, urgent: 0, high: 0, done: 0, inProgress: 0, completion: 0 };
     stats['none'] = { total: 0, urgent: 0, high: 0, done: 0, inProgress: 0, completion: 0 };
     
     tasks.forEach((task: Task) => {
       const projectId = task.projectId ?? 'none';
       
-      // Increment total counts
       stats['all'].total++;
       if (stats[projectId]) stats[projectId].total++;
       
-      // Track urgent tasks
       if (task.priority === TaskPriority.URGENT) {
         stats['all'].urgent++;
         if (stats[projectId]) stats[projectId].urgent++;
       }
       
-      // Track high priority tasks
       if (task.priority === TaskPriority.HIGH) {
         stats['all'].high++;
         if (stats[projectId]) stats[projectId].high++;
       }
       
-      // Track done tasks
       if (task.status === TaskStatus.DONE) {
         stats['all'].done++;
         if (stats[projectId]) stats[projectId].done++;
       }
       
-      // Track in-progress tasks
       if (task.status === TaskStatus.IN_PROGRESS) {
         stats['all'].inProgress++;
         if (stats[projectId]) stats[projectId].inProgress++;
       }
     });
     
-    // Calculate completion percentages
     Object.keys(stats).forEach(id => {
       if (stats[id].total > 0) {
         stats[id].completion = Math.round((stats[id].done / stats[id].total) * 100);
@@ -235,6 +226,28 @@ export function EnhancedProjectList() {
       toast({
         title: "Refresh failed",
         description: "There was a problem refreshing the task counts.",
+        variant: "destructive"
+      });
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 1000);
+    }
+  };
+  
+  const handleDiagnosticQuery = async () => {
+    setIsRefreshing(true);
+    
+    try {
+      await diagnosticDatabaseQuery();
+      
+      toast({
+        title: "Database diagnostic completed",
+        description: "Database diagnostic query has been executed.",
+      });
+    } catch (error) {
+      console.error("Error during database diagnostic:", error);
+      toast({
+        title: "Diagnostic failed",
+        description: "There was a problem running the diagnostic query.",
         variant: "destructive"
       });
     } finally {
@@ -415,7 +428,9 @@ export function EnhancedProjectList() {
                   <span className="sr-only">Unfavorite</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="right">Remove from favorites</TooltipContent>
+              <TooltipContent>
+                <p>Remove from favorites</p>
+              </TooltipContent>
             </Tooltip>
           ) : (
             <Tooltip>
@@ -433,7 +448,9 @@ export function EnhancedProjectList() {
                   <span className="sr-only">Favorite</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="right">Add to favorites</TooltipContent>
+              <TooltipContent>
+                <p>Add to favorites</p>
+              </TooltipContent>
             </Tooltip>
           )}
           
@@ -452,7 +469,9 @@ export function EnhancedProjectList() {
                 <span className="sr-only">Edit</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="right">Edit project</TooltipContent>
+            <TooltipContent>
+              <p>Edit project</p>
+            </TooltipContent>
           </Tooltip>
           
           <Tooltip>
@@ -470,7 +489,9 @@ export function EnhancedProjectList() {
                 <span className="sr-only">Delete</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="right">Delete project</TooltipContent>
+            <TooltipContent>
+              <p>Delete project</p>
+            </TooltipContent>
           </Tooltip>
           
           <Tooltip>
@@ -488,7 +509,9 @@ export function EnhancedProjectList() {
                 <span className="sr-only">Info</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="right">Project details</TooltipContent>
+            <TooltipContent>
+              <p>Project details</p>
+            </TooltipContent>
           </Tooltip>
         </div>
       </SidebarMenuButton>
