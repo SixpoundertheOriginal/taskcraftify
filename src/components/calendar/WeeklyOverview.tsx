@@ -1,11 +1,12 @@
 
 import { useMemo } from 'react';
-import { format, addDays, isSameDay } from 'date-fns';
+import { format, addDays, isSameDay, isToday } from 'date-fns';
 import { Task } from '@/types/task';
 import { CalendarEvent } from '@/types/integration';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Calendar, CheckCircle2, Clock } from 'lucide-react';
 
 interface WeeklyOverviewProps {
   tasks: Task[];
@@ -44,7 +45,7 @@ export function WeeklyOverview({ tasks, events, selectedDate, onDateSelect }: We
         taskCount: dayTasks.length,
         eventCount: dayEvents.length,
         isSelected: selectedDate && isSameDay(date, selectedDate),
-        isToday: isSameDay(date, new Date())
+        isToday: isToday(date)
       });
     }
     
@@ -55,7 +56,7 @@ export function WeeklyOverview({ tasks, events, selectedDate, onDateSelect }: We
   
   return (
     <div className={cn(
-      "flex justify-between mb-4 overflow-x-auto pb-1",
+      "flex justify-between mb-6 overflow-x-auto pb-1 bg-card/50 rounded-lg p-3",
       isMobile && "mb-20" // Add bottom margin on mobile to prevent overlap with floating button
     )}>
       {weekDays.map((day) => (
@@ -64,33 +65,51 @@ export function WeeklyOverview({ tasks, events, selectedDate, onDateSelect }: We
           variant="ghost"
           size="sm"
           className={cn(
-            "flex flex-col items-center px-2 py-1 h-auto min-w-0 gap-1 rounded-lg",
-            isMobile ? "flex-1 mx-1" : "min-w-14",
-            day.isSelected && "bg-primary text-primary-foreground",
-            day.isToday && !day.isSelected && "border border-primary"
+            "flex flex-col items-center px-2 py-3 h-auto min-w-0 gap-1 rounded-lg transition-all",
+            isMobile ? "flex-1 mx-1" : "min-w-16",
+            day.isSelected ? "bg-primary text-primary-foreground shadow-md" : 
+              day.isToday ? "border border-primary bg-primary/5" : "",
+            "hover:bg-primary/10"
           )}
           onClick={() => onDateSelect(day.date)}
         >
           <span className={cn(
-            "text-xs font-normal",
-            isMobile && "text-[10px]"
+            "text-xs font-medium",
+            isMobile && "text-[10px]",
+            day.isSelected ? "text-primary-foreground" : day.isToday ? "text-primary" : "text-muted-foreground"
           )}>{day.dayName}</span>
+          
           <span className={cn(
             "flex items-center justify-center rounded-full",
-            isMobile ? "w-6 h-6 text-xs" : "w-7 h-7",
-            day.isSelected && "font-bold",
-            day.isToday && !day.isSelected && "bg-primary/10 font-medium",
+            isMobile ? "w-7 h-7 text-sm" : "w-8 h-8 text-base",
+            day.isSelected ? "bg-primary-foreground text-primary font-bold" : 
+              day.isToday ? "bg-primary/20 text-primary font-medium" : "",
           )}>
             {day.dayNumber}
           </span>
           
           {(day.taskCount > 0 || day.eventCount > 0) && (
-            <div className="flex gap-1 mt-1">
+            <div className="flex flex-col items-center mt-1 gap-1">
               {day.taskCount > 0 && (
-                <div className="h-1.5 w-1.5 rounded-full bg-blue-500"></div>
+                <div className="flex items-center gap-1 text-xs">
+                  <CheckCircle2 className="h-3 w-3" />
+                  <span className={cn(
+                    day.isSelected ? "text-primary-foreground" : "text-muted-foreground"
+                  )}>
+                    {day.taskCount}
+                  </span>
+                </div>
               )}
+              
               {day.eventCount > 0 && (
-                <div className="h-1.5 w-1.5 rounded-full bg-purple-500"></div>
+                <div className="flex items-center gap-1 text-xs">
+                  <Calendar className="h-3 w-3" />
+                  <span className={cn(
+                    day.isSelected ? "text-primary-foreground" : "text-muted-foreground"
+                  )}>
+                    {day.eventCount}
+                  </span>
+                </div>
               )}
             </div>
           )}
