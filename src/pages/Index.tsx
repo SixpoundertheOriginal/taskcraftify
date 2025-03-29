@@ -25,6 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CalendarDays, List, KanbanSquare, Settings, PanelLeft } from 'lucide-react';
 import { QuickAddButton } from '@/components/quick-add';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { InsightsPanel } from '@/components/insights';
 
 export default function Index() {
   const [activeView, setActiveView] = useState<ViewMode>('list');
@@ -147,6 +148,11 @@ export default function Index() {
                   )}
                 </div>
               </div>
+              
+              {/* Add InsightsPanel here, only for tasks and calendar tabs */}
+              {(activeTab === 'tasks' || activeTab === 'calendar') && (
+                <InsightsPanel />
+              )}
               
               <TabsContent value="tasks" className="mt-0">
                 {activeView === 'list' ? (
