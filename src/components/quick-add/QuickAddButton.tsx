@@ -20,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { TaskForm } from '@/components/tasks/TaskForm';
+import { UnifiedTaskForm } from '@/components/unified/TaskForm';
 import { useKeyboardShortcut } from '@/hooks/use-keyboard-shortcuts';
 import { cn } from '@/lib/utils';
 
@@ -36,7 +36,6 @@ export const QuickAddButton = () => {
     setIsDropdownOpen(false);
   };
   
-  // Keyboard shortcut handler
   useKeyboardShortcut({
     key: 'k',
     ctrl: true,
@@ -64,7 +63,6 @@ export const QuickAddButton = () => {
     }
   });
   
-  // Handle task form close
   const handleTaskFormOpenChange = (open: boolean) => {
     setIsTaskFormOpen(open);
   };
@@ -128,7 +126,7 @@ export const QuickAddButton = () => {
         </DropdownMenu>
       </TooltipProvider>
       
-      <TaskForm 
+      <UnifiedTaskForm 
         open={isTaskFormOpen}
         onOpenChange={handleTaskFormOpenChange}
         initialDueDate={taskFormType === 'event' ? new Date() : undefined}
