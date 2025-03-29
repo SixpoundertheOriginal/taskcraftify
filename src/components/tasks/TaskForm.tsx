@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Dialog } from '@/components/ui/dialog';
-import { Task } from '@/types/task';
+import { Task, TaskStatus } from '@/types/task';
 
 interface TaskFormProps {
   open: boolean;
@@ -9,9 +9,10 @@ interface TaskFormProps {
   initialTask?: Partial<Task>;
   initialDueDate?: Date;
   taskToEdit?: Task;
+  initialStatus?: TaskStatus;
 }
 
-export function TaskForm({ open, onOpenChange, initialTask, initialDueDate, taskToEdit }: TaskFormProps) {
+export function TaskForm({ open, onOpenChange, initialTask, initialDueDate, taskToEdit, initialStatus }: TaskFormProps) {
   // This component now simply forwards to the UnifiedTaskForm component
   // This maintains backward compatibility with existing code
   
@@ -21,6 +22,7 @@ export function TaskForm({ open, onOpenChange, initialTask, initialDueDate, task
       onOpenChange={onOpenChange} 
       initialTask={taskToEdit} 
       initialDueDate={initialDueDate}
+      initialStatus={initialStatus}
     />
   );
 }
