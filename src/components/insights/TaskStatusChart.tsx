@@ -100,13 +100,13 @@ export function TaskStatusChart() {
         </ResponsiveContainer>
       </ChartContainer>
       
-      {/* Improved badges display with more padding and spacing for better mobile layout */}
-      <div className="mt-4 flex flex-wrap gap-2 justify-center">
+      {/* Improved badges display with more spacing and layout */}
+      <div className="mt-4 mb-8 flex flex-wrap gap-3 justify-center">
         {chartData.map((item) => (
           <Badge 
             key={item.status} 
             variant="outline"
-            className="flex items-center gap-1.5 whitespace-nowrap py-1.5 px-2.5" // Added more padding
+            className="flex items-center gap-1.5 whitespace-nowrap py-1.5 px-3"
           >
             <span 
               className="h-2.5 w-2.5 rounded-full flex-shrink-0" 
