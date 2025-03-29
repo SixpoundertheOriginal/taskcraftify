@@ -4,6 +4,7 @@ import { Bar, BarChart, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { format } from 'date-fns';
 import { TaskStatus } from '@/types/task';
 import { useTaskStore } from '@/store';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface StatsChartProps {
   data: { name: string; value: number; date?: Date }[];
@@ -13,6 +14,8 @@ interface StatsChartProps {
 }
 
 export function StatsChart({ data, color = 'var(--primary)', title, height = 160 }: StatsChartProps) {
+  const isMobile = useIsMobile();
+  
   return (
     <div className="w-full">
       <div className="mb-2 text-sm font-medium">{title}</div>
@@ -25,6 +28,10 @@ export function StatsChart({ data, color = 'var(--primary)', title, height = 160
               fontSize={12} 
               tickLine={false} 
               axisLine={false}
+              // For mobile, reduce the number of ticks shown
+              interval={isMobile ? 1 : 0}
+              // Limit label length on mobile
+              tickFormatter={(value) => isMobile && value.length > 3 ? value.substring(0, 3) + '.' : value}
             />
             <Tooltip
               content={({ active, payload }) => {

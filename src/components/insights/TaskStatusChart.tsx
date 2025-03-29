@@ -6,9 +6,11 @@ import { useTaskStore } from '@/store';
 import { TaskStatus } from '@/types/task';
 import { getStatusLabel } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export function TaskStatusChart() {
   const { getTasksCountByStatus } = useTaskStore();
+  const isMobile = useIsMobile();
   
   // Get status counts from the store
   const statusCounts = getTasksCountByStatus();
@@ -98,18 +100,19 @@ export function TaskStatusChart() {
         </ResponsiveContainer>
       </ChartContainer>
       
+      {/* Improved badges display for better mobile layout */}
       <div className="mt-2 flex flex-wrap gap-2 justify-center">
         {chartData.map((item) => (
           <Badge 
             key={item.status} 
             variant="outline"
-            className="flex items-center gap-1.5"
+            className="flex items-center gap-1.5 whitespace-nowrap"
           >
             <span 
-              className="h-2.5 w-2.5 rounded-full" 
+              className="h-2.5 w-2.5 rounded-full flex-shrink-0" 
               style={{ backgroundColor: COLORS[item.status as TaskStatus] }} 
             />
-            <span>{item.name}: {item.value}</span>
+            <span className="max-w-[85px] truncate">{item.name}: {item.value}</span>
           </Badge>
         ))}
       </div>

@@ -11,10 +11,12 @@ import {
 } from "@/components/ui/accordion";
 import { ChevronDown } from 'lucide-react';
 import { startOfToday, endOfToday, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export function InsightsPanel() {
   const { tasks } = useTaskStore();
   const [expanded, setExpanded] = useState(true);
+  const isMobile = useIsMobile();
   
   // Get today's date range
   const today = new Date();
@@ -112,7 +114,7 @@ export function InsightsPanel() {
                   </div>
                 </div>
                 
-                <div>
+                <div className={isMobile ? "mb-6" : ""}>
                   <h4 className="text-sm font-medium mb-3">Attention Required</h4>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-background rounded-md p-3 shadow-sm border">
@@ -129,6 +131,7 @@ export function InsightsPanel() {
               
               {/* Charts */}
               <div className="space-y-6">
+                {/* For mobile, separate the charts to avoid overlapping issues */}
                 <div>
                   <h4 className="text-sm font-medium mb-3">Task Distribution</h4>
                   <div className="bg-background rounded-md p-4 shadow-sm border">
@@ -136,8 +139,11 @@ export function InsightsPanel() {
                   </div>
                 </div>
                 
+                {/* Productivity chart with clear separation */}
+                {isMobile && <div className="h-6"></div>}
+                
                 <div>
-                  <h4 className="text-sm font-medium mb-3">Weekly Productivity</h4>
+                  <h4 className="text-sm font-medium mb-3 mt-4">Weekly Productivity</h4>
                   <div className="bg-background rounded-md p-4 shadow-sm border">
                     <ProductivityChart />
                   </div>
