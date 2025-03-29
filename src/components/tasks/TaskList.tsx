@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useTaskStore } from '@/store/taskStore/taskStore';
 import { TaskCard } from './TaskCard';
@@ -10,6 +9,7 @@ import { debounce } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle, Search, Loader2, Tag, X } from 'lucide-react';
+import { ActiveFiltersDisplay } from './ActiveFiltersDisplay';
 import {
   Popover,
   PopoverContent,
@@ -22,40 +22,36 @@ export function TaskList() {
   const [activeTab, setActiveTab] = useState<string>('all');
   const [tagInput, setTagInput] = useState('');
   
-  // Get all unique tags from tasks
   const allTags = Array.from(new Set(tasks.flatMap(task => task.tags || []))).sort();
   
   useEffect(() => {
-    // Fetch tasks on component mount
     fetchTasks();
-    
-    // Setup real-time subscription
     const unsubscribe = setupTaskSubscription();
-    
     return () => {
-      // Cleanup subscription on unmount
       unsubscribe();
     };
   }, [fetchTasks, setupTaskSubscription]);
   
-  // Apply debounced search
   const debouncedSearch = debounce((query: string) => {
     setFilters({ ...filters, searchQuery: query });
   }, 300);
   
-  // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
     debouncedSearch(query);
   };
   
-  // Handle tag input change
+  const clearSearchFilter = () => {
+    setSearchQuery('');
+    const { searchQuery, ...restFilters } = filters;
+    setFilters(restFilters);
+  };
+  
   const handleTagInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTagInput(e.target.value);
   };
   
-  // Handle tag selection
   const handleTagSelect = (tag: string) => {
     const currentTags = filters.tags || [];
     
@@ -67,7 +63,6 @@ export function TaskList() {
     setTagInput('');
   };
   
-  // Handle tag removal
   const handleTagRemove = (tag: string) => {
     const currentTags = filters.tags || [];
     const newTags = currentTags.filter(t => t !== tag);
@@ -80,7 +75,6 @@ export function TaskList() {
     }
   };
   
-  // Handle tag input key down
   const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && tagInput.trim()) {
       e.preventDefault();
@@ -94,7 +88,6 @@ export function TaskList() {
     }
   };
   
-  // Handle tab change
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     
@@ -112,15 +105,35 @@ export function TaskList() {
     }
   };
   
-  // Get filtered tags based on input
+  const clearStatusFilter = () => {
+    const { status, ...restFilters } = filters;
+    setFilters(restFilters);
+    setActiveTab('all');
+  };
+  
+  const clearPriorityFilter = () => {
+    const { priority, ...restFilters } = filters;
+    setFilters(restFilters);
+  };
+  
+  const clearDateFilters = () => {
+    const { dueDateFrom, dueDateTo, ...restFilters } = filters;
+    setFilters(restFilters);
+  };
+  
+  const clearAllFilters = () => {
+    setFilters({});
+    setSearchQuery('');
+    setTagInput('');
+    setActiveTab('all');
+  };
+  
   const filteredTags = allTags
     .filter(tag => tag.toLowerCase().includes(tagInput.toLowerCase()))
     .filter(tag => !(filters.tags || []).includes(tag));
   
-  // Get filtered tasks based on current filters
   const filteredTasks = getFilteredTasks();
   
-  // Show error state if there's an error
   if (error) {
     return (
       <Alert variant="destructive" className="mb-6">
@@ -132,7 +145,6 @@ export function TaskList() {
     );
   }
   
-  // Show loading state when initially loading data
   if (isLoading && tasks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-60">
@@ -229,6 +241,16 @@ export function TaskList() {
         </div>
       </div>
       
+      <ActiveFiltersDisplay 
+        filters={filters}
+        onClearStatusFilter={clearStatusFilter}
+        onClearPriorityFilter={clearPriorityFilter}
+        onClearDateFilters={clearDateFilters}
+        onClearSearchFilter={clearSearchFilter}
+        onClearTagsFilter={clearTagsFilter}
+        onClearAllFilters={clearAllFilters}
+      />
+      
       <Tabs defaultValue="all" value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="w-full mb-6 bg-muted/50 backdrop-blur-sm">
           <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
@@ -237,7 +259,6 @@ export function TaskList() {
           <TabsTrigger value="archived" className="flex-1">Archived</TabsTrigger>
         </TabsList>
         
-        {/* Loading indicator while refreshing with existing data */}
         {isLoading && tasks.length > 0 && (
           <div className="flex justify-center mb-4">
             <Loader2 className="h-5 w-5 animate-spin text-primary" />
