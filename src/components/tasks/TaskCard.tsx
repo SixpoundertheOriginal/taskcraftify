@@ -19,7 +19,18 @@ import {
   Trash,
   ListChecks,
   MessageSquare,
-  GripVertical
+  GripVertical,
+  // New icons for status badges
+  CircleCheck,
+  AlertCircle,
+  ArrowRight,
+  Clock3,
+  Archive,
+  // New icons for priority badges
+  Flag,
+  AlertTriangle,
+  Flame,
+  ArrowDown
 } from 'lucide-react';
 import { Task, TaskStatus, TaskPriority, countCompletedSubtasks } from '@/types/task';
 import { 
@@ -33,7 +44,6 @@ import {
 import { useTaskStore } from '@/store';
 import { cn } from '@/lib/utils';
 import { ProjectBadge } from '@/components/projects';
-import { useProjectStore } from '@/store';
 import { toast } from '@/hooks/use-toast';
 import {
   HoverCard,
@@ -49,6 +59,40 @@ interface TaskCardProps {
   task: Task;
   isCompact?: boolean; // For optionally showing a more compact view
 }
+
+// Helper function to get status icon
+const getStatusIcon = (status: TaskStatus) => {
+  switch (status) {
+    case TaskStatus.TODO:
+      return <Clock3 className="h-3 w-3" />;
+    case TaskStatus.IN_PROGRESS:
+      return <ArrowRight className="h-3 w-3" />;
+    case TaskStatus.DONE:
+      return <CircleCheck className="h-3 w-3" />;
+    case TaskStatus.ARCHIVED:
+      return <Archive className="h-3 w-3" />;
+    case TaskStatus.BACKLOG:
+      return <AlertCircle className="h-3 w-3" />;
+    default:
+      return <Clock3 className="h-3 w-3" />;
+  }
+};
+
+// Helper function to get priority icon
+const getPriorityIcon = (priority: TaskPriority) => {
+  switch (priority) {
+    case TaskPriority.LOW:
+      return <ArrowDown className="h-3 w-3" />;
+    case TaskPriority.MEDIUM:
+      return <Flag className="h-3 w-3" />;
+    case TaskPriority.HIGH:
+      return <AlertTriangle className="h-3 w-3" />;
+    case TaskPriority.URGENT:
+      return <Flame className="h-3 w-3" />;
+    default:
+      return <Flag className="h-3 w-3" />;
+  }
+};
 
 function TaskCardComponent({ task, isCompact = false }: TaskCardProps) {
   const [isUpdating, setIsUpdating] = useState(false);
@@ -259,13 +303,22 @@ function TaskCardComponent({ task, isCompact = false }: TaskCardProps) {
               </div>
               
               <div className="flex flex-wrap gap-2 my-2">
-                <Badge variant="outline" className={cn(getStatusColor(task.status), "flex items-center gap-1")}>
-                  <CheckCircle className="mr-1 h-3 w-3" />
-                  {getStatusLabel(task.status)}
+                <Badge 
+                  variant="outline" 
+                  size="sm" 
+                  className={cn(getStatusColor(task.status), "flex items-center gap-1")}
+                >
+                  {getStatusIcon(task.status)}
+                  <span>{getStatusLabel(task.status)}</span>
                 </Badge>
                 
-                <Badge variant="outline" className={cn(getPriorityColor(task.priority), "flex items-center gap-1")}>
-                  {getPriorityLabel(task.priority)}
+                <Badge 
+                  variant="outline" 
+                  size="sm" 
+                  className={cn(getPriorityColor(task.priority), "flex items-center gap-1")}
+                >
+                  {getPriorityIcon(task.priority)}
+                  <span>{getPriorityLabel(task.priority)}</span>
                 </Badge>
                 
                 {task.projectId && (
@@ -273,16 +326,24 @@ function TaskCardComponent({ task, isCompact = false }: TaskCardProps) {
                 )}
                 
                 {subtaskCounts.total > 0 && (
-                  <Badge variant="outline" className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 flex items-center gap-1">
-                    <ListChecks className="mr-1 h-3 w-3" />
-                    {subtaskCounts.completed}/{subtaskCounts.total}
+                  <Badge 
+                    variant="outline" 
+                    size="sm" 
+                    className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 flex items-center gap-1"
+                  >
+                    <ListChecks className="h-3 w-3" />
+                    <span>{subtaskCounts.completed}/{subtaskCounts.total}</span>
                   </Badge>
                 )}
                 
                 {task.comments && task.comments.length > 0 && (
-                  <Badge variant="outline" className="bg-green-50 text-green-600 hover:bg-green-100 flex items-center gap-1">
-                    <MessageSquare className="mr-1 h-3 w-3" />
-                    {task.comments.length}
+                  <Badge 
+                    variant="outline" 
+                    size="sm" 
+                    className="bg-green-50 text-green-600 hover:bg-green-100 flex items-center gap-1"
+                  >
+                    <MessageSquare className="h-3 w-3" />
+                    <span>{task.comments.length}</span>
                   </Badge>
                 )}
               </div>

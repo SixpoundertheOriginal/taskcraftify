@@ -1,4 +1,3 @@
-
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { 
@@ -29,13 +28,13 @@ export function formatDate(date: Date | string | undefined): string {
 export function getPriorityColor(priority: TaskPriority): string {
   switch (priority) {
     case TaskPriority.LOW:
-      return 'bg-priority-low/10 text-priority-low border-priority-low/20 hover:bg-priority-low/15 hover:border-priority-low/30 transition-colors';
+      return 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 hover:border-blue-300 transition-colors';
     case TaskPriority.MEDIUM:
-      return 'bg-priority-medium/10 text-priority-medium border-priority-medium/20 hover:bg-priority-medium/15 hover:border-priority-medium/30 transition-colors';
+      return 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 hover:border-green-300 transition-colors';
     case TaskPriority.HIGH:
-      return 'bg-priority-high/10 text-priority-high border-priority-high/20 hover:bg-priority-high/15 hover:border-priority-high/30 transition-colors';
+      return 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 hover:border-amber-300 transition-colors';
     case TaskPriority.URGENT:
-      return 'bg-priority-urgent/10 text-priority-urgent border-priority-urgent/20 hover:bg-priority-urgent/15 hover:border-priority-urgent/30 transition-colors';
+      return 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100 hover:border-red-300 transition-colors';
     default:
       return 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100 hover:border-gray-300 transition-colors';
   }
@@ -44,15 +43,15 @@ export function getPriorityColor(priority: TaskPriority): string {
 export function getStatusColor(status: TaskStatus): string {
   switch (status) {
     case TaskStatus.BACKLOG:
-      return 'bg-status-backlog/10 text-status-backlog border-status-backlog/20 hover:bg-status-backlog/15 hover:border-status-backlog/30 transition-colors';
+      return 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:border-slate-300 transition-colors';
     case TaskStatus.TODO:
-      return 'bg-status-todo/10 text-status-todo border-status-todo/20 hover:bg-status-todo/15 hover:border-status-todo/30 transition-colors';
+      return 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 hover:border-blue-300 transition-colors';
     case TaskStatus.IN_PROGRESS:
-      return 'bg-status-in-progress/10 text-status-in-progress border-status-in-progress/20 hover:bg-status-in-progress/15 hover:border-status-in-progress/30 transition-colors';
+      return 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 hover:border-amber-300 transition-colors';
     case TaskStatus.DONE:
-      return 'bg-status-done/10 text-status-done border-status-done/20 hover:bg-status-done/15 hover:border-status-done/30 transition-colors';
+      return 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 hover:border-green-300 transition-colors';
     case TaskStatus.ARCHIVED:
-      return 'bg-status-archived/10 text-status-archived border-status-archived/20 hover:bg-status-archived/15 hover:border-status-archived/30 transition-colors';
+      return 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100 hover:border-purple-300 transition-colors';
     default:
       return 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100 hover:border-gray-300 transition-colors';
   }

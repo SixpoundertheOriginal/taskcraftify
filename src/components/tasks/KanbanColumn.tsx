@@ -9,6 +9,8 @@ import { TaskForm } from './TaskForm';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useDroppable } from '@dnd-kit/core';
+import { Badge } from '@/components/ui/badge';
+import { getStatusColor, getStatusLabel } from '@/lib/utils';
 
 interface KanbanColumnProps {
   id: string;
@@ -47,7 +49,13 @@ export function KanbanColumn({ id, title, tasks, status, className }: KanbanColu
     >
       <div className="p-3 border-b flex items-center justify-between bg-muted/30 rounded-t-lg">
         <div className="flex items-center gap-2">
-          <h3 className="font-medium text-sm">{title}</h3>
+          <Badge 
+            variant="outline" 
+            size="sm" 
+            className={cn(getStatusColor(status), "flex items-center gap-1 py-0.5")}
+          >
+            {getStatusLabel(status)}
+          </Badge>
           <span className="inline-flex items-center justify-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
             {tasks.length}
           </span>
