@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -33,6 +32,7 @@ import { Check, ChevronDown } from 'lucide-react';
 import { TaskTemplateSelector } from './TaskTemplateSelector';
 import { SaveTemplateDialog } from './SaveTemplateDialog';
 import { TaskTemplate } from '@/types/template';
+import { templateService } from '@/services/templateService';
 
 interface TaskFormContentProps {
   onSuccess: () => void;
@@ -53,6 +53,7 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
   const [projectId, setProjectId] = useState<string | undefined>(taskToEdit?.projectId || selectedProjectId || undefined);
   const [projectSelectorOpen, setProjectSelectorOpen] = useState(false);
   const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(undefined);
   
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<CreateTaskDTO>({
     defaultValues: taskToEdit ? {
@@ -107,6 +108,9 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
   };
   
   const handleSelectTemplate = async (template: TaskTemplate) => {
+    // Store the selected template ID for later use
+    setSelectedTemplateId(template.id);
+    
     // Apply template to form
     if (template.structure.title) {
       setValue('title', template.structure.title);
@@ -167,17 +171,33 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
         projectId: projectId === 'none' ? undefined : projectId
       };
       
+      let taskId: string;
+      
       if (taskToEdit) {
-        await updateTask({
+        const updatedTask = await updateTask({
           id: taskToEdit.id,
           ...taskData
         });
+        taskId = updatedTask.id;
+        
         toast({
           title: "Task updated",
           description: "Your task has been updated successfully.",
         });
       } else {
-        await createTask(taskData);
+        const newTask = await createTask(taskData);
+        taskId = newTask.id;
+        
+        // If the task was created from a template, record the usage
+        if (selectedTemplateId) {
+          try {
+            await templateService.recordTemplateUsage(selectedTemplateId, taskId);
+          } catch (err) {
+            console.error("Failed to record template usage:", err);
+            // Non-critical error, don't show toast to user
+          }
+        }
+        
         toast({
           title: "Task created",
           description: "Your task has been created successfully.",
@@ -187,6 +207,7 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
       reset();
       setTags([]);
       setDueDate(undefined);
+      setSelectedTemplateId(undefined);
       onSuccess();
     } catch (err) {
       toast({

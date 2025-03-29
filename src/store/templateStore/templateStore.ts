@@ -15,6 +15,7 @@ interface TemplateState {
   updateTemplate: (template: UpdateTemplateDTO) => Promise<TaskTemplate>;
   deleteTemplate: (id: string) => Promise<void>;
   useTemplate: (id: string) => Promise<void>;
+  recordTemplateUsage: (templateId: string, taskId: string) => Promise<void>;
 }
 
 export const useTemplateStore = create<TemplateState>()(
@@ -118,6 +119,17 @@ export const useTemplateStore = create<TemplateState>()(
           }));
         } catch (error) {
           console.error('Error incrementing template usage:', error);
+          // Don't throw or set error - non-critical operation
+        }
+      },
+      
+      recordTemplateUsage: async (templateId: string, taskId: string) => {
+        try {
+          await templateService.recordTemplateUsage(templateId, taskId);
+          // Usage count is already incremented by the recordTemplateUsage method
+          // through the incrementUsage call, so we don't need to update the state here
+        } catch (error) {
+          console.error('Error recording template usage:', error);
           // Don't throw or set error - non-critical operation
         }
       }

@@ -125,5 +125,31 @@ export const templateService = {
       console.error('Error incrementing template usage:', error);
       // Don't throw here - just log the error
     }
+  },
+  
+  // Record template usage with associated task
+  async recordTemplateUsage(templateId: string, taskId: string): Promise<void> {
+    const { data: session } = await supabase.auth.getSession();
+    if (!session.session?.user) {
+      console.error('User not authenticated, cannot record template usage');
+      return;
+    }
+    
+    // First, increment the usage count
+    await this.incrementUsage(templateId);
+    
+    // Then, record the template usage entry
+    const { error } = await supabase
+      .from('template_usage')
+      .insert({
+        template_id: templateId,
+        task_id: taskId,
+        user_id: session.session.user.id
+      });
+      
+    if (error) {
+      console.error('Error recording template usage:', error);
+      // Non-critical error, just log it
+    }
   }
 };
