@@ -30,14 +30,13 @@ export type TaskStore = TaskSlice & FilterSlice & SubscriptionSlice & StatsSlice
 
 export const useTaskStore = create<TaskStore>()(
   devtools(
-    (...a) => {
-      const taskSlice = createTaskSlice(...a);
-      const filterSlice = createFilterSlice(...a);
-      const subscriptionSlice = createSubscriptionSlice(...a);
-      const statsSlice = createStatsSlice(...a);
-      const attachmentSlice = createAttachmentSlice(...a);
+    (set, get) => {
+      const taskSlice = createTaskSlice(set, get);
+      const filterSlice = createFilterSlice(set, get);
+      const subscriptionSlice = createSubscriptionSlice(set, get);
+      const statsSlice = createStatsSlice(set, get);
+      const attachmentSlice = createAttachmentSlice(set, get);
       
-      // Implement the combined store with additional methods
       return {
         ...taskSlice,
         ...filterSlice,
@@ -148,18 +147,17 @@ export const useTaskStore = create<TaskStore>()(
         },
         
         // These methods simply forward to the appropriate slices
-        // They're needed here to satisfy the TaskStore type
         refreshTaskCounts: statsSlice.refreshTaskCounts,
         
-        setTaskStatus: async (taskId: string, status: string) => {
-          return taskSlice.updateTask({
+        setTaskStatus: async (taskId: string, status: string): Promise<void> => {
+          await taskSlice.updateTask({
             id: taskId,
             status: status as TaskStatus
           });
         },
         
-        toggleSubtaskCompletion: async (subtaskId: string, completed: boolean) => {
-          return taskSlice.updateSubtask({
+        toggleSubtaskCompletion: async (subtaskId: string, completed: boolean): Promise<void> => {
+          await taskSlice.updateSubtask({
             id: subtaskId,
             completed
           });
@@ -168,7 +166,6 @@ export const useTaskStore = create<TaskStore>()(
         // Optional diagnostic method
         diagnosticDatabaseQuery: async () => {
           // This could be implemented to perform diagnostic queries
-          // For now, we return a simple object with the task counts
           return {
             taskCounts: statsSlice.taskCounts,
             tasksByStatus: taskSlice.tasks.reduce((acc, task) => {

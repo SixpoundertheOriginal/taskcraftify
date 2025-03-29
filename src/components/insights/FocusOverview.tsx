@@ -6,20 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle, Clock, CalendarDays, Flag } from 'lucide-react';
 
 export function FocusOverview() {
-  const { 
-    getOverdueTasks,
-    getTasksDueToday, 
-    getTasksDueTomorrow, 
-    getTasksDueThisWeek,
-    getHighPriorityTasks
-  } = useTaskStore();
+  const taskStore = useTaskStore();
 
   // Get counts for each task group
-  const overdueTasks = getOverdueTasks();
-  const todayTasks = getTasksDueToday();
-  const tomorrowTasks = getTasksDueTomorrow();
-  const thisWeekTasks = getTasksDueThisWeek();
-  const highPriorityTasks = getHighPriorityTasks();
+  const overdueTasks = taskStore.getOverdueTasks();
+  const todayTasks = taskStore.getTasksDueToday();
+  const tomorrowTasks = taskStore.getTasksDueTomorrow();
+  const thisWeekTasks = taskStore.getTasksDueThisWeek();
+  const highPriorityTasks = taskStore.getHighPriorityTasks();
 
   // Prepare data for chart
   const data = [

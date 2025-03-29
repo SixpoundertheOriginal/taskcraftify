@@ -9,11 +9,11 @@ import { Badge } from '@/components/ui/badge';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 export function TaskStatusChart() {
-  const { getTasksCountByStatus } = useTaskStore();
+  const taskStore = useTaskStore();
   const isMobile = useIsMobile();
   
   // Get status counts from the store
-  const statusCounts = getTasksCountByStatus();
+  const statusCounts = taskStore.getTasksCountByStatus();
   
   // Convert to array for recharts
   const chartData = Object.entries(statusCounts).map(([status, count]) => ({

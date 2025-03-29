@@ -11,11 +11,11 @@ import { useTaskStore } from '@/store';
 export function Header() {
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const { user } = useAuth();
-  const { getTasksCountByStatus, getOverdueTasks } = useTaskStore();
+  const taskStore = useTaskStore();
   
   // Calculate task statistics for the welcome message
-  const taskStats = getTasksCountByStatus();
-  const overdueTasks = getOverdueTasks();
+  const taskStats = taskStore.getTasksCountByStatus();
+  const overdueTasks = taskStore.getOverdueTasks();
   const hasTasks = Object.values(taskStats).some(count => count > 0);
   
   // Get user's email and extract name

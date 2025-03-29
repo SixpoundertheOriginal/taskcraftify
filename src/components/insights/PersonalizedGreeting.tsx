@@ -7,7 +7,7 @@ import { Sun, Moon, Cloud, Clock } from 'lucide-react';
 
 export function PersonalizedGreeting() {
   const { user } = useAuth();
-  const { getTasksDueToday, getOverdueTasks, getAverageDailyCompletionRate } = useTaskStore();
+  const taskStore = useTaskStore();
   
   // Get current time to personalize greeting
   const currentHour = new Date().getHours();
@@ -29,9 +29,9 @@ export function PersonalizedGreeting() {
   }
   
   // Get task statistics
-  const tasksDueToday = getTasksDueToday();
-  const overdueTasks = getOverdueTasks();
-  const averageCompletionRate = getAverageDailyCompletionRate();
+  const tasksDueToday = taskStore.getTasksDueToday();
+  const overdueTasks = taskStore.getOverdueTasks();
+  const averageCompletionRate = taskStore.getAverageDailyCompletionRate();
   
   // Get username
   const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'there';
