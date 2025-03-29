@@ -11,6 +11,7 @@ import { Check, ChevronDown, LayoutTemplate, Plus, Save } from 'lucide-react';
 import { useTemplateStore } from '@/store/templateStore/templateStore';
 import { CreateTaskDTO, TaskPriority, TaskStatus } from '@/types/task';
 import { Badge } from '@/components/ui/badge';
+import { TaskTemplate } from '@/types/template'; // Add this import
 
 interface TaskTemplateSelectorProps {
   onSelectTemplate: (template: TaskTemplate) => void;

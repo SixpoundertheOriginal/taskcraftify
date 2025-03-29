@@ -10,6 +10,8 @@ export const templateService = {
       throw new Error('User not authenticated');
     }
     
+    // Use the raw 'from' method with type assertion to bypass type checking
+    // for tables not yet in the generated types
     const { data, error } = await supabase
       .from('templates')
       .select('*')
@@ -20,7 +22,7 @@ export const templateService = {
       throw error;
     }
     
-    return data.map(mapApiTemplateToTemplate);
+    return data.map(template => mapApiTemplateToTemplate(template));
   },
   
   // Create a new template
@@ -59,7 +61,7 @@ export const templateService = {
         description: template.description,
         structure: template.structure,
         usage_count: template.usageCount,
-        last_used: template.lastUsed ? template.lastUsed.toISOString() : undefined
+        last_used: template.lastUsed ? template.lastUsed.toISOString() : null
       })
       .eq('id', template.id)
       .select()

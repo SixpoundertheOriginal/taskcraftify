@@ -383,12 +383,89 @@ export type Database = {
           },
         ]
       }
+      template_usage: {
+        Row: {
+          created_at: string
+          id: string
+          task_id: string
+          template_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          task_id: string
+          template_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          task_id?: string
+          template_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_usage_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "template_usage_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      templates: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          last_used: string | null
+          name: string
+          structure: Json
+          usage_count: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          last_used?: string | null
+          name: string
+          structure: Json
+          usage_count?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          last_used?: string | null
+          name?: string
+          structure?: Json
+          usage_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      increment_template_usage: {
+        Args: {
+          template_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       task_priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT"

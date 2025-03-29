@@ -48,25 +48,31 @@ Deno.serve(async (req) => {
       );
     }
     
-    // Log template usage
-    const now = new Date().toISOString();
+    // Call the increment_template_usage function
+    const { error: rpcError } = await supabase.rpc('increment_template_usage', {
+      template_id: templateId
+    });
     
-    // Update template usage count and last_used date
-    const { error: updateError } = await supabase
-      .from('templates')
-      .update({ 
-        usage_count: supabase.rpc('increment_counter', { row_id: templateId }),
-        last_used: now
-      })
-      .eq('id', templateId)
-      .eq('user_id', user.id);
-    
-    if (updateError) {
-      console.error('Error updating template usage:', updateError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to update template usage' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (rpcError) {
+      console.error('Error updating template usage via RPC:', rpcError);
+      
+      // Fallback: manually update the template if RPC fails
+      const { error: updateError } = await supabase
+        .from('templates')
+        .update({ 
+          usage_count: supabase.sql`usage_count + 1`,
+          last_used: new Date().toISOString()
+        })
+        .eq('id', templateId)
+        .eq('user_id', user.id);
+        
+      if (updateError) {
+        console.error('Error updating template usage directly:', updateError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to update template usage' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
     
     // If taskId is provided, log template_usage record
