@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { CreateTaskDTO, TaskPriority, TaskStatus, Task } from '@/types/task';
 import { getPriorityLabel, getStatusLabel } from '@/lib/utils';
-import { useTaskStore, useProjectStore } from '@/store';
+import { useTaskStore, useProjectStore, useTemplateStore } from '@/store';
 import { toast } from '@/hooks/use-toast';
 import { ProjectSelector } from '../projects/ProjectSelector';
 import { 
@@ -30,6 +31,9 @@ import {
   CommandSeparator
 } from '@/components/ui/command';
 import { Check, ChevronDown, Layers } from 'lucide-react';
+import { TaskTemplateSelector } from './TaskTemplateSelector';
+import { SaveTemplateDialog } from './SaveTemplateDialog';
+import { TaskTemplate } from '@/types/template';
 
 interface TaskFormContentProps {
   onSuccess: () => void;
@@ -41,6 +45,7 @@ interface TaskFormContentProps {
 export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialDueDate }: TaskFormContentProps) {
   const { createTask, updateTask, isLoading, error } = useTaskStore();
   const { projects, selectedProjectId } = useProjectStore();
+  const { useTemplate } = useTemplateStore();
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>(taskToEdit?.tags || []);
   const [dueDate, setDueDate] = useState<Date | undefined>(
@@ -48,8 +53,9 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
   );
   const [projectId, setProjectId] = useState<string | undefined>(taskToEdit?.projectId || selectedProjectId || undefined);
   const [projectSelectorOpen, setProjectSelectorOpen] = useState(false);
+  const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
   
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateTaskDTO>({
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<CreateTaskDTO>({
     defaultValues: taskToEdit ? {
       title: taskToEdit.title,
       description: taskToEdit.description,
@@ -62,6 +68,9 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
       priority: TaskPriority.MEDIUM,
     }
   });
+  
+  // Get all form values for template operations
+  const formValues = watch();
   
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
@@ -84,6 +93,58 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
   const handleProjectSelect = (id: string | undefined) => {
     setProjectId(id === 'none' ? undefined : id);
     setProjectSelectorOpen(false);
+  };
+  
+  const handleSelectTemplate = async (template: TaskTemplate) => {
+    // Apply template to form
+    if (template.structure.title) {
+      setValue('title', template.structure.title);
+    }
+    
+    if (template.structure.description) {
+      setValue('description', template.structure.description);
+    }
+    
+    if (template.structure.status) {
+      setValue('status', template.structure.status);
+    }
+    
+    if (template.structure.priority) {
+      setValue('priority', template.structure.priority);
+    }
+    
+    if (template.structure.tags && template.structure.tags.length > 0) {
+      setTags(template.structure.tags);
+    }
+    
+    if (template.structure.dueDate) {
+      setDueDate(new Date(template.structure.dueDate));
+    }
+    
+    if (template.structure.projectId) {
+      setProjectId(template.structure.projectId);
+    }
+    
+    // Increment template usage
+    await useTemplate(template.id);
+    
+    toast({
+      title: "Template applied",
+      description: `Applied the "${template.name}" template.`,
+    });
+  };
+  
+  const handleSaveAsTemplate = () => {
+    setSaveTemplateOpen(true);
+  };
+  
+  const getCurrentFormData = (): Partial<CreateTaskDTO> => {
+    return {
+      ...formValues,
+      tags,
+      dueDate,
+      projectId: projectId === 'none' ? undefined : projectId
+    };
   };
   
   const onSubmit = async (data: CreateTaskDTO) => {
@@ -129,6 +190,20 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
+      {!taskToEdit && (
+        <TaskTemplateSelector 
+          onSelectTemplate={handleSelectTemplate}
+          currentTask={getCurrentFormData()}
+          onSaveAsTemplate={handleSaveAsTemplate}
+        />
+      )}
+      
+      <SaveTemplateDialog
+        open={saveTemplateOpen}
+        onOpenChange={setSaveTemplateOpen}
+        taskData={getCurrentFormData()}
+      />
+      
       <div className="space-y-2">
         <label htmlFor="title" className="text-sm font-medium">
           Title <span className="text-destructive">*</span>
