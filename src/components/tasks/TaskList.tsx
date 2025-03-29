@@ -128,6 +128,12 @@ export function TaskList() {
     setActiveTab('all');
   };
   
+  const clearTagsFilter = () => {
+    const { tags, ...restFilters } = filters;
+    setFilters(restFilters);
+    setTagInput('');
+  };
+  
   const filteredTags = allTags
     .filter(tag => tag.toLowerCase().includes(tagInput.toLowerCase()))
     .filter(tag => !(filters.tags || []).includes(tag));
