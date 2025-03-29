@@ -1,6 +1,20 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { CreateTaskDTO } from '@/types/task';
 import { CreateTemplateDTO, TaskTemplate, UpdateTemplateDTO, mapApiTemplateToTemplate } from '@/types/template';
+
+// Helper function to make template structure JSON-safe
+const prepareStructureForStorage = (structure: Partial<CreateTaskDTO>): Record<string, any> => {
+  // Create a new object to avoid mutating the original
+  const jsonSafeStructure = { ...structure };
+  
+  // Convert Date objects to ISO strings for JSON compatibility
+  if (jsonSafeStructure.dueDate instanceof Date) {
+    jsonSafeStructure.dueDate = jsonSafeStructure.dueDate.toISOString();
+  }
+  
+  return jsonSafeStructure;
+};
 
 export const templateService = {
   // Fetch all templates for the current user
@@ -32,12 +46,14 @@ export const templateService = {
       throw new Error('User not authenticated');
     }
     
+    const jsonSafeStructure = prepareStructureForStorage(template.structure);
+    
     const { data, error } = await supabase
       .from('templates')
       .insert({
         name: template.name,
         description: template.description,
-        structure: template.structure,
+        structure: jsonSafeStructure,
         user_id: session.session.user.id,
         usage_count: 0
       })
@@ -54,15 +70,23 @@ export const templateService = {
   
   // Update an existing template
   async updateTemplate(template: UpdateTemplateDTO): Promise<TaskTemplate> {
+    const updateData: Record<string, any> = {
+      name: template.name,
+      description: template.description,
+      usage_count: template.usageCount,
+    };
+    
+    if (template.structure) {
+      updateData.structure = prepareStructureForStorage(template.structure);
+    }
+    
+    if (template.lastUsed) {
+      updateData.last_used = template.lastUsed.toISOString();
+    }
+    
     const { data, error } = await supabase
       .from('templates')
-      .update({
-        name: template.name,
-        description: template.description,
-        structure: template.structure,
-        usage_count: template.usageCount,
-        last_used: template.lastUsed ? template.lastUsed.toISOString() : null
-      })
+      .update(updateData)
       .eq('id', template.id)
       .select()
       .single();
