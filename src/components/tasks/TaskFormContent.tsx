@@ -20,7 +20,6 @@ import { CreateTaskDTO, TaskPriority, TaskStatus, Task } from '@/types/task';
 import { getPriorityLabel, getStatusLabel } from '@/lib/utils';
 import { useTaskStore, useProjectStore, useTemplateStore } from '@/store';
 import { toast } from '@/hooks/use-toast';
-import { ProjectSelector } from '../projects/ProjectSelector';
 import { 
   Command,
   CommandEmpty,
@@ -30,7 +29,7 @@ import {
   CommandList,
   CommandSeparator
 } from '@/components/ui/command';
-import { Check, ChevronDown, Layers } from 'lucide-react';
+import { Check, ChevronDown } from 'lucide-react';
 import { TaskTemplateSelector } from './TaskTemplateSelector';
 import { SaveTemplateDialog } from './SaveTemplateDialog';
 import { TaskTemplate } from '@/types/template';
@@ -45,7 +44,7 @@ interface TaskFormContentProps {
 export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialDueDate }: TaskFormContentProps) {
   const { createTask, updateTask, isLoading, error } = useTaskStore();
   const { projects, selectedProjectId } = useProjectStore();
-  const { useTemplate } = useTemplateStore();
+  const { fetchTemplates, useTemplate } = useTemplateStore();
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>(taskToEdit?.tags || []);
   const [dueDate, setDueDate] = useState<Date | undefined>(
@@ -71,6 +70,18 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
   
   // Get all form values for template operations
   const formValues = watch();
+  
+  // Load templates when form opens
+  useEffect(() => {
+    fetchTemplates().catch(err => {
+      console.error("Failed to load templates:", err);
+      toast({
+        title: "Template loading failed",
+        description: "Could not load your saved templates. Please try again later.",
+        variant: "destructive"
+      });
+    });
+  }, [fetchTemplates]);
   
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
