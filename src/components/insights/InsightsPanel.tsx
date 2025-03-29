@@ -130,7 +130,7 @@ export function InsightsPanel() {
               </div>
               
               {/* Charts */}
-              <div className="space-y-6">
+              <div className="space-y-8"> {/* Increased space between charts */}
                 {/* For mobile, separate the charts to avoid overlapping issues */}
                 <div>
                   <h4 className="text-sm font-medium mb-3">Task Distribution</h4>
@@ -139,8 +139,8 @@ export function InsightsPanel() {
                   </div>
                 </div>
                 
-                {/* Productivity chart with clear separation */}
-                {isMobile && <div className="h-6"></div>}
+                {/* Add more spacing between chart sections on mobile */}
+                {isMobile && <div className="h-8"></div>} {/* Increased height for better separation */}
                 
                 <div>
                   <h4 className="text-sm font-medium mb-3 mt-4">Weekly Productivity</h4>

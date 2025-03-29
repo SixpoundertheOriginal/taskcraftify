@@ -21,7 +21,7 @@ export function StatsChart({ data, color = 'var(--primary)', title, height = 160
       <div className="mb-2 text-sm font-medium">{title}</div>
       <div style={{ height: `${height}px` }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 10, right: 0, left: 0, bottom: 20 }}>
+          <BarChart data={data} margin={{ top: 10, right: 0, left: 0, bottom: isMobile ? 25 : 20 }}>
             <XAxis 
               dataKey="name" 
               stroke="#888888" 
@@ -32,6 +32,8 @@ export function StatsChart({ data, color = 'var(--primary)', title, height = 160
               interval={isMobile ? 1 : 0}
               // Limit label length on mobile
               tickFormatter={(value) => isMobile && value.length > 3 ? value.substring(0, 3) + '.' : value}
+              // Add more bottom margin on mobile
+              dy={isMobile ? 10 : 5}
             />
             <Tooltip
               content={({ active, payload }) => {
