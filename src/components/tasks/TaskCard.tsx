@@ -1,3 +1,4 @@
+
 import { useState, useCallback, memo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -42,6 +43,7 @@ import {
 import { useIsMobile } from '@/hooks/use-mobile';
 import { TaskForm } from './TaskForm';
 import { useDraggable } from '@dnd-kit/core';
+import { Separator } from '@/components/ui/separator';
 
 interface TaskCardProps {
   task: Task;
@@ -52,6 +54,7 @@ function TaskCardComponent({ task, isCompact = false }: TaskCardProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const { updateTask, deleteTask } = useTaskStore();
   const { projects } = useProjectStore();
   const isMobile = useIsMobile();
@@ -154,12 +157,17 @@ function TaskCardComponent({ task, isCompact = false }: TaskCardProps) {
           ...(project ? { borderLeftColor: project.color } : {})
         }}
         className={cn(
-          "group w-full transition-all duration-200 border border-border/40 shadow-sm hover:shadow-md hover:border-border/80 cursor-pointer",
+          "group w-full transition-all duration-200 border border-border/40 shadow-sm",
+          "hover:shadow-md hover:border-border/80 cursor-pointer",
+          "hover:bg-muted/30", // Subtle background change on hover
           project ? `border-l-4` : '',
           isDragging ? "shadow-lg opacity-80" : "",
-          (isUpdating || isDeleting) ? 'opacity-70' : ''
+          (isUpdating || isDeleting) ? 'opacity-70' : '',
+          isHovered ? "bg-muted/10" : ""
         )}
         onClick={handleCardClick}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         tabIndex={0}
         role="button"
         aria-label={`Task: ${task.title}`}
@@ -173,14 +181,22 @@ function TaskCardComponent({ task, isCompact = false }: TaskCardProps) {
           <div className="flex items-start gap-3">
             <button
               onClick={handleCheckboxClick}
-              className="mt-0.5 flex-shrink-0 transition-all duration-150"
+              className={cn(
+                "mt-0.5 flex-shrink-0 transition-all duration-150",
+                "hover:scale-110", // Scale effect on hover
+                "active:scale-95" // Press effect
+              )}
               disabled={isUpdating || isDeleting}
               aria-label={task.status === TaskStatus.DONE ? "Mark as not done" : "Mark as done"}
             >
               {task.status === TaskStatus.DONE ? (
-                <CheckCircle className="h-5 w-5 text-primary" />
+                <CheckCircle className="h-5 w-5 text-primary animate-scale-in" />
               ) : (
-                <Circle className="h-5 w-5 text-muted-foreground hover:text-primary" />
+                <Circle className={cn(
+                  "h-5 w-5 text-muted-foreground",
+                  "hover:text-primary hover:drop-shadow-sm", // Enhanced hover effect
+                  isHovered ? "text-primary/70" : ""
+                )} />
               )}
             </button>
             
@@ -231,6 +247,7 @@ function TaskCardComponent({ task, isCompact = false }: TaskCardProps) {
                         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setIsTaskModalOpen(true); }}>
                           View/Edit Task
                         </DropdownMenuItem>
+                        <Separator className="my-1 bg-muted-foreground/20" />
                         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDelete(); }} className="text-destructive">
                           <Trash className="h-4 w-4 mr-2" />
                           Delete
@@ -242,12 +259,12 @@ function TaskCardComponent({ task, isCompact = false }: TaskCardProps) {
               </div>
               
               <div className="flex flex-wrap gap-2 my-2">
-                <Badge variant="outline" className={getStatusColor(task.status)}>
+                <Badge variant="outline" className={cn(getStatusColor(task.status), "flex items-center gap-1")}>
                   <CheckCircle className="mr-1 h-3 w-3" />
                   {getStatusLabel(task.status)}
                 </Badge>
                 
-                <Badge variant="outline" className={getPriorityColor(task.priority)}>
+                <Badge variant="outline" className={cn(getPriorityColor(task.priority), "flex items-center gap-1")}>
                   {getPriorityLabel(task.priority)}
                 </Badge>
                 
@@ -256,19 +273,21 @@ function TaskCardComponent({ task, isCompact = false }: TaskCardProps) {
                 )}
                 
                 {subtaskCounts.total > 0 && (
-                  <Badge variant="outline" className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100">
+                  <Badge variant="outline" className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 flex items-center gap-1">
                     <ListChecks className="mr-1 h-3 w-3" />
                     {subtaskCounts.completed}/{subtaskCounts.total}
                   </Badge>
                 )}
                 
                 {task.comments && task.comments.length > 0 && (
-                  <Badge variant="outline" className="bg-green-50 text-green-600 hover:bg-green-100">
+                  <Badge variant="outline" className="bg-green-50 text-green-600 hover:bg-green-100 flex items-center gap-1">
                     <MessageSquare className="mr-1 h-3 w-3" />
                     {task.comments.length}
                   </Badge>
                 )}
               </div>
+              
+              <Separator className="my-2 bg-muted-foreground/10" />
               
               <div className="flex justify-between items-center text-xs text-muted-foreground mt-1">
                 <div className="flex items-center gap-2 flex-wrap">

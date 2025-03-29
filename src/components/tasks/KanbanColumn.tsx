@@ -70,7 +70,7 @@ export function KanbanColumn({ id, title, tasks, status, className }: KanbanColu
       )}>
         {tasks.length > 0 ? (
           <div 
-            className="flex flex-col gap-3" 
+            className="flex flex-col gap-4" 
             aria-label={`${tasks.length} tasks in ${title}`}
           >
             {tasks.map(task => (

@@ -167,7 +167,7 @@ export function TaskList() {
         
         <TabsContent value="all" className="mt-0">
           {filteredTasks.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 gap-6">
               {filteredTasks.map(task => (
                 <TaskCard key={task.id} task={task} />
               ))}
@@ -185,7 +185,7 @@ export function TaskList() {
         
         <TabsContent value="active" className="mt-0">
           {filteredTasks.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 gap-6">
               {filteredTasks.map(task => (
                 <TaskCard key={task.id} task={task} />
               ))}
@@ -203,7 +203,7 @@ export function TaskList() {
         
         <TabsContent value="completed" className="mt-0">
           {filteredTasks.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 gap-6">
               {filteredTasks.map(task => (
                 <TaskCard key={task.id} task={task} />
               ))}
@@ -221,7 +221,7 @@ export function TaskList() {
         
         <TabsContent value="archived" className="mt-0">
           {filteredTasks.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 gap-6">
               {filteredTasks.map(task => (
                 <TaskCard key={task.id} task={task} />
               ))}
