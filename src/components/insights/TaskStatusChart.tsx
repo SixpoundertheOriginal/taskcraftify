@@ -1,50 +1,73 @@
 
 import React from 'react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useTaskStore } from '@/store';
+import { TaskStatus } from '@/types/task';
+import { getStatusLabel } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 
 export function TaskStatusChart() {
   const { tasks } = useTaskStore();
   
-  // Calculate tasks by status
-  const todoCount = tasks.filter(task => task.status === 'TODO').length;
-  const inProgressCount = tasks.filter(task => task.status === 'IN_PROGRESS').length;
-  const doneCount = tasks.filter(task => task.status === 'DONE').length;
+  // Group tasks by status
+  const statusCounts = tasks.reduce((acc, task) => {
+    const status = task.status;
+    if (!acc[status]) {
+      acc[status] = 0;
+    }
+    acc[status]++;
+    return acc;
+  }, {} as Record<TaskStatus, number>);
   
-  const data = [
-    { name: 'To Do', value: todoCount, color: '#f97316' },  // Orange
-    { name: 'In Progress', value: inProgressCount, color: '#3b82f6' },  // Blue
-    { name: 'Done', value: doneCount, color: '#22c55e' },  // Green
-  ].filter(item => item.value > 0);  // Only show statuses with tasks
+  // Convert to array for recharts
+  const chartData = Object.entries(statusCounts).map(([status, count]) => ({
+    name: getStatusLabel(status as TaskStatus),
+    value: count,
+    status
+  }));
   
-  const total = todoCount + inProgressCount + doneCount;
+  // Status colors
+  const COLORS = {
+    [TaskStatus.BACKLOG]: '#94a3b8', // slate-400
+    [TaskStatus.TODO]: '#3b82f6', // blue-500
+    [TaskStatus.IN_PROGRESS]: '#f59e0b', // amber-500
+    [TaskStatus.DONE]: '#10b981', // emerald-500
+    [TaskStatus.ARCHIVED]: '#6b7280', // gray-500
+  };
   
-  if (total === 0) {
+  // No tasks case
+  if (chartData.length === 0) {
     return (
-      <div className="flex h-32 w-full items-center justify-center text-xs text-muted-foreground">
+      <div className="h-32 w-full flex items-center justify-center text-muted-foreground text-sm">
         No task data available
       </div>
     );
   }
   
   return (
-    <div className="flex h-32 w-full items-center">
-      <div className="w-1/2">
+    <div className="h-36 w-full">
+      <ChartContainer className="h-full">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
-              data={data}
+              data={chartData}
               cx="50%"
               cy="50%"
-              innerRadius={25}
-              outerRadius={40}
+              innerRadius={30}
+              outerRadius={50}
               paddingAngle={2}
               dataKey="value"
+              nameKey="name"
+              label={false}
+              animationDuration={500}
             >
-              {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
+              {chartData.map((entry, index) => (
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={COLORS[entry.status as TaskStatus]} 
+                  stroke="transparent"
+                />
               ))}
             </Pie>
             <Tooltip
@@ -53,15 +76,13 @@ export function TaskStatusChart() {
                   const data = payload[0].payload;
                   return (
                     <div className="rounded-md border bg-background p-2 shadow-md">
-                      <div className="flex items-center gap-1 text-xs">
+                      <div className="flex items-center gap-2">
                         <div 
-                          className="h-2 w-2 rounded-full" 
-                          style={{ backgroundColor: data.color }}
+                          className="h-3 w-3 rounded-full" 
+                          style={{ backgroundColor: COLORS[data.status as TaskStatus] }}
                         />
-                        <span className="font-semibold">{data.name}</span>
-                      </div>
-                      <div className="text-xs">
-                        {data.value} tasks ({Math.round((data.value / total) * 100)}%)
+                        <span className="font-medium">{data.name}:</span> 
+                        <span>{data.value} tasks</span>
                       </div>
                     </div>
                   );
@@ -71,18 +92,21 @@ export function TaskStatusChart() {
             />
           </PieChart>
         </ResponsiveContainer>
-      </div>
-      <div className="flex w-1/2 flex-col gap-1">
-        {data.map((status) => (
-          <div key={status.name} className="flex items-center justify-between text-xs">
-            <div className="flex items-center gap-1.5">
-              <div className="h-2 w-2 rounded-full" style={{ backgroundColor: status.color }} />
-              <span>{status.name}</span>
-            </div>
-            <span className="font-mono text-muted-foreground">
-              {status.value} ({Math.round((status.value / total) * 100)}%)
-            </span>
-          </div>
+      </ChartContainer>
+      
+      <div className="mt-2 flex flex-wrap gap-2 justify-center">
+        {chartData.map((item) => (
+          <Badge 
+            key={item.status} 
+            variant="outline"
+            className="flex items-center gap-1.5"
+          >
+            <span 
+              className="h-2.5 w-2.5 rounded-full" 
+              style={{ backgroundColor: COLORS[item.status as TaskStatus] }} 
+            />
+            <span>{item.name}: {item.value}</span>
+          </Badge>
         ))}
       </div>
     </div>

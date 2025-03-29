@@ -38,6 +38,20 @@ export function ProductivityChart() {
     };
   });
   
+  // Find most productive day
+  const mostProductiveDay = [...weekData].sort((a, b) => b.completed - a.completed)[0];
+  
+  // Calculate productivity trend (are tasks being completed more towards the end of the week or beginning?)
+  const firstHalfCompleted = weekData.slice(0, 3).reduce((sum, day) => sum + day.completed, 0);
+  const secondHalfCompleted = weekData.slice(3).reduce((sum, day) => sum + day.completed, 0);
+  
+  let trendMessage = "";
+  if (secondHalfCompleted > firstHalfCompleted) {
+    trendMessage = "Your productivity increases toward the end of the week";
+  } else if (firstHalfCompleted > secondHalfCompleted) {
+    trendMessage = "You're most productive early in the week";
+  }
+  
   const chartConfig = {
     completed: {
       label: 'Completed Tasks',
@@ -45,54 +59,76 @@ export function ProductivityChart() {
     }
   };
   
+  // No tasks completed case
+  const totalCompleted = weekData.reduce((sum, day) => sum + day.completed, 0);
+  if (totalCompleted === 0) {
+    return (
+      <div className="h-32 w-full flex items-center justify-center text-muted-foreground text-sm">
+        No completed tasks this week
+      </div>
+    );
+  }
+  
   return (
-    <div className="h-32 w-full">
-      <ChartContainer
-        config={chartConfig}
-        className="h-full w-full"
-      >
-        <BarChart data={weekData} margin={{ top: 10, right: 0, left: 0, bottom: 10 }}>
-          <XAxis 
-            dataKey="name" 
-            axisLine={false} 
-            tickLine={false}
-            tickFormatter={(value, index) => {
-              // Check if this day is today
-              const isTodays = isToday(weekData[index].date);
-              return isTodays ? `${value} (Today)` : value;
-            }}
-            fontSize={10}
-          />
-          <YAxis hide={true} />
-          <Tooltip 
-            content={({ active, payload }) => {
-              if (active && payload && payload.length) {
-                const data = payload[0].payload as DayData;
-                return (
-                  <div className="rounded-md border bg-background p-2 shadow-md">
-                    <div className="text-xs font-semibold">{data.formattedDate}</div>
-                    <div className="flex items-center gap-1 text-xs">
-                      <div 
-                        className="h-2 w-2 rounded-full" 
-                        style={{ backgroundColor: 'var(--primary)' }}
-                      />
-                      <span>{data.completed} tasks completed</span>
+    <div className="space-y-2">
+      <div className="h-32 w-full">
+        <ChartContainer
+          config={chartConfig}
+          className="h-full w-full"
+        >
+          <BarChart data={weekData} margin={{ top: 10, right: 0, left: 0, bottom: 10 }}>
+            <XAxis 
+              dataKey="name" 
+              axisLine={false} 
+              tickLine={false}
+              tickFormatter={(value, index) => {
+                // Check if this day is today
+                const isTodays = isToday(weekData[index].date);
+                return isTodays ? `${value} (Today)` : value;
+              }}
+              fontSize={10}
+            />
+            <YAxis hide={true} />
+            <Tooltip 
+              content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  const data = payload[0].payload as DayData;
+                  return (
+                    <div className="rounded-md border bg-background p-2 shadow-md">
+                      <div className="text-xs font-semibold">{data.formattedDate}</div>
+                      <div className="flex items-center gap-1 text-xs">
+                        <div 
+                          className="h-2 w-2 rounded-full" 
+                          style={{ backgroundColor: 'var(--primary)' }}
+                        />
+                        <span>{data.completed} tasks completed</span>
+                      </div>
                     </div>
-                  </div>
-                );
-              }
-              return null;
-            }}
-          />
-          <Bar 
-            dataKey="completed" 
-            fill="var(--primary)" 
-            radius={[4, 4, 0, 0]}
-            className={cn("transition-opacity", "opacity-70 hover:opacity-100")}
-            animationDuration={300}
-          />
-        </BarChart>
-      </ChartContainer>
+                  );
+                }
+                return null;
+              }}
+            />
+            <Bar 
+              dataKey="completed" 
+              fill="var(--primary)" 
+              radius={[4, 4, 0, 0]}
+              className={cn("transition-opacity", "opacity-70 hover:opacity-100")}
+              animationDuration={300}
+            />
+          </BarChart>
+        </ChartContainer>
+      </div>
+      
+      {/* Productivity insights */}
+      {mostProductiveDay && mostProductiveDay.completed > 0 && (
+        <div className="text-xs text-muted-foreground">
+          <p className="mb-1">
+            <span className="font-medium">Most productive day:</span> {mostProductiveDay.formattedDate} ({mostProductiveDay.completed} tasks)
+          </p>
+          {trendMessage && <p>{trendMessage}</p>}
+        </div>
+      )}
     </div>
   );
 }
