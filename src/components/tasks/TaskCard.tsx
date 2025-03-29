@@ -41,7 +41,7 @@ import {
   getStatusLabel, 
   isOverdue 
 } from '@/lib/utils';
-import { useTaskStore } from '@/store';
+import { useTaskStore, useProjectStore } from '@/store';
 import { cn } from '@/lib/utils';
 import { ProjectBadge } from '@/components/projects';
 import { toast } from '@/hooks/use-toast';
