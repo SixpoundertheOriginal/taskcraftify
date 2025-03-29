@@ -16,9 +16,9 @@ export function ThemeToggle() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button 
-          variant="outline" 
+          variant="ghost" 
           size="icon" 
-          className="transition-colors duration-300 bg-background/40 backdrop-blur-sm border-muted/40"
+          className="transition-colors duration-300 h-8 w-8 text-sidebar-foreground hover:bg-sidebar-hover"
           aria-label="Toggle theme"
         >
           <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all text-amber-500 dark:rotate-90 dark:scale-0" />
@@ -26,7 +26,7 @@ export function ThemeToggle() {
           <span className="sr-only">Toggle theme</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="border-muted/60 backdrop-blur-sm">
+      <DropdownMenuContent align="end" className="border-border/60 backdrop-blur-sm">
         <DropdownMenuItem onClick={() => setTheme('light')} className="cursor-pointer">
           <Sun className="mr-2 h-4 w-4 text-amber-500" />
           <span>Light</span>

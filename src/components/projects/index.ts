@@ -1,6 +1,5 @@
 
-export * from './ProjectBadge';
-export * from './ProjectDialog';
-export * from './ProjectList';
-export * from './ProjectSelector';
-export * from './ColorPicker';
+export { ProjectSelector } from './ProjectSelector';
+export { ProjectDialog } from './ProjectDialog';
+export { ProjectBadge } from './ProjectBadge';
+export { EnhancedProjectList } from './EnhancedProjectList';

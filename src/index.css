@@ -43,8 +43,10 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 246 80% 60%;
+    --sidebar-hover: 240 5% 96%;
+    --sidebar-section-header: 240 5% 65%;
 
-    /* New task status and priority colors */
+    /* Task status and priority colors */
     --status-todo: 221 83% 53%;
     --status-in-progress: 35 92% 51%;
     --status-done: 171 68% 41%;
@@ -94,8 +96,10 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 246 80% 60%;
+    --sidebar-hover: 240 5% 13%;
+    --sidebar-section-header: 240 5% 75%;
 
-    /* New task status and priority colors - adjusted for dark mode */
+    /* Task status and priority colors - adjusted for dark mode */
     --status-todo: 213 94% 68%;
     --status-in-progress: 38 95% 64%;
     --status-done: 166 73% 46%;
@@ -166,6 +170,31 @@
   
   .text-shadow-sm {
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+
+  /* Sidebar specific utilities */
+  .sidebar-section-header {
+    @apply text-sidebar-section-header font-medium text-xs uppercase tracking-wider px-2 py-1.5;
+  }
+  
+  .sidebar-separator {
+    @apply my-2 h-px bg-sidebar-border/60;
+  }
+  
+  .sidebar-item-active {
+    @apply bg-sidebar-hover text-sidebar-primary font-medium before:opacity-100;
+  }
+  
+  .sidebar-item-indicator {
+    @apply absolute left-0 top-1/2 h-[60%] w-1 -translate-y-1/2 rounded-r-full bg-sidebar-primary opacity-0 transition-opacity;
+  }
+  
+  .progress-bar {
+    @apply h-1 rounded-full overflow-hidden bg-sidebar-border/30;
+  }
+  
+  .progress-bar-fill {
+    @apply h-full bg-sidebar-primary rounded-full transition-all duration-500;
   }
 }
 

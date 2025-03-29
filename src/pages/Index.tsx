@@ -17,11 +17,14 @@ import {
   SidebarFooter,
   SidebarMenu,
   SidebarMenuItem,
-  SidebarMenuButton
+  SidebarMenuButton,
+  SidebarSeparator
 } from '@/components/ui/sidebar';
-import { ProjectSelector, ProjectList } from '@/components/projects';
+import { ProjectSelector, EnhancedProjectList } from '@/components/projects';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CalendarDays, List, KanbanSquare, Settings } from 'lucide-react';
+import { CalendarDays, List, KanbanSquare, Settings, PanelLeft } from 'lucide-react';
+import { QuickAddButton } from '@/components/quick-add';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function Index() {
   const [activeView, setActiveView] = useState<ViewMode>('list');
@@ -31,60 +34,90 @@ export default function Index() {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        <Sidebar variant="inset">
-          <SidebarHeader className="flex flex-col gap-2 pt-6">
-            <div className="flex items-center px-2">
-              <h1 className="text-xl font-semibold">TaskCraft</h1>
+        <Sidebar variant="inset" className="shadow-sidebar dark:shadow-sidebar-dark border-r border-sidebar-border/40">
+          <SidebarHeader className="flex flex-col gap-2 pt-4 pb-2">
+            <div className="flex items-center px-3 pb-2">
+              <h1 className="text-xl font-bold bg-gradient-to-r from-sidebar-primary to-sidebar-primary/70 bg-clip-text text-transparent">
+                TaskCraft
+              </h1>
+              <div className="ml-auto">
+                <ThemeToggle />
+              </div>
+            </div>
+            
+            <div className="px-2">
+              <QuickAddButton />
             </div>
           </SidebarHeader>
           
-          <SidebarContent className="pt-6">
+          <SidebarSeparator />
+          
+          <SidebarContent className="pt-3">
             <div className="px-2 mb-4">
               <ProjectSelector />
             </div>
             
             <SidebarGroup>
-              <SidebarGroupLabel>
+              <div className="sidebar-section-header">
                 Navigation
-              </SidebarGroupLabel>
+              </div>
               <SidebarGroupContent className="space-y-1">
                 <SidebarMenu>
                   <SidebarMenuItem>
+                    <div 
+                      className="sidebar-item-indicator" 
+                      data-active={activeTab === 'tasks'}
+                    />
                     <SidebarMenuButton 
-                      className="flex items-center gap-2"
+                      className={`flex items-center gap-2 ${activeTab === 'tasks' ? 'sidebar-item-active' : ''}`}
                       isActive={activeTab === 'tasks'}
                       onClick={() => setActiveTab('tasks')}
                     >
                       <List className="h-4 w-4" />
-                      <span>Tasks</span>
+                      <span className="font-medium">Tasks</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
+                    <div 
+                      className="sidebar-item-indicator" 
+                      data-active={activeTab === 'calendar'}
+                    />
                     <SidebarMenuButton 
-                      className="flex items-center gap-2"
+                      className={`flex items-center gap-2 ${activeTab === 'calendar' ? 'sidebar-item-active' : ''}`}
                       isActive={activeTab === 'calendar'}
                       onClick={() => setActiveTab('calendar')}
                     >
                       <CalendarDays className="h-4 w-4" />
-                      <span>Calendar</span>
+                      <span className="font-medium">Calendar</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <div 
+                      className="sidebar-item-indicator" 
+                      data-active={activeTab === 'integrations'}
+                    />
+                    <SidebarMenuButton 
+                      className={`flex items-center gap-2 ${activeTab === 'integrations' ? 'sidebar-item-active' : ''}`}
+                      isActive={activeTab === 'integrations'}
+                      onClick={() => setActiveTab('integrations')}
+                    >
+                      <Settings className="h-4 w-4" />
+                      <span className="font-medium">Settings</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
             
+            <SidebarSeparator />
+            
             <SidebarGroup>
-              <SidebarGroupLabel>
-                Projects
-              </SidebarGroupLabel>
-              <SidebarGroupContent className="space-y-1">
-                <ProjectList />
-              </SidebarGroupContent>
+              <EnhancedProjectList />
             </SidebarGroup>
           </SidebarContent>
         </Sidebar>
         
-        <SidebarInset className="p-6">
+        <SidebarInset className="p-6 bg-background">
           <div className="w-full max-w-5xl mx-auto">
             <Tabs defaultValue="tasks" value={activeTab} onValueChange={setActiveTab} className="w-full">
               <div className="flex justify-between items-center mb-8">
