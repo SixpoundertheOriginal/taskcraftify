@@ -22,11 +22,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { TaskForm } from '@/components/tasks/TaskForm';
 import { useKeyboardShortcut } from '@/hooks/use-keyboard-shortcuts';
+import { cn } from '@/lib/utils';
 
 export const QuickAddButton = () => {
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [taskFormType, setTaskFormType] = useState<'task' | 'event'>('task');
+  const [isHovered, setIsHovered] = useState(false);
   
   const handleOpenTaskForm = (type: 'task' | 'event') => {
     setTaskFormType(type);
@@ -77,10 +79,19 @@ export const QuickAddButton = () => {
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="w-full h-10 justify-between bg-sidebar-primary text-sidebar-primary-foreground border-none hover:bg-sidebar-primary/90 transition-all px-3 shadow-sm"
+                  className={cn(
+                    "w-full h-10 justify-between bg-sidebar-primary text-sidebar-primary-foreground",
+                    "border-none hover:bg-sidebar-primary/90 transition-all px-3 shadow-sm",
+                    "hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
+                  )}
+                  onMouseEnter={() => setIsHovered(true)}
+                  onMouseLeave={() => setIsHovered(false)}
                 >
                   <span className="flex items-center gap-2">
-                    <PlusCircle className="h-4 w-4" />
+                    <PlusCircle className={cn(
+                      "h-4 w-4 transition-transform duration-200",
+                      isHovered ? "rotate-90" : ""
+                    )} />
                     <span className="font-medium">Quick Add</span>
                   </span>
                   <kbd className="bg-sidebar-primary-foreground/20 text-sidebar-primary-foreground/70 text-[10px] font-mono rounded px-1.5 py-0.5">
@@ -98,7 +109,7 @@ export const QuickAddButton = () => {
             <DropdownMenuLabel>Create New</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem 
-              className="gap-2 cursor-pointer"
+              className="gap-2 cursor-pointer hover:bg-primary/5"
               onClick={() => handleOpenTaskForm('task')}
             >
               <ListTodo className="h-4 w-4" />
@@ -106,7 +117,7 @@ export const QuickAddButton = () => {
               <kbd className="ml-auto text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded">Ctrl+T</kbd>
             </DropdownMenuItem>
             <DropdownMenuItem 
-              className="gap-2 cursor-pointer"
+              className="gap-2 cursor-pointer hover:bg-primary/5"
               onClick={() => handleOpenTaskForm('event')}
             >
               <Calendar className="h-4 w-4" />
