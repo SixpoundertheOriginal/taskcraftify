@@ -23,7 +23,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { toast } from '@/hooks/use-toast';
 import { Task, TaskStatus, TaskPriority } from '@/types/task';
 import { useTaskStore } from '@/store';
@@ -183,6 +183,8 @@ export function TaskForm({ open, onOpenChange, initialTask, initialDueDate, init
                       placeholder="Task title" 
                       {...field} 
                       autoFocus 
+                      value={field.value}
+                      onChange={(e) => field.onChange(e.target.value)}
                     />
                   </FormControl>
                   <FormMessage />
@@ -201,6 +203,8 @@ export function TaskForm({ open, onOpenChange, initialTask, initialDueDate, init
                       placeholder="Task description (optional)" 
                       className="resize-none" 
                       {...field} 
+                      value={field.value || ''}
+                      onChange={(e) => field.onChange(e.target.value)}
                     />
                   </FormControl>
                   <FormMessage />
@@ -217,7 +221,6 @@ export function TaskForm({ open, onOpenChange, initialTask, initialDueDate, init
                     <FormLabel>Status</FormLabel>
                     <Select 
                       onValueChange={field.onChange} 
-                      defaultValue={field.value}
                       value={field.value}
                     >
                       <FormControl>
@@ -245,7 +248,6 @@ export function TaskForm({ open, onOpenChange, initialTask, initialDueDate, init
                     <FormLabel>Priority</FormLabel>
                     <Select 
                       onValueChange={field.onChange} 
-                      defaultValue={field.value}
                       value={field.value}
                     >
                       <FormControl>

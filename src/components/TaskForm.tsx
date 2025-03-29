@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { 
   Dialog,
   DialogContent,
@@ -41,7 +41,7 @@ export function TaskForm({ open, onOpenChange, initialDueDate }: TaskFormProps) 
   const [tags, setTags] = useState<string[]>([]);
   const [dueDate, setDueDate] = useState<Date | undefined>(initialDueDate);
   
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<CreateTaskDTO>({
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors }, control } = useForm<CreateTaskDTO>({
     defaultValues: {
       title: '',
       description: '',
@@ -122,8 +122,7 @@ export function TaskForm({ open, onOpenChange, initialDueDate }: TaskFormProps) 
             <Input
               id="title"
               placeholder="Task title"
-              value={titleValue}
-              onChange={(e) => setValue('title', e.target.value)}
+              {...register('title', { required: 'Title is required' })}
               className="w-full"
             />
             {errors.title && (
@@ -136,8 +135,7 @@ export function TaskForm({ open, onOpenChange, initialDueDate }: TaskFormProps) 
             <Textarea
               id="description"
               placeholder="Add details about this task..."
-              value={descriptionValue}
-              onChange={(e) => setValue('description', e.target.value)}
+              {...register('description')}
               className="min-h-[100px]"
             />
           </div>
@@ -147,36 +145,54 @@ export function TaskForm({ open, onOpenChange, initialDueDate }: TaskFormProps) 
               <label htmlFor="status" className="text-sm font-medium">
                 Status <span className="text-destructive">*</span>
               </label>
-              <Select defaultValue={TaskStatus.TODO} onValueChange={(value) => setValue('status', value as TaskStatus)}>
-                <SelectTrigger id="status">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.values(TaskStatus).map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {getStatusLabel(status)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Controller
+                control={control}
+                name="status"
+                render={({ field }) => (
+                  <Select 
+                    onValueChange={field.onChange}
+                    value={field.value}
+                  >
+                    <SelectTrigger id="status">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.values(TaskStatus).map((status) => (
+                        <SelectItem key={status} value={status}>
+                          {getStatusLabel(status)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
             
             <div className="space-y-2">
               <label htmlFor="priority" className="text-sm font-medium">
                 Priority <span className="text-destructive">*</span>
               </label>
-              <Select defaultValue={TaskPriority.MEDIUM} onValueChange={(value) => setValue('priority', value as TaskPriority)}>
-                <SelectTrigger id="priority">
-                  <SelectValue placeholder="Select priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.values(TaskPriority).map((priority) => (
-                    <SelectItem key={priority} value={priority}>
-                      {getPriorityLabel(priority)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Controller
+                control={control}
+                name="priority"
+                render={({ field }) => (
+                  <Select 
+                    onValueChange={field.onChange}
+                    value={field.value}
+                  >
+                    <SelectTrigger id="priority">
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.values(TaskPriority).map((priority) => (
+                        <SelectItem key={priority} value={priority}>
+                          {getPriorityLabel(priority)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
           </div>
           
