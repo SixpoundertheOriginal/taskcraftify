@@ -25,11 +25,13 @@ import { useKeyboardShortcut } from '@/hooks/use-keyboard-shortcuts';
 
 export const QuickAddButton = () => {
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [taskFormType, setTaskFormType] = useState<'task' | 'event'>('task');
   
   const handleOpenTaskForm = (type: 'task' | 'event') => {
     setTaskFormType(type);
     setIsTaskFormOpen(true);
+    setIsDropdownOpen(false);
   };
   
   // Keyboard shortcut handler
@@ -60,10 +62,15 @@ export const QuickAddButton = () => {
     }
   });
   
+  // Handle task form close
+  const handleTaskFormOpenChange = (open: boolean) => {
+    setIsTaskFormOpen(open);
+  };
+  
   return (
     <>
       <TooltipProvider>
-        <DropdownMenu>
+        <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
           <Tooltip delayDuration={300}>
             <TooltipTrigger asChild>
               <DropdownMenuTrigger asChild>
@@ -110,13 +117,11 @@ export const QuickAddButton = () => {
         </DropdownMenu>
       </TooltipProvider>
       
-      {isTaskFormOpen && (
-        <TaskForm 
-          open={isTaskFormOpen}
-          onOpenChange={setIsTaskFormOpen}
-          initialDueDate={taskFormType === 'event' ? new Date() : undefined}
-        />
-      )}
+      <TaskForm 
+        open={isTaskFormOpen}
+        onOpenChange={handleTaskFormOpenChange}
+        initialDueDate={taskFormType === 'event' ? new Date() : undefined}
+      />
     </>
   );
 };
