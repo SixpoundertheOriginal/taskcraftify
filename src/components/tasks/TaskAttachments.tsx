@@ -53,6 +53,7 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
   const [attachmentToDelete, setAttachmentToDelete] = useState<Attachment | null>(null);
   const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
   
   // Get attachments for this task
   const attachmentsForTask = taskAttachments[taskId] || [];
@@ -61,6 +62,34 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
     // Fetch attachments when the component mounts
     fetchTaskAttachments(taskId);
   }, [taskId, fetchTaskAttachments]);
+
+  // Add global drag handler to provide visual cue when dragging over the component
+  useEffect(() => {
+    const handleDragOver = (e: DragEvent) => {
+      // Only set dragging state if files are being dragged
+      if (e.dataTransfer?.types.includes('Files')) {
+        setIsDraggingOver(true);
+      }
+    };
+
+    const handleDragLeave = () => {
+      setIsDraggingOver(false);
+    };
+
+    const handleDrop = () => {
+      setIsDraggingOver(false);
+    };
+
+    document.addEventListener('dragover', handleDragOver);
+    document.addEventListener('dragleave', handleDragLeave);
+    document.addEventListener('drop', handleDrop);
+
+    return () => {
+      document.removeEventListener('dragover', handleDragOver);
+      document.removeEventListener('dragleave', handleDragLeave);
+      document.removeEventListener('drop', handleDrop);
+    };
+  }, []);
   
   const handleUpload = async (files: File[]) => {
     if (files.length > 0) {
@@ -189,9 +218,15 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
   });
   
   return (
-    <div className="space-y-4">
+    <div className={cn(
+      "space-y-4 transition-all duration-300", 
+      isDraggingOver && "scale-[1.02] ring-2 ring-primary/40 rounded-lg p-4 bg-muted/10"
+    )}>
       <div className="flex items-center gap-2 mb-4">
-        <Paperclip className="h-5 w-5" />
+        <Paperclip className={cn(
+          "h-5 w-5 transition-transform",
+          isDraggingOver && "text-primary animate-bounce"
+        )} />
         <h3 className="text-lg font-medium">Attachments</h3>
       </div>
       

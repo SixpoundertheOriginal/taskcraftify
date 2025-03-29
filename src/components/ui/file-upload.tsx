@@ -82,7 +82,7 @@ export const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
       }
     };
     
-    const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    const { getRootProps, getInputProps, isDragActive, isDragAccept, isDragReject } = useDropzone({
       onDrop,
       maxFiles,
       maxSize,
@@ -117,20 +117,43 @@ export const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
         <div
           {...getRootProps()}
           className={cn(
-            "border-2 border-dashed rounded-lg p-4 transition-colors cursor-pointer",
-            isDragActive 
-              ? "border-primary bg-primary/5" 
-              : "border-muted-foreground/25 hover:border-primary/50",
+            "border-2 border-dashed rounded-lg p-4 transition-colors cursor-pointer group",
+            isDragActive && !isDragReject && "border-primary bg-primary/5 shadow-lg animate-pulse",
+            isDragAccept && "border-green-500 bg-green-50 dark:bg-green-900/20",
+            isDragReject && "border-destructive bg-destructive/10",
+            !isDragActive && "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30",
             disabled && "pointer-events-none opacity-60",
             className
           )}
         >
           <input {...getInputProps()} />
           
-          <div className="flex flex-col items-center justify-center gap-2 text-center p-4">
-            <Upload className="h-8 w-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground font-medium">{label}</p>
-            <p className="text-xs text-muted-foreground/70">
+          <div className={cn(
+            "flex flex-col items-center justify-center gap-2 text-center p-4 transition-transform duration-200",
+            isDragActive && "scale-105"
+          )}>
+            <Upload className={cn(
+              "h-8 w-8 transition-all duration-300",
+              isDragActive ? "text-primary animate-bounce" : "text-muted-foreground",
+              isDragReject && "text-destructive"
+            )} />
+            
+            <p className={cn(
+              "text-sm font-medium transition-colors",
+              isDragActive && !isDragReject ? "text-primary" : "text-muted-foreground",
+              isDragReject && "text-destructive"
+            )}>
+              {isDragReject 
+                ? "File type not accepted or too many files" 
+                : isDragActive 
+                  ? "Drop files here..." 
+                  : label}
+            </p>
+            <p className={cn(
+              "text-xs transition-colors",
+              isDragActive && !isDragReject ? "text-primary/70" : "text-muted-foreground/70",
+              isDragReject && "text-destructive/70"
+            )}>
               {maxSize && (
                 <span>Max size: {Math.round(maxSize / 1024 / 1024)}MB. </span>
               )}
@@ -142,7 +165,9 @@ export const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
         </div>
         
         {(files.length > 0 || (uploadProgress && Object.keys(uploadProgress).length > 0)) && (
-          <div className="mt-2 space-y-2">
+          <div className={cn(
+            "mt-2 space-y-2 animate-fade-in",
+          )}>
             {files.map((file, i) => (
               <div
                 key={`${file.name}-${i}`}
@@ -192,7 +217,7 @@ export const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
             {uploadProgress && Object.entries(uploadProgress).map(([fileName, progress]) => (
               <div
                 key={fileName}
-                className="flex items-center gap-2 rounded-md border p-2"
+                className="flex items-center gap-2 rounded-md border p-2 animate-pulse"
               >
                 <File className="h-6 w-6 text-blue-500 animate-pulse" />
                 <div className="flex-1 overflow-hidden">
