@@ -30,12 +30,12 @@ export type TaskStore = TaskSlice & FilterSlice & SubscriptionSlice & StatsSlice
 
 export const useTaskStore = create<TaskStore>()(
   devtools(
-    (set, get) => {
-      const taskSlice = createTaskSlice(set, get);
-      const filterSlice = createFilterSlice(set, get);
-      const subscriptionSlice = createSubscriptionSlice(set, get);
-      const statsSlice = createStatsSlice(set, get);
-      const attachmentSlice = createAttachmentSlice(set, get);
+    (set, get, api) => {
+      const taskSlice = createTaskSlice(set, get, api);
+      const filterSlice = createFilterSlice(set, get, api);
+      const subscriptionSlice = createSubscriptionSlice(set, get, api);
+      const statsSlice = createStatsSlice(set, get, api);
+      const attachmentSlice = createAttachmentSlice(set, get, api);
       
       return {
         ...taskSlice,
