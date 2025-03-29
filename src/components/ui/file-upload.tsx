@@ -1,7 +1,7 @@
 
 import * as React from "react";
 import { useDropzone, FileRejection, DropzoneOptions } from "react-dropzone";
-import { Upload, X, File, FileImage, FileText, FileSpreadsheet, Archive, FileBox, FileAudio, Eye } from "lucide-react";
+import { Upload, X, File, FileImage, FileText, FileSpreadsheet, Archive, FileBox, FileAudio, Eye, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
@@ -11,6 +11,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { motion, AnimatePresence } from "framer-motion";
 
 export interface FileUploadProps extends Omit<DropzoneOptions, "onDrop"> {
   className?: string;
@@ -43,6 +51,7 @@ export const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
   }, ref) => {
     const [files, setFiles] = React.useState<File[]>(value);
     const [previewFile, setPreviewFile] = React.useState<File | null>(null);
+    const [fileRejections, setFileRejections] = React.useState<FileRejection[]>([]);
     
     React.useEffect(() => {
       if (value !== files) {
@@ -51,7 +60,7 @@ export const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
     }, [value, files]);
     
     const onDrop = React.useCallback(
-      (acceptedFiles: File[], fileRejections: FileRejection[]) => {
+      (acceptedFiles: File[], rejections: FileRejection[]) => {
         if (acceptedFiles?.length) {
           const newFiles = 
             maxFiles === 1 
@@ -66,8 +75,11 @@ export const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
           }
         }
         
-        if (fileRejections.length > 0 && onReject) {
-          onReject(fileRejections);
+        // Store file rejections for display
+        setFileRejections(rejections);
+        
+        if (rejections.length > 0 && onReject) {
+          onReject(rejections);
         }
       },
       [files, maxFiles, onChange, onReject, onUpload]
@@ -79,6 +91,51 @@ export const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
       
       if (onChange) {
         onChange(newFiles);
+      }
+    };
+
+    const removeRejection = (rejectionToRemove: FileRejection) => {
+      setFileRejections(prev => 
+        prev.filter(rejection => rejection.file !== rejectionToRemove.file)
+      );
+    };
+
+    const formatFileSize = (bytes: number) => {
+      if (bytes < 1024) return bytes + ' bytes';
+      else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+      else return (bytes / 1048576).toFixed(1) + ' MB';
+    };
+    
+    const getFileTypeAcceptMessage = () => {
+      if (!accept) return null;
+      
+      const acceptEntries = Object.entries(accept);
+      if (acceptEntries.length === 0) return null;
+      
+      const acceptTypes = acceptEntries.map(([mimeType, exts]) => {
+        if (exts && exts.length > 0) {
+          return exts.join(', ');
+        }
+        return mimeType;
+      }).join(', ');
+      
+      return `Accepted file types: ${acceptTypes}`;
+    };
+    
+    const getRejectionError = (rejection: FileRejection) => {
+      const error = rejection.errors[0];
+      
+      switch (error.code) {
+        case 'file-too-large':
+          return `File is too large. Max size is ${formatFileSize(maxSize)}`;
+        case 'file-too-small':
+          return `File is too small`;
+        case 'file-invalid-type':
+          return `Invalid file type. ${getFileTypeAcceptMessage()}`;
+        case 'too-many-files':
+          return `Too many files. Max is ${maxFiles}`;
+        default:
+          return error.message;
       }
     };
     
@@ -155,14 +212,62 @@ export const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
               isDragReject && "text-destructive/70"
             )}>
               {maxSize && (
-                <span>Max size: {Math.round(maxSize / 1024 / 1024)}MB. </span>
+                <span>Max size: {formatFileSize(maxSize)}. </span>
               )}
               {maxFiles > 1 && (
-                <span>Max files: {maxFiles}</span>
+                <span>Max files: {maxFiles}. </span>
+              )}
+              {getFileTypeAcceptMessage() && (
+                <span>{getFileTypeAcceptMessage()}</span>
               )}
             </p>
           </div>
         </div>
+        
+        {/* File rejections list with animations */}
+        <AnimatePresence>
+          {fileRejections.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="mt-2 space-y-2"
+            >
+              {fileRejections.map((rejection, index) => (
+                <motion.div
+                  key={`${rejection.file.name}-${index}`}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Alert variant="destructive" className="flex items-center">
+                    <AlertCircle className="h-4 w-4 mr-2" />
+                    <div className="flex-1 overflow-hidden">
+                      <p className="text-sm font-medium truncate">
+                        {rejection.file.name}
+                      </p>
+                      <AlertDescription className="text-xs">
+                        {getRejectionError(rejection)}
+                      </AlertDescription>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeRejection(rejection)}
+                      className="h-6 w-6 rounded-full ml-2"
+                    >
+                      <X className="h-3 w-3" />
+                      <span className="sr-only">Dismiss</span>
+                    </Button>
+                  </Alert>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
         
         {(files.length > 0 || (uploadProgress && Object.keys(uploadProgress).length > 0)) && (
           <div className={cn(
@@ -177,38 +282,54 @@ export const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
                 <div className="flex-1 overflow-hidden">
                   <p className="text-sm truncate font-medium">{file.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {(file.size / 1024).toFixed(1)} KB
+                    {formatFileSize(file.size)}
                   </p>
                 </div>
                 <div className="flex items-center gap-1">
                   {showPreviews && (
-                    <Popover>
-                      <PopoverTrigger asChild>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 rounded-full"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPreviewFile(file);
+                            }}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Preview file</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeFile(file);
+                          }}
                           className="h-7 w-7 rounded-full"
                         >
-                          <Eye className="h-4 w-4" />
-                          <span className="sr-only">Preview file</span>
+                          <X className="h-4 w-4" />
                         </Button>
-                      </PopoverTrigger>
-                      <PopoverContent side="right" align="center" className="w-80 p-2">
-                        <FilePreview file={file} maxHeight={300} />
-                      </PopoverContent>
-                    </Popover>
-                  )}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeFile(file)}
-                    className="h-7 w-7 rounded-full"
-                  >
-                    <X className="h-4 w-4" />
-                    <span className="sr-only">Remove file</span>
-                  </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Remove file</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </div>
             ))}
@@ -230,6 +351,15 @@ export const FileUpload = React.forwardRef<HTMLDivElement, FileUploadProps>(
               </div>
             ))}
           </div>
+        )}
+        
+        {/* File preview popover */}
+        {previewFile && (
+          <Popover open={!!previewFile} onOpenChange={(open) => !open && setPreviewFile(null)}>
+            <PopoverContent side="right" align="center" className="w-80 p-2">
+              <FilePreview file={previewFile} maxHeight={300} />
+            </PopoverContent>
+          </Popover>
         )}
       </div>
     );

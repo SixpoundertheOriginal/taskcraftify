@@ -11,13 +11,15 @@ import {
   Download, 
   Trash2, 
   Loader2,
-  Eye 
+  Eye,
+  AlertCircle
 } from 'lucide-react';
 import { useTaskStore } from '@/store';
 import { Attachment } from '@/types/attachment';
 import { FileUpload } from '@/components/ui/file-upload';
 import { Button } from '@/components/ui/button';
 import { FilePreview } from '@/components/ui/file-preview';
+import { toast } from '@/hooks/use-toast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -94,6 +96,28 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
   const handleUpload = async (files: File[]) => {
     if (files.length > 0) {
       await uploadAttachment({ taskId, file: files[0] });
+    }
+  };
+  
+  const handleUploadRejection = (rejections: any[]) => {
+    const rejection = rejections[0];
+    if (rejection) {
+      const errorCode = rejection.errors[0].code;
+      let message = "File upload failed";
+      
+      if (errorCode === 'file-too-large') {
+        message = "File is too large. Maximum size is 5MB.";
+      } else if (errorCode === 'file-invalid-type') {
+        message = "Invalid file type. Please use a supported file format.";
+      } else if (errorCode === 'too-many-files') {
+        message = "Too many files. Please upload one file at a time.";
+      }
+      
+      toast({
+        title: "Upload Error",
+        description: message,
+        variant: "destructive"
+      });
     }
   };
   
@@ -232,12 +256,23 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
       
       <FileUpload
         onUpload={handleUpload}
+        onReject={handleUploadRejection}
         uploadProgress={uploadProgressForFileUpload}
         maxSize={5 * 1024 * 1024} // 5MB
         label="Drag and drop files here, or click to browse"
         className={cn(isAttachmentLoading && "opacity-70 pointer-events-none")}
         disabled={isAttachmentLoading}
         showPreviews={true}
+        accept={{
+          'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.svg'],
+          'application/pdf': ['.pdf'],
+          'text/plain': ['.txt'],
+          'text/csv': ['.csv'],
+          'application/vnd.ms-excel': ['.xls'],
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+          'application/zip': ['.zip'],
+          'application/json': ['.json']
+        }}
       />
       
       {renderAttachmentList()}
