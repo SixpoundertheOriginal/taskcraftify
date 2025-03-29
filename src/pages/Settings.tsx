@@ -1,6 +1,9 @@
 
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { 
   AccountSettings, 
   AppearanceSettings, 
@@ -13,14 +16,26 @@ import {
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState('account');
+  const navigate = useNavigate();
   
   return (
     <div className="container py-6 max-w-4xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="text-muted-foreground">
-          Customize TaskCraft to meet your preferences and workflow needs.
-        </p>
+      <div className="flex items-center mb-6">
+        <Button 
+          variant="ghost" 
+          className="mr-4" 
+          onClick={() => navigate('/')}
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Main Menu
+        </Button>
+        
+        <div>
+          <h1 className="text-2xl font-bold">Settings</h1>
+          <p className="text-muted-foreground">
+            Customize TaskCraft to meet your preferences and workflow needs.
+          </p>
+        </div>
       </div>
       
       <Tabs defaultValue="account" value={activeTab} onValueChange={setActiveTab} className="w-full">
