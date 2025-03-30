@@ -11,11 +11,12 @@ import {
   UpdateSubtaskDTO,
   Comment,
   CreateCommentDTO,
-  UpdateCommentDTO
+  UpdateCommentDTO,
+  APITask
 } from '@/types/task';
 import { TaskService } from '@/services/taskService';
 import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { mapApiTaskToTask } from '@/utils/task';
 
 export interface TaskSlice {
