@@ -20,6 +20,13 @@ export const createSubscriptionSlice: StateCreator<
     const fetchTasks = get().fetchTasks;
     fetchTasks().then(tasks => {
       console.log("Initial tasks load complete with", tasks.length, "tasks");
+      
+      // Force a refresh of task counts immediately after initial load
+      const refreshTaskCounts = get().refreshTaskCounts;
+      if (refreshTaskCounts) {
+        console.log("Explicitly refreshing task counts after initial load");
+        refreshTaskCounts();
+      }
     }).catch(error => {
       console.error("Error with initial tasks load:", error);
     });
@@ -38,16 +45,14 @@ export const createSubscriptionSlice: StateCreator<
       // Update the tasks in the store
       set({ tasks });
       
-      // Force a complete refresh of task counts
-      setTimeout(() => {
-        console.log("Triggering explicit refreshTaskCounts after subscription update");
-        const refreshTaskCounts = get().refreshTaskCounts;
-        if (refreshTaskCounts) {
-          refreshTaskCounts();
-        } else {
-          console.error("refreshTaskCounts not available in task store");
-        }
-      }, 50); // Shorter timeout for faster UI updates
+      // Force a complete refresh of task counts immediately
+      const refreshTaskCounts = get().refreshTaskCounts;
+      if (refreshTaskCounts) {
+        console.log("Refreshing task counts after subscription update");
+        refreshTaskCounts();
+      } else {
+        console.error("refreshTaskCounts not available in task store");
+      }
     });
     
     return unsubscribe;

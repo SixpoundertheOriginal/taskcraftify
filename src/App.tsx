@@ -20,22 +20,29 @@ function App() {
   useEffect(() => {
     console.log("App mounted - setting up data fetching and subscriptions");
     
-    // Initial fetch
+    // Initial fetch with priority order
     const loadData = async () => {
       try {
+        // First fetch tasks and projects as they're most critical
         console.log("Fetching initial tasks data");
-        await fetchTasks();
+        const tasks = await fetchTasks();
+        console.log(`Loaded ${tasks.length} tasks initially`);
+        
         console.log("Fetching initial projects data");
-        await fetchProjects();
+        const projects = await fetchProjects();
+        console.log(`Loaded ${projects.length} projects initially`);
+        
+        // Then refresh task counts based on the loaded data
+        console.log("Refreshing task counts after initial data load");
+        refreshTaskCounts();
+        
+        // Then fetch other data in the background
         console.log("Fetching integrations data");
         await fetchIntegrations();
         console.log("Fetching calendar events");
         await fetchCalendarEvents();
         console.log("Fetching email settings");
         await fetchEmailSettings();
-        
-        // Ensure counts are updated after initial data load
-        refreshTaskCounts();
       } catch (error) {
         console.error("Error fetching initial data:", error);
       }
@@ -43,7 +50,7 @@ function App() {
     
     loadData();
     
-    // Setup real-time subscriptions
+    // Setup real-time subscriptions after initial data load
     console.log("Setting up real-time subscriptions");
     const unsubscribeTasks = setupTaskSubscription();
     const unsubscribeProjects = setupProjectSubscription();
