@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, User } from 'lucide-react';
 import { TaskForm } from '@/components/tasks';
@@ -11,12 +11,19 @@ import { useTaskStore } from '@/store';
 export function Header() {
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const { user } = useAuth();
-  const taskStore = useTaskStore();
+  const { tasks, getTasksCountByStatus, getOverdueTasks, refreshTaskCounts } = useTaskStore();
+  
+  // Refresh task counts when component mounts
+  useEffect(() => {
+    if (user) {
+      refreshTaskCounts();
+    }
+  }, [refreshTaskCounts, user]);
   
   // Calculate task statistics for the welcome message
-  const taskStats = taskStore.getTasksCountByStatus();
-  const overdueTasks = taskStore.getOverdueTasks();
-  const hasTasks = Object.values(taskStats).some(count => count > 0);
+  const taskStats = getTasksCountByStatus();
+  const overdueTasks = getOverdueTasks();
+  const hasTasks = tasks.length > 0;
   
   // Get user's email and extract name
   const userEmail = user?.email || '';
@@ -57,7 +64,7 @@ export function Header() {
                   ? "Welcome to TaskCraft! Get started by creating your first task."
                   : overdueTasks.length > 0
                     ? `You have ${overdueTasks.length} overdue ${overdueTasks.length === 1 ? 'task' : 'tasks'} that need attention.`
-                    : `You have ${taskStats.TODO + taskStats.IN_PROGRESS} active ${(taskStats.TODO + taskStats.IN_PROGRESS) === 1 ? 'task' : 'tasks'} and completed ${taskStats.DONE} ${taskStats.DONE === 1 ? 'task' : 'tasks'}.`
+                    : `You have ${taskStats.TODO || 0 + (taskStats.IN_PROGRESS || 0)} active ${(taskStats.TODO || 0 + (taskStats.IN_PROGRESS || 0)) === 1 ? 'task' : 'tasks'} and completed ${taskStats.DONE || 0} ${taskStats.DONE === 1 ? 'task' : 'tasks'}.`
                 }
               </p>
             </div>
@@ -65,15 +72,15 @@ export function Header() {
             {hasTasks && (
               <div className="flex gap-3 text-sm">
                 <div className="px-3 py-1 rounded-md bg-muted flex items-center gap-1.5">
-                  <span className="font-medium">{taskStats.TODO}</span>
+                  <span className="font-medium">{taskStats.TODO || 0}</span>
                   <span className="text-muted-foreground">To Do</span>
                 </div>
                 <div className="px-3 py-1 rounded-md bg-muted flex items-center gap-1.5">
-                  <span className="font-medium">{taskStats.IN_PROGRESS}</span>
+                  <span className="font-medium">{taskStats.IN_PROGRESS || 0}</span>
                   <span className="text-muted-foreground">In Progress</span>
                 </div>
                 <div className="px-3 py-1 rounded-md bg-muted flex items-center gap-1.5">
-                  <span className="font-medium">{taskStats.DONE}</span>
+                  <span className="font-medium">{taskStats.DONE || 0}</span>
                   <span className="text-muted-foreground">Done</span>
                 </div>
               </div>

@@ -2,6 +2,7 @@
 import { StateCreator } from 'zustand';
 import { TaskStore } from './taskStore';
 import { TaskService } from '@/services/taskService';
+import { TaskStatus } from '@/types/task';
 
 export interface StatsSlice {
   taskCounts: {
@@ -28,11 +29,16 @@ export const createStatsSlice: StateCreator<
     console.log("Refreshing task counts");
     
     try {
-      // Option 1: Calculate counts based on current tasks in the store
+      // Calculate counts based on current tasks in the store
       const tasks = get().tasks;
       
       const byProject: Record<string, number> = {};
       const byStatus: Record<string, number> = {};
+      
+      // Initialize all status counts to ensure all statuses are represented
+      Object.values(TaskStatus).forEach(status => {
+        byStatus[status] = 0;
+      });
       
       tasks.forEach(task => {
         // Count by project
@@ -43,6 +49,12 @@ export const createStatsSlice: StateCreator<
         byStatus[task.status] = (byStatus[task.status] || 0) + 1;
       });
       
+      console.log("Task counts calculated:", {
+        total: tasks.length,
+        byProject,
+        byStatus
+      });
+      
       set({ 
         taskCounts: {
           total: tasks.length,
@@ -50,28 +62,6 @@ export const createStatsSlice: StateCreator<
           byStatus
         }
       });
-      
-      console.log("Task counts refreshed:", {
-        total: tasks.length,
-        byProject,
-        byStatus
-      });
-      
-      // Option 2: Direct database query for more accurate counts
-      // Uncomment if you need to use the direct database query
-      /*
-      const result = await TaskService.directQueryTaskCounts();
-      if (result.data) {
-        console.log("Task counts from direct query:", result.data);
-        set({
-          taskCounts: {
-            total: result.data.totalCount,
-            byProject: result.data.projectCounts,
-            byStatus: {} // Add status counts if available in the result
-          }
-        });
-      }
-      */
     } catch (error) {
       console.error("Error refreshing task counts:", error);
     }

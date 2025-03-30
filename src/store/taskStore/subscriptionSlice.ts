@@ -18,19 +18,17 @@ export const createSubscriptionSlice: StateCreator<
     const unsubscribe = TaskService.subscribeToTasks((tasks) => {
       console.log("Task subscription updated with", tasks.length, "tasks");
       
-      // Log task distribution by project
-      const tasksByProject: Record<string, number> = {};
+      // Log task distribution by status
+      const tasksByStatus: Record<string, number> = {};
       tasks.forEach(task => {
-        const projectId = task.projectId || 'none';
-        tasksByProject[projectId] = (tasksByProject[projectId] || 0) + 1;
+        tasksByStatus[task.status] = (tasksByStatus[task.status] || 0) + 1;
       });
-      
-      console.log("Task counts by project after subscription update:", tasksByProject);
+      console.log("Task counts by status after subscription update:", tasksByStatus);
       
       // Update the tasks in the store
       set({ tasks });
       
-      // Force a complete refresh
+      // Force a complete refresh of task counts
       setTimeout(() => {
         console.log("Triggering explicit refreshTaskCounts after subscription update");
         const refreshTaskCounts = get().refreshTaskCounts;
@@ -39,7 +37,7 @@ export const createSubscriptionSlice: StateCreator<
         } else {
           console.error("refreshTaskCounts not available in task store");
         }
-      }, 300);
+      }, 100); // Shorter timeout for faster UI updates
     });
     
     return unsubscribe;

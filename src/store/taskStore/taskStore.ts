@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { Task, TaskStatus, TaskPriority } from '@/types/task';
@@ -33,12 +32,14 @@ export type TaskStore = TaskSlice & FilterSlice & SubscriptionSlice & StatsSlice
 
 export const useTaskStore = create<TaskStore>()(
   devtools(
-    (set, get, api) => {
-      const taskSlice = createTaskSlice(set, get, api);
-      const filterSlice = createFilterSlice(set, get, api);
-      const subscriptionSlice = createSubscriptionSlice(set, get, api);
-      const statsSlice = createStatsSlice(set, get, api);
-      const attachmentSlice = createAttachmentSlice(set, get, api);
+    (...args) => {
+      const [set, get, store] = args;
+      
+      const taskSlice = createTaskSlice(set, get, store);
+      const filterSlice = createFilterSlice(set, get, store);
+      const subscriptionSlice = createSubscriptionSlice(set, get, store);
+      const statsSlice = createStatsSlice(set, get, store);
+      const attachmentSlice = createAttachmentSlice(set, get, store);
       
       return {
         ...taskSlice,
@@ -53,14 +54,11 @@ export const useTaskStore = create<TaskStore>()(
         
         fetchTask: async (taskId: string): Promise<Task | undefined> => {
           try {
-            // First check if we have the task in the store and it's up to date
             const existingTask = get().tasks.find(t => t.id === taskId);
             
-            // Fetch the latest version from the server
             const updatedTask = await taskSlice.fetchTask(taskId);
             
             if (updatedTask) {
-              // Make sure the task is refreshed with attachments and comments
               await attachmentSlice.fetchTaskAttachments(taskId);
               await taskSlice.fetchComments(taskId);
               await taskSlice.fetchActivities(taskId);
@@ -134,6 +132,12 @@ export const useTaskStore = create<TaskStore>()(
         },
         
         getTasksCountByStatus: () => {
+          const { byStatus } = statsSlice.taskCounts;
+          if (Object.keys(byStatus).length > 0) {
+            console.log("Using pre-calculated status counts:", byStatus);
+            return byStatus;
+          }
+          
           const counts: Record<string, number> = {};
           
           Object.values(TaskStatus).forEach(status => {
@@ -173,6 +177,8 @@ export const useTaskStore = create<TaskStore>()(
             id: taskId,
             status: status as TaskStatus
           });
+          
+          statsSlice.refreshTaskCounts();
         },
         
         toggleSubtaskCompletion: async (subtaskId: string, completed: boolean): Promise<void> => {
