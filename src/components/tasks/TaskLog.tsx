@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useTaskStore } from '@/store';
 import { Task, ActivityItem } from '@/types/task';
@@ -27,6 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { AttachmentService } from '@/services/attachmentService';
+import { toast } from '@/hooks/use-toast';
 
 interface TaskLogProps {
   task: Task;
@@ -45,6 +45,7 @@ export function TaskLog({ task, maxHeight = 500 }: TaskLogProps) {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [comment, setComment] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Fetch activities and attachments when task changes
   useEffect(() => {
@@ -73,8 +74,12 @@ export function TaskLog({ task, maxHeight = 500 }: TaskLogProps) {
     }
   };
   
-  const handleAddComment = async () => {
+  const handleAddComment = async (e: React.FormEvent) => {
+    e.preventDefault(); // Prevent form submission
+    
     if (!comment.trim() || !task.id) return;
+    
+    setIsSubmitting(true);
     
     try {
       await createComment({
@@ -82,17 +87,32 @@ export function TaskLog({ task, maxHeight = 500 }: TaskLogProps) {
         content: comment.trim()
       });
       
+      // Clear comment field immediately
       setComment('');
       
-      // Refresh activities
+      // Update local activities state without triggering a full page refresh
       await loadTaskData(task.id);
+      
+      toast({
+        title: "Comment added",
+        description: "Your comment has been added successfully",
+      });
     } catch (error) {
       console.error("Error adding comment:", error);
+      toast({
+        title: "Error adding comment",
+        description: "There was a problem adding your comment",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
   const handleFileUpload = async (files: File[]) => {
     if (!task.id || files.length === 0) return;
+    
+    setIsSubmitting(true);
     
     try {
       for (const file of files) {
@@ -103,10 +123,22 @@ export function TaskLog({ task, maxHeight = 500 }: TaskLogProps) {
         });
       }
       
-      // Refresh data after upload
+      // Update local attachments without triggering a full page refresh
       await loadTaskData(task.id);
+      
+      toast({
+        title: "File uploaded",
+        description: `${files.length} file(s) uploaded successfully`,
+      });
     } catch (error) {
       console.error("Error uploading files:", error);
+      toast({
+        title: "Error uploading files",
+        description: "There was a problem uploading your files",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
@@ -211,13 +243,14 @@ export function TaskLog({ task, maxHeight = 500 }: TaskLogProps) {
       
       <Separator />
       
-      {/* Comment input */}
-      <div className="space-y-2">
+      {/* Comment form - make it a proper form to handle submission */}
+      <form onSubmit={handleAddComment} className="space-y-2">
         <Textarea
           placeholder="Add a comment or update..."
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           className="min-h-[80px] resize-none"
+          disabled={isSubmitting}
         />
         <div className="flex justify-between items-center">
           <FileUpload
@@ -233,28 +266,33 @@ export function TaskLog({ task, maxHeight = 500 }: TaskLogProps) {
               'application/zip': ['.zip'],
               'application/json': ['.json']
             }}
+            disabled={isSubmitting}
           >
-            <Button type="button" variant="outline" size="sm">
+            <Button type="button" variant="outline" size="sm" disabled={isSubmitting}>
               <Paperclip className="h-4 w-4 mr-2" />
               Attach
             </Button>
           </FileUpload>
           
           <Button
-            onClick={handleAddComment}
-            disabled={!comment.trim()}
+            type="submit"
+            disabled={!comment.trim() || isSubmitting}
             size="sm"
           >
-            Add Comment
+            {isSubmitting ? 'Adding...' : 'Add Comment'}
           </Button>
         </div>
-      </div>
+      </form>
       
       <Separator />
       
-      {/* Timeline */}
+      {/* Timeline with loading state */}
       <ScrollArea className={cn("pr-4", maxHeight ? `max-h-[${maxHeight}px]` : "")}>
-        {timeline.length > 0 ? (
+        {isLoading ? (
+          <div className="py-8 text-center text-muted-foreground">
+            <p>Loading activity...</p>
+          </div>
+        ) : timeline.length > 0 ? (
           <div className="space-y-4">
             {timeline.map((item, index) => (
               <div key={item.id} className="relative pl-6 pb-4 border-l border-dashed">

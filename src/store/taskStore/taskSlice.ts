@@ -51,7 +51,7 @@ export const createTaskSlice: StateCreator<
   [],
   [],
   TaskSlice
-> = (set, get) => ({
+> = (set, get, api) => ({
   // State
   tasks: [],
   currentTask: null,
@@ -362,7 +362,7 @@ export const createTaskSlice: StateCreator<
         throw new Error('No comment data returned');
       }
       
-      // Update the current task if applicable
+      // Update the current task if applicable in an immutable way
       set(state => {
         if (state.currentTask && state.currentTask.id === commentData.taskId) {
           const currentComments = state.currentTask.comments || [];
@@ -466,7 +466,7 @@ export const createTaskSlice: StateCreator<
         throw new Error('No activity data returned');
       }
       
-      // Update the current task if applicable
+      // Update the current task if applicable in an immutable way
       set(state => {
         if (state.currentTask && state.currentTask.id === taskId) {
           return {
