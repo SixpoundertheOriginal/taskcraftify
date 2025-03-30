@@ -15,6 +15,8 @@ import {
 } from '@/types/task';
 import { TaskService } from '@/services/taskService';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabase';
+import { mapApiTaskToTask } from '@/utils/task';
 
 export interface TaskSlice {
   // State
@@ -44,14 +46,17 @@ export interface TaskSlice {
   
   // Activity operations
   fetchActivities: (taskId: string) => Promise<ActivityItem[]>;
+  
+  // Single task fetching
+  fetchTask: (taskId: string) => Promise<Task | undefined>;
 }
 
 export const createTaskSlice: StateCreator<
-  TaskSlice & { filteredTasks: Task[] },
-  [],
+  TaskSlice, 
+  [], 
   [],
   TaskSlice
-> = (set, get, api) => ({
+> = (set, get) => ({
   // State
   tasks: [],
   currentTask: null,
@@ -562,6 +567,56 @@ export const createTaskSlice: StateCreator<
     } catch (error) {
       console.error('Error toggling subtask completion:', error);
       throw error;
+    }
+  },
+  
+  // Single task fetching
+  fetchTask: async (taskId: string): Promise<Task | undefined> => {
+    try {
+      set({ isLoading: true, error: null });
+      
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('id', taskId)
+        .single();
+        
+      if (error) {
+        throw error;
+      }
+      
+      if (!data) {
+        set({ isLoading: false });
+        return undefined;
+      }
+      
+      const task = mapApiTaskToTask(data as unknown as APITask);
+      
+      // Update the task in the store, maintaining other tasks
+      set(state => {
+        const updatedTasks = state.tasks.map(t => 
+          t.id === taskId ? task : t
+        );
+        
+        // If task wasn't in the store, add it
+        if (!state.tasks.some(t => t.id === taskId)) {
+          updatedTasks.push(task);
+        }
+        
+        return { 
+          tasks: updatedTasks,
+          isLoading: false 
+        };
+      });
+      
+      return task;
+    } catch (error) {
+      console.error('Error fetching task:', error);
+      set({ 
+        isLoading: false, 
+        error: error instanceof Error ? error.message : 'Failed to fetch task' 
+      });
+      return undefined;
     }
   }
 });

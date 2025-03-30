@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { 
@@ -45,7 +44,7 @@ export function UnifiedTaskForm({
   initialDueDate, 
   initialStatus 
 }: TaskFormProps) {
-  const { createTask, updateTask, isLoading, uploadAttachment } = useTaskStore();
+  const { createTask, updateTask, isLoading, uploadAttachment, fetchTask } = useTaskStore();
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>(initialTask?.tags || []);
   const [dueDate, setDueDate] = useState<Date | undefined>(
@@ -54,8 +53,9 @@ export function UnifiedTaskForm({
   const [activeTab, setActiveTab] = useState<string>("details");
   const [descriptionFiles, setDescriptionFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentTask, setCurrentTask] = useState<Task | undefined>(initialTask);
   
-  const { register, handleSubmit, reset, control, formState: { errors }, watch, setValue } = useForm<CreateTaskDTO>({
+  const { register, handleSubmit, reset, formState: { errors }, watch, setValue } = useForm<CreateTaskDTO>({
     defaultValues: initialTask ? {
       title: initialTask.title,
       description: initialTask.description,
@@ -70,6 +70,16 @@ export function UnifiedTaskForm({
   });
   
   const description = watch('description');
+  
+  useEffect(() => {
+    if (initialTask && initialTask.id) {
+      fetchTask(initialTask.id).then(refreshedTask => {
+        if (refreshedTask) {
+          setCurrentTask(refreshedTask);
+        }
+      });
+    }
+  }, [initialTask, fetchTask]);
   
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
@@ -104,14 +114,16 @@ export function UnifiedTaskForm({
       };
       
       let taskId: string;
+      let updatedTask: Task;
       
       if (initialTask) {
-        await updateTask({
+        updatedTask = await updateTask({
           id: initialTask.id,
           ...taskData
         });
         
         taskId = initialTask.id;
+        setCurrentTask(updatedTask);
         
         toast({
           title: "Task updated",
@@ -119,8 +131,9 @@ export function UnifiedTaskForm({
         });
       } else {
         const newTask = await createTask(taskData);
-        
+        updatedTask = newTask;
         taskId = newTask.id;
+        setCurrentTask(newTask);
         
         toast({
           title: "Task created",
@@ -128,7 +141,6 @@ export function UnifiedTaskForm({
         });
       }
       
-      // Upload description embedded files if there are any
       if (descriptionFiles.length > 0 && taskId) {
         for (const file of descriptionFiles) {
           await uploadAttachment({
@@ -144,14 +156,20 @@ export function UnifiedTaskForm({
           title: "Files uploaded",
           description: `${descriptionFiles.length} file(s) have been attached to the task.`,
         });
+        
+        const refreshedTask = await fetchTask(taskId);
+        if (refreshedTask) {
+          setCurrentTask(refreshedTask);
+        }
       }
       
-      // Reset form
-      reset();
-      setTags([]);
-      setDueDate(undefined);
-      setDescriptionFiles([]);
-      onOpenChange(false);
+      if (!initialTask) {
+        reset();
+        setTags([]);
+        setDueDate(undefined);
+        setDescriptionFiles([]);
+        onOpenChange(false);
+      }
     } catch (error) {
       toast({
         title: initialTask ? "Failed to update task" : "Failed to create task",
@@ -164,11 +182,12 @@ export function UnifiedTaskForm({
   };
   
   const handleClose = () => {
-    // Reset form on close
-    reset();
-    setTags([]);
-    setDueDate(undefined);
-    setDescriptionFiles([]);
+    if (!initialTask) {
+      reset();
+      setTags([]);
+      setDueDate(undefined);
+      setDescriptionFiles([]);
+    }
     onOpenChange(false);
   };
   
@@ -216,15 +235,8 @@ export function UnifiedTaskForm({
                       Status <span className="text-destructive">*</span>
                     </label>
                     <Select 
-                      onValueChange={(value) => {
-                        const formElement = document.querySelector('form');
-                        const statusInput = document.createElement('input');
-                        statusInput.type = 'hidden';
-                        statusInput.name = 'status';
-                        statusInput.value = value;
-                        formElement?.appendChild(statusInput);
-                      }}
-                      defaultValue={initialTask?.status || initialStatus || TaskStatus.TODO}
+                      onValueChange={(value) => setValue('status', value as TaskStatus)}
+                      defaultValue={watch('status')}
                     >
                       <SelectTrigger id="status">
                         <SelectValue placeholder="Select status" />
@@ -240,7 +252,6 @@ export function UnifiedTaskForm({
                         ))}
                       </SelectContent>
                     </Select>
-                    <input type="hidden" {...register('status')} />
                   </div>
                   
                   <div className="space-y-2">
@@ -248,15 +259,8 @@ export function UnifiedTaskForm({
                       Priority <span className="text-destructive">*</span>
                     </label>
                     <Select
-                      onValueChange={(value) => {
-                        const formElement = document.querySelector('form');
-                        const priorityInput = document.createElement('input');
-                        priorityInput.type = 'hidden';
-                        priorityInput.name = 'priority';
-                        priorityInput.value = value;
-                        formElement?.appendChild(priorityInput);
-                      }}
-                      defaultValue={initialTask?.priority || TaskPriority.MEDIUM}
+                      onValueChange={(value) => setValue('priority', value as TaskPriority)}
+                      defaultValue={watch('priority')}
                     >
                       <SelectTrigger id="priority">
                         <SelectValue placeholder="Select priority" />
@@ -272,7 +276,6 @@ export function UnifiedTaskForm({
                         ))}
                       </SelectContent>
                     </Select>
-                    <input type="hidden" {...register('priority')} />
                   </div>
                 </div>
                 
@@ -353,7 +356,7 @@ export function UnifiedTaskForm({
               </TabsContent>
               
               <TabsContent value="log" className="flex-1 overflow-auto">
-                {initialTask && <TaskLog task={initialTask} />}
+                {currentTask && <TaskLog task={currentTask} />}
               </TabsContent>
             </Tabs>
           ) : (
@@ -364,14 +367,7 @@ export function UnifiedTaskForm({
                     Status <span className="text-destructive">*</span>
                   </label>
                   <Select 
-                    onValueChange={(value) => {
-                      const formElement = document.querySelector('form');
-                      const statusInput = document.createElement('input');
-                      statusInput.type = 'hidden';
-                      statusInput.name = 'status';
-                      statusInput.value = value;
-                      formElement?.appendChild(statusInput);
-                    }}
+                    onValueChange={(value) => setValue('status', value as TaskStatus)}
                     defaultValue={initialStatus || TaskStatus.TODO}
                   >
                     <SelectTrigger id="status">
@@ -388,7 +384,6 @@ export function UnifiedTaskForm({
                       ))}
                     </SelectContent>
                   </Select>
-                  <input type="hidden" {...register('status')} />
                 </div>
                 
                 <div className="space-y-2">
@@ -396,14 +391,7 @@ export function UnifiedTaskForm({
                     Priority <span className="text-destructive">*</span>
                   </label>
                   <Select
-                    onValueChange={(value) => {
-                      const formElement = document.querySelector('form');
-                      const priorityInput = document.createElement('input');
-                      priorityInput.type = 'hidden';
-                      priorityInput.name = 'priority';
-                      priorityInput.value = value;
-                      formElement?.appendChild(priorityInput);
-                    }}
+                    onValueChange={(value) => setValue('priority', value as TaskPriority)}
                     defaultValue={TaskPriority.MEDIUM}
                   >
                     <SelectTrigger id="priority">
@@ -420,7 +408,6 @@ export function UnifiedTaskForm({
                       ))}
                     </SelectContent>
                   </Select>
-                  <input type="hidden" {...register('priority')} />
                 </div>
               </div>
               

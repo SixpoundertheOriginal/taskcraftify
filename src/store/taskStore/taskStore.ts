@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { Task, TaskStatus, TaskPriority } from '@/types/task';
@@ -25,6 +26,9 @@ export type TaskStore = TaskSlice & FilterSlice & SubscriptionSlice & StatsSlice
   // Stats methods
   getTasksCountByStatus: () => Record<string, number>;
   getAverageDailyCompletionRate: () => number;
+  
+  // Single task retrieval
+  fetchTask: (taskId: string) => Promise<Task | undefined>;
 };
 
 export const useTaskStore = create<TaskStore>()(
@@ -45,6 +49,30 @@ export const useTaskStore = create<TaskStore>()(
         
         get filteredTasks() {
           return filterSlice.getFilteredTasks();
+        },
+        
+        fetchTask: async (taskId: string): Promise<Task | undefined> => {
+          try {
+            // First check if we have the task in the store and it's up to date
+            const existingTask = get().tasks.find(t => t.id === taskId);
+            
+            // Fetch the latest version from the server
+            const updatedTask = await taskSlice.fetchTask(taskId);
+            
+            if (updatedTask) {
+              // Make sure the task is refreshed with attachments and comments
+              await attachmentSlice.fetchTaskAttachments(taskId);
+              await taskSlice.fetchComments(taskId);
+              await taskSlice.fetchActivities(taskId);
+              
+              return updatedTask;
+            }
+            
+            return existingTask;
+          } catch (error) {
+            console.error("Error fetching single task:", error);
+            return undefined;
+          }
         },
         
         getOverdueTasks: () => {

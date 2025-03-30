@@ -20,10 +20,7 @@ export function FilePreview({ file, className, maxHeight = 200 }: FilePreviewPro
   const [csvData, setCsvData] = useState<any[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  const fileType = typeof file === 'string' 
-    ? file.split('.').pop()?.toLowerCase() 
-    : file.type;
+  const [fileTypeDetected, setFileTypeDetected] = useState<string | null>(null);
   
   useEffect(() => {
     if (!file) return;
@@ -41,13 +38,25 @@ export function FilePreview({ file, className, maxHeight = 200 }: FilePreviewPro
       try {
         // Handle string URLs (for already uploaded files)
         if (typeof file === 'string') {
+          const fileExtension = file.split('.').pop()?.toLowerCase();
+          const isImage = /\.(jpg|jpeg|png|gif|svg|webp)$/i.test(file);
+          const isPdf = /\.pdf$/i.test(file);
+          const isCsv = /\.(csv|xls|xlsx)$/i.test(file);
+          
           setPreviewUrl(file);
+          setFileTypeDetected(isImage ? 'image' : isPdf ? 'pdf' : isCsv ? 'csv' : 'other');
           setIsLoading(false);
           return;
         }
         
         // Handle File objects
         const type = file.type.toLowerCase();
+        setFileTypeDetected(
+          type.startsWith('image/') ? 'image' : 
+          type === 'application/pdf' ? 'pdf' :
+          type === 'text/csv' || type.includes('spreadsheet') || file.name.endsWith('.csv') ? 'csv' : 
+          'other'
+        );
         
         // For images, create a preview URL
         if (type.startsWith('image/')) {
@@ -85,6 +94,7 @@ export function FilePreview({ file, className, maxHeight = 200 }: FilePreviewPro
           setIsLoading(false);
         }
       } catch (err) {
+        console.error("Error generating preview:", err);
         setError(`Error generating preview: ${err instanceof Error ? err.message : String(err)}`);
         setIsLoading(false);
       }
@@ -117,10 +127,7 @@ export function FilePreview({ file, className, maxHeight = 200 }: FilePreviewPro
   }
   
   // Image preview
-  if (typeof fileType === 'string' && (
-      fileType.startsWith('image/') || 
-      ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(fileType)
-    )) {
+  if (fileTypeDetected === 'image') {
     return (
       <div className={cn("overflow-hidden rounded-md", className)} style={{ maxHeight }}>
         <img 
@@ -128,13 +135,14 @@ export function FilePreview({ file, className, maxHeight = 200 }: FilePreviewPro
           alt="File preview" 
           className="object-contain w-full h-full"
           style={{ maxHeight }}
+          onError={() => setError("Failed to load image")}
         />
       </div>
     );
   }
   
   // PDF preview
-  if (typeof fileType === 'string' && (fileType === 'application/pdf' || fileType === 'pdf')) {
+  if (fileTypeDetected === 'pdf') {
     return (
       <div className={cn("overflow-hidden rounded-md border", className)} style={{ maxHeight }}>
         <Document

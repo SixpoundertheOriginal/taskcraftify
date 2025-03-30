@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useTaskStore } from '@/store';
 import { Task, ActivityItem } from '@/types/task';
@@ -46,6 +47,7 @@ export function TaskLog({ task, maxHeight = 500 }: TaskLogProps) {
   const [comment, setComment] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [expandedAttachments, setExpandedAttachments] = useState<Record<string, boolean>>({});
   
   // Fetch activities and attachments when task changes
   useEffect(() => {
@@ -101,7 +103,7 @@ export function TaskLog({ task, maxHeight = 500 }: TaskLogProps) {
       console.error("Error adding comment:", error);
       toast({
         title: "Error adding comment",
-        description: "There was a problem adding your comment",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
         variant: "destructive"
       });
     } finally {
@@ -140,6 +142,13 @@ export function TaskLog({ task, maxHeight = 500 }: TaskLogProps) {
     } finally {
       setIsSubmitting(false);
     }
+  };
+  
+  const toggleAttachmentPreview = (attachmentId: string) => {
+    setExpandedAttachments(prev => ({
+      ...prev,
+      [attachmentId]: !prev[attachmentId]
+    }));
   };
   
   // Combine activities and attachments into a single timeline
@@ -199,9 +208,10 @@ export function TaskLog({ task, maxHeight = 500 }: TaskLogProps) {
   const renderAttachmentPreview = (attachment: Attachment) => {
     // Get the file URL from the attachment
     const fileUrl = AttachmentService.getAttachmentUrl(attachment.storagePath);
+    const isExpanded = expandedAttachments[attachment.id] || false;
     
     return (
-      <Collapsible className="w-full">
+      <div className="w-full">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {getFileIcon(attachment.fileType)}
@@ -211,23 +221,38 @@ export function TaskLog({ task, maxHeight = 500 }: TaskLogProps) {
             </span>
           </div>
           
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="sm">
-              Preview
-            </Button>
-          </CollapsibleTrigger>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => toggleAttachmentPreview(attachment.id)}
+          >
+            {isExpanded ? "Hide" : "Preview"}
+          </Button>
         </div>
         
-        <CollapsibleContent className="mt-2">
-          <div className="border rounded-md overflow-hidden">
+        {isExpanded && (
+          <div className="mt-2 border rounded-md overflow-hidden">
             <FilePreview 
               file={fileUrl} 
               className="max-h-[300px] w-full"
             />
           </div>
-        </CollapsibleContent>
-      </Collapsible>
+        )}
+      </div>
     );
+  };
+  
+  const getActivityContentPreview = (item: ActivityItem) => {
+    // Extract the relevant content from the activity
+    if (item.type === 'comment_added' || item.type === 'comment_edited') {
+      // Try to extract comment content from metadata
+      if (item.metadata && 'content' in item.metadata) {
+        return item.metadata.content as string;
+      }
+    }
+    
+    // For other activity types, show the description
+    return item.description;
   };
   
   const timeline = getLogTimeline();
@@ -287,14 +312,14 @@ export function TaskLog({ task, maxHeight = 500 }: TaskLogProps) {
       <Separator />
       
       {/* Timeline with loading state */}
-      <ScrollArea className={cn("pr-4", maxHeight ? `max-h-[${maxHeight}px]` : "")}>
+      <ScrollArea className={cn("pr-4")} style={{ maxHeight }}>
         {isLoading ? (
           <div className="py-8 text-center text-muted-foreground">
             <p>Loading activity...</p>
           </div>
         ) : timeline.length > 0 ? (
           <div className="space-y-4">
-            {timeline.map((item, index) => (
+            {timeline.map((item) => (
               <div key={item.id} className="relative pl-6 pb-4 border-l border-dashed">
                 <div className="absolute left-[-8px] top-0 w-4 h-4 rounded-full bg-background flex items-center justify-center border">
                   {'type' in item && item.type === 'attachment' ? (
@@ -325,10 +350,15 @@ export function TaskLog({ task, maxHeight = 500 }: TaskLogProps) {
                   <div className="bg-card/30 rounded-md p-3">
                     {'type' in item && item.type === 'attachment' ? (
                       renderAttachmentPreview(item.attachment)
-                    ) : 'description' in item ? (
-                      <p className="text-sm">{item.description}</p>
                     ) : (
-                      <p className="text-sm">Activity recorded</p>
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">
+                          {item.type.replace(/_/g, ' ')}
+                        </p>
+                        <p className="text-sm whitespace-pre-line">
+                          {getActivityContentPreview(item)}
+                        </p>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -345,3 +375,4 @@ export function TaskLog({ task, maxHeight = 500 }: TaskLogProps) {
     </div>
   );
 }
+
