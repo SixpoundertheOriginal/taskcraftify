@@ -15,6 +15,16 @@ export const createSubscriptionSlice: StateCreator<
 > = (set, get) => ({
   setupTaskSubscription: () => {
     console.log("Setting up task subscription");
+    
+    // First, load tasks explicitly to ensure we have initial data
+    const fetchTasks = get().fetchTasks;
+    fetchTasks().then(tasks => {
+      console.log("Initial tasks load complete with", tasks.length, "tasks");
+    }).catch(error => {
+      console.error("Error with initial tasks load:", error);
+    });
+    
+    // Then set up the subscription for real-time updates
     const unsubscribe = TaskService.subscribeToTasks((tasks) => {
       console.log("Task subscription updated with", tasks.length, "tasks");
       
@@ -37,7 +47,7 @@ export const createSubscriptionSlice: StateCreator<
         } else {
           console.error("refreshTaskCounts not available in task store");
         }
-      }, 100); // Shorter timeout for faster UI updates
+      }, 50); // Shorter timeout for faster UI updates
     });
     
     return unsubscribe;

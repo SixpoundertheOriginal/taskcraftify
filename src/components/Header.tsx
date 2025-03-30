@@ -11,14 +11,24 @@ import { useTaskStore } from '@/store';
 export function Header() {
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const { user } = useAuth();
-  const { tasks, getTasksCountByStatus, getOverdueTasks, refreshTaskCounts } = useTaskStore();
+  const { tasks, getTasksCountByStatus, getOverdueTasks, refreshTaskCounts, setupTaskSubscription, fetchTasks } = useTaskStore();
   
-  // Refresh task counts when component mounts
+  // On component mount, fetch tasks and set up subscription
   useEffect(() => {
     if (user) {
-      refreshTaskCounts();
+      console.log("Header component: fetching tasks");
+      fetchTasks().then(() => {
+        console.log("Header component: tasks fetched successfully");
+        refreshTaskCounts();
+      });
+      
+      // Set up real-time subscription
+      const unsubscribe = setupTaskSubscription();
+      return () => {
+        unsubscribe();
+      };
     }
-  }, [refreshTaskCounts, user]);
+  }, [fetchTasks, setupTaskSubscription, refreshTaskCounts, user]);
   
   // Calculate task statistics for the welcome message
   const taskStats = getTasksCountByStatus();

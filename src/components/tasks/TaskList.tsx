@@ -21,7 +21,18 @@ import {
 } from '@/components/ui/sheet';
 
 export function TaskList() {
-  const { tasks, filters, setFilters, getFilteredTasks, fetchTasks, isLoading, error, setupTaskSubscription } = useTaskStore();
+  const { 
+    tasks, 
+    filters, 
+    setFilters, 
+    getFilteredTasks, 
+    fetchTasks, 
+    isLoading, 
+    error, 
+    setupTaskSubscription,
+    refreshTaskCounts
+  } = useTaskStore();
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<string>('focus');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -30,12 +41,25 @@ export function TaskList() {
   const allTags = Array.from(new Set(tasks.flatMap(task => task.tags || []))).sort();
   
   useEffect(() => {
-    fetchTasks();
+    console.log("TaskList: Fetching tasks and setting up subscription");
+    
+    // First fetch tasks directly
+    fetchTasks().then(() => {
+      console.log("TaskList: Initial task fetch complete");
+      // Ensure task counts are refreshed after tasks are loaded
+      refreshTaskCounts();
+    }).catch(err => {
+      console.error("TaskList: Error fetching tasks:", err);
+    });
+    
+    // Then set up subscription for real-time updates
     const unsubscribe = setupTaskSubscription();
+    
     return () => {
+      console.log("TaskList: Unsubscribing from task updates");
       unsubscribe();
     };
-  }, [fetchTasks, setupTaskSubscription]);
+  }, [fetchTasks, setupTaskSubscription, refreshTaskCounts]);
   
   // Initialize searchQuery from filters
   useEffect(() => {

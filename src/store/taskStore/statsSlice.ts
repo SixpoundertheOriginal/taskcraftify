@@ -22,7 +22,12 @@ export const createStatsSlice: StateCreator<
   taskCounts: {
     total: 0,
     byProject: {},
-    byStatus: {}
+    byStatus: {
+      TODO: 0,
+      IN_PROGRESS: 0,
+      DONE: 0,
+      ARCHIVED: 0
+    }
   },
   
   refreshTaskCounts: async () => {
@@ -31,6 +36,7 @@ export const createStatsSlice: StateCreator<
     try {
       // Calculate counts based on current tasks in the store
       const tasks = get().tasks;
+      console.log(`Calculating counts for ${tasks.length} tasks in store`);
       
       const byProject: Record<string, number> = {};
       const byStatus: Record<string, number> = {};
