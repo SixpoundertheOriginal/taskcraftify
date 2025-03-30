@@ -25,12 +25,12 @@ function App() {
       try {
         // First fetch tasks and projects as they're most critical
         console.log("Fetching initial tasks data");
-        const tasks = await fetchTasks();
-        console.log(`Loaded ${tasks.length} tasks initially`);
+        const tasksResult = await fetchTasks();
+        console.log(`Loaded ${tasksResult ? tasksResult.length : 0} tasks initially`);
         
         console.log("Fetching initial projects data");
         const projects = await fetchProjects();
-        console.log(`Loaded ${projects.length} projects initially`);
+        console.log(`Loaded ${projects ? projects.length : 0} projects initially`);
         
         // Then refresh task counts based on the loaded data
         console.log("Refreshing task counts after initial data load");
