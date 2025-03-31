@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTaskStore } from '@/store';
 import { TaskCard } from './TaskCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -36,17 +36,28 @@ export function TaskList() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<string>('focus');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   const allTags = Array.from(new Set(tasks.flatMap(task => task.tags || []))).sort();
   
   console.log("TaskList render - Total tasks:", tasks.length);
-  console.log("TaskList render - Active filters:", filters);
   
-  const filteredTasks = getFilteredTasks();
-  console.log("TaskList render - Filtered tasks:", filteredTasks.length);
+  const filteredTasks = useCallback(() => {
+    console.log("Computing filtered tasks with filters:", filters);
+    return getFilteredTasks();
+  }, [getFilteredTasks, filters, tasks.length]);
+  
+  const currentFilteredTasks = filteredTasks();
+  console.log("TaskList render - Filtered tasks:", currentFilteredTasks.length);
   
   useEffect(() => {
-    console.log("TaskList: Fetching tasks and setting up subscription");
+    if (isInitialized) {
+      console.log("TaskList: Already initialized, skipping setup");
+      return;
+    }
+    
+    console.log("TaskList: Initial setup - fetching tasks and setting up subscription");
+    setIsInitialized(true);
     
     fetchTasks().then((fetchedTasks) => {
       console.log("TaskList: Initial task fetch complete, tasks:", fetchedTasks.length);
@@ -61,7 +72,7 @@ export function TaskList() {
       console.log("TaskList: Unsubscribing from task updates");
       unsubscribe();
     };
-  }, [fetchTasks, setupTaskSubscription, refreshTaskCounts]);
+  }, [fetchTasks, setupTaskSubscription, refreshTaskCounts, isInitialized]);
   
   useEffect(() => {
     if (filters.searchQuery) {
@@ -69,7 +80,8 @@ export function TaskList() {
     }
   }, [filters.searchQuery]);
   
-  const handleTabChange = (tab: string) => {
+  const handleTabChange = useCallback((tab: string) => {
+    console.log("TaskList: Tab changed to", tab);
     setActiveTab(tab);
     
     if (tab === 'all') {
@@ -86,40 +98,40 @@ export function TaskList() {
     } else if (tab === 'focus') {
       setFilters({});
     }
-  };
+  }, [filters, setFilters]);
   
-  const clearStatusFilter = () => {
+  const clearStatusFilter = useCallback(() => {
     const { status, ...restFilters } = filters;
     setFilters(restFilters);
     setActiveTab('all');
-  };
+  }, [filters, setFilters]);
   
-  const clearPriorityFilter = () => {
+  const clearPriorityFilter = useCallback(() => {
     const { priority, ...restFilters } = filters;
     setFilters(restFilters);
-  };
+  }, [filters, setFilters]);
   
-  const clearDateFilters = () => {
+  const clearDateFilters = useCallback(() => {
     const { dueDateFrom, dueDateTo, ...restFilters } = filters;
     setFilters(restFilters);
-  };
+  }, [filters, setFilters]);
   
-  const clearSearchFilter = () => {
+  const clearSearchFilter = useCallback(() => {
     setSearchQuery('');
     const { searchQuery, ...restFilters } = filters;
     setFilters(restFilters);
-  };
+  }, [filters, setFilters]);
   
-  const clearTagsFilter = () => {
+  const clearTagsFilter = useCallback(() => {
     const { tags, ...restFilters } = filters;
     setFilters(restFilters);
-  };
+  }, [filters, setFilters]);
   
-  const clearAllFilters = () => {
+  const clearAllFilters = useCallback(() => {
     setFilters({});
     setSearchQuery('');
     setActiveTab('focus');
-  };
+  }, [setFilters]);
   
   if (error && activeTab !== 'focus') {
     return (
@@ -140,12 +152,6 @@ export function TaskList() {
       </div>
     );
   }
-  
-  console.log(`About to render tasks for tab "${activeTab}":`, 
-    activeTab === 'focus' 
-      ? 'Using FocusView component'
-      : `Using filtered tasks (${filteredTasks.length})`
-  );
   
   return (
     <div className="animate-fade-in">
@@ -236,9 +242,9 @@ export function TaskList() {
                 </TabsContent>
                 
                 <TabsContent value="all" className="mt-0">
-                  {filteredTasks.length > 0 ? (
+                  {currentFilteredTasks.length > 0 ? (
                     <div className="grid grid-cols-1 gap-4">
-                      {filteredTasks.map(task => (
+                      {currentFilteredTasks.map(task => (
                         <TaskCard key={task.id} task={task} />
                       ))}
                     </div>
@@ -249,20 +255,14 @@ export function TaskList() {
                       <p className="text-sm text-muted-foreground mt-1">
                         {Object.keys(filters).length > 0 ? 'Try different filters' : 'Create your first task to get started'}
                       </p>
-                      <div className="mt-4">
-                        <pre className="text-xs text-left bg-muted p-2 rounded">
-                          Tasks in store: {tasks.length}
-                          {'\n'}Active filters: {JSON.stringify(filters, null, 2)}
-                        </pre>
-                      </div>
                     </div>
                   )}
                 </TabsContent>
                 
                 <TabsContent value="active" className="mt-0">
-                  {filteredTasks.length > 0 ? (
+                  {currentFilteredTasks.length > 0 ? (
                     <div className="grid grid-cols-1 gap-4">
-                      {filteredTasks.map(task => (
+                      {currentFilteredTasks.map(task => (
                         <TaskCard key={task.id} task={task} />
                       ))}
                     </div>
@@ -273,20 +273,14 @@ export function TaskList() {
                       <p className="text-sm text-muted-foreground mt-1">
                         {Object.keys(filters).length > 0 ? 'Try different filters' : 'All your tasks are completed or archived'}
                       </p>
-                      <div className="mt-4">
-                        <pre className="text-xs text-left bg-muted p-2 rounded">
-                          Tasks in store: {tasks.length}
-                          {'\n'}Active filters: {JSON.stringify(filters, null, 2)}
-                        </pre>
-                      </div>
                     </div>
                   )}
                 </TabsContent>
                 
                 <TabsContent value="completed" className="mt-0">
-                  {filteredTasks.length > 0 ? (
+                  {currentFilteredTasks.length > 0 ? (
                     <div className="grid grid-cols-1 gap-4">
-                      {filteredTasks.map(task => (
+                      {currentFilteredTasks.map(task => (
                         <TaskCard key={task.id} task={task} />
                       ))}
                     </div>
@@ -297,20 +291,14 @@ export function TaskList() {
                       <p className="text-sm text-muted-foreground mt-1">
                         {Object.keys(filters).length > 0 ? 'Try different filters' : 'Complete some tasks to see them here'}
                       </p>
-                      <div className="mt-4">
-                        <pre className="text-xs text-left bg-muted p-2 rounded">
-                          Tasks in store: {tasks.length}
-                          {'\n'}Active filters: {JSON.stringify(filters, null, 2)}
-                        </pre>
-                      </div>
                     </div>
                   )}
                 </TabsContent>
                 
                 <TabsContent value="archived" className="mt-0">
-                  {filteredTasks.length > 0 ? (
+                  {currentFilteredTasks.length > 0 ? (
                     <div className="grid grid-cols-1 gap-4">
-                      {filteredTasks.map(task => (
+                      {currentFilteredTasks.map(task => (
                         <TaskCard key={task.id} task={task} />
                       ))}
                     </div>
@@ -321,12 +309,6 @@ export function TaskList() {
                       <p className="text-sm text-muted-foreground mt-1">
                         {Object.keys(filters).length > 0 ? 'Try different filters' : 'Archive completed tasks to keep things organized'}
                       </p>
-                      <div className="mt-4">
-                        <pre className="text-xs text-left bg-muted p-2 rounded">
-                          Tasks in store: {tasks.length}
-                          {'\n'}Active filters: {JSON.stringify(filters, null, 2)}
-                        </pre>
-                      </div>
                     </div>
                   )}
                 </TabsContent>
