@@ -41,6 +41,19 @@ export const useTaskStore = create<TaskStore>()(
       const statsSlice = createStatsSlice(set, get, store);
       const attachmentSlice = createAttachmentSlice(set, get, store);
       
+      // Helper function to safely handle date comparisons
+      const getValidDate = (dateValue: Date | string | null | undefined): Date | null => {
+        if (!dateValue) return null;
+        
+        try {
+          const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
+          return isNaN(date.getTime()) ? null : date;
+        } catch (e) {
+          console.error('Invalid date value:', dateValue);
+          return null;
+        }
+      };
+      
       return {
         ...taskSlice,
         ...filterSlice,
@@ -109,38 +122,42 @@ export const useTaskStore = create<TaskStore>()(
         getOverdueTasks: () => {
           console.log("[TaskStore] Getting overdue tasks, total tasks:", taskSlice.tasks.length);
           const now = new Date();
-          return taskSlice.tasks.filter(task => 
-            task.dueDate && 
-            isBefore(task.dueDate, now) && 
-            task.status !== TaskStatus.DONE && 
-            task.status !== TaskStatus.ARCHIVED
-          );
+          return taskSlice.tasks.filter(task => {
+            if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) return false;
+            
+            const dueDate = getValidDate(task.dueDate);
+            if (!dueDate) return false;
+            
+            return isBefore(dueDate, now) && !isToday(dueDate);
+          });
         },
         
         getTasksDueToday: () => {
           const today = startOfToday();
           const endOfDay = endOfToday();
           
-          return taskSlice.tasks.filter(task => 
-            task.dueDate && 
-            isAfter(task.dueDate, today) && 
-            isBefore(task.dueDate, endOfDay) &&
-            task.status !== TaskStatus.DONE && 
-            task.status !== TaskStatus.ARCHIVED
-          );
+          return taskSlice.tasks.filter(task => {
+            if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) return false;
+            
+            const dueDate = getValidDate(task.dueDate);
+            if (!dueDate) return false;
+            
+            return dueDate >= today && dueDate <= endOfDay;
+          });
         },
         
         getTasksDueTomorrow: () => {
           const tomorrow = startOfTomorrow();
           const endOfTomorrowDay = endOfTomorrow();
           
-          return taskSlice.tasks.filter(task => 
-            task.dueDate && 
-            isAfter(task.dueDate, tomorrow) && 
-            isBefore(task.dueDate, endOfTomorrowDay) &&
-            task.status !== TaskStatus.DONE && 
-            task.status !== TaskStatus.ARCHIVED
-          );
+          return taskSlice.tasks.filter(task => {
+            if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) return false;
+            
+            const dueDate = getValidDate(task.dueDate);
+            if (!dueDate) return false;
+            
+            return dueDate >= tomorrow && dueDate <= endOfTomorrowDay;
+          });
         },
         
         getTasksDueThisWeek: () => {
@@ -148,21 +165,35 @@ export const useTaskStore = create<TaskStore>()(
           const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 }); // Start on Monday
           const weekEnd = endOfWeek(new Date(), { weekStartsOn: 1 }); // End on Sunday
           
-          return taskSlice.tasks.filter(task => 
-            task.dueDate && 
-            isAfter(task.dueDate, weekStart) && 
-            isBefore(task.dueDate, weekEnd) &&
-            task.status !== TaskStatus.DONE && 
-            task.status !== TaskStatus.ARCHIVED
-          );
+          return taskSlice.tasks.filter(task => {
+            if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) return false;
+            
+            const dueDate = getValidDate(task.dueDate);
+            if (!dueDate) return false;
+            
+            // Exclude today and tomorrow
+            const isNotTodayOrTomorrow = !isToday(dueDate) && !isTomorrow(dueDate);
+            
+            return isNotTodayOrTomorrow && dueDate >= today && dueDate <= weekEnd;
+          });
         },
         
         getHighPriorityTasks: () => {
-          return taskSlice.tasks.filter(task => 
-            (task.priority === TaskPriority.HIGH || task.priority === TaskPriority.URGENT) &&
-            task.status !== TaskStatus.DONE && 
-            task.status !== TaskStatus.ARCHIVED
-          );
+          return taskSlice.tasks.filter(task => {
+            if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) return false;
+            
+            // Only include high priority tasks that aren't already covered by date-based filters
+            const dueDate = getValidDate(task.dueDate);
+            if (dueDate) {
+              const now = new Date();
+              if (isBefore(dueDate, now) || isToday(dueDate) || isTomorrow(dueDate) || 
+                  (isThisWeek(dueDate) && !isToday(dueDate) && !isTomorrow(dueDate))) {
+                return false;
+              }
+            }
+            
+            return task.priority === TaskPriority.HIGH || task.priority === TaskPriority.URGENT;
+          });
         },
         
         getTasksCountByStatus: () => {

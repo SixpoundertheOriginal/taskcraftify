@@ -36,6 +36,19 @@ export const createFilterSlice: StateCreator<TaskStore, [], [], FilterSlice> = (
       return tasks;
     }
     
+    // Helper function to safely compare dates
+    const getValidDate = (dateValue: Date | string | null | undefined): Date | null => {
+      if (!dateValue) return null;
+      
+      try {
+        const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
+        return isNaN(date.getTime()) ? null : date;
+      } catch (e) {
+        console.error('Invalid date value:', dateValue);
+        return null;
+      }
+    };
+    
     const filteredTasks = tasks.filter(task => {
       // Project filter
       if (filters.projectId !== undefined) {
@@ -72,15 +85,19 @@ export const createFilterSlice: StateCreator<TaskStore, [], [], FilterSlice> = (
         if (!matchesTitle && !matchesDescription) return false;
       }
       
-      // Due date range
+      // Due date range with improved date handling
       if (filters.dueDateFrom && task.dueDate) {
-        const dueDate = new Date(task.dueDate);
-        if (dueDate < filters.dueDateFrom) return false;
+        const dueDate = getValidDate(task.dueDate);
+        const fromDate = getValidDate(filters.dueDateFrom);
+        
+        if (dueDate && fromDate && dueDate < fromDate) return false;
       }
       
       if (filters.dueDateTo && task.dueDate) {
-        const dueDate = new Date(task.dueDate);
-        if (dueDate > filters.dueDateTo) return false;
+        const dueDate = getValidDate(task.dueDate);
+        const toDate = getValidDate(filters.dueDateTo);
+        
+        if (dueDate && toDate && dueDate > toDate) return false;
       }
       
       return true;

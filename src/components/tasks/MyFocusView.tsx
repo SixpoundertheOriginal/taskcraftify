@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useTaskStore } from '@/store';
 import { Task, TaskStatus, TaskPriority } from '@/types/task';
 import { TaskCard } from './TaskCard';
@@ -33,6 +34,14 @@ export function MyFocusView() {
     }));
   };
   
+  // Debug tasks
+  useEffect(() => {
+    console.log('MyFocusView - All tasks:', tasks);
+    if (tasks.length > 0) {
+      console.log('MyFocusView - First task due date:', tasks[0].dueDate, 'type:', typeof tasks[0].dueDate);
+    }
+  }, [tasks]);
+  
   if (isLoading) {
     return <TaskGroupSkeleton />;
   }
@@ -56,46 +65,101 @@ export function MyFocusView() {
   const tomorrow = addDays(now, 1);
   const nextWeek = addDays(now, 7);
   
-  // Task grouping logic
-  const overdueTasks = tasks.filter(task => 
-    task.dueDate && isPast(task.dueDate) && !isToday(task.dueDate) && 
-    task.status !== TaskStatus.DONE && task.status !== TaskStatus.ARCHIVED
-  );
+  // Ensure dueDate is a proper Date object before comparisons
+  const getValidDate = (dateValue: Date | string | null | undefined): Date | null => {
+    if (!dateValue) return null;
+    
+    try {
+      const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
+      return isNaN(date.getTime()) ? null : date;
+    } catch (e) {
+      console.error('Invalid date value:', dateValue);
+      return null;
+    }
+  };
   
-  const todayTasks = tasks.filter(task => 
-    task.dueDate && isToday(task.dueDate) && 
-    task.status !== TaskStatus.DONE && task.status !== TaskStatus.ARCHIVED
-  );
+  // Task grouping logic with improved date handling
+  const overdueTasks = tasks.filter(task => {
+    if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) return false;
+    
+    const dueDate = getValidDate(task.dueDate);
+    if (!dueDate) return false;
+    
+    return isPast(dueDate) && !isToday(dueDate);
+  });
   
-  const tomorrowTasks = tasks.filter(task => 
-    task.dueDate && isTomorrow(task.dueDate) && 
-    task.status !== TaskStatus.DONE && task.status !== TaskStatus.ARCHIVED
-  );
+  const todayTasks = tasks.filter(task => {
+    if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) return false;
+    
+    const dueDate = getValidDate(task.dueDate);
+    if (!dueDate) return false;
+    
+    return isToday(dueDate);
+  });
   
-  const thisWeekTasks = tasks.filter(task => 
-    task.dueDate && isThisWeek(task.dueDate) && 
-    !isToday(task.dueDate) && !isTomorrow(task.dueDate) && 
-    task.status !== TaskStatus.DONE && task.status !== TaskStatus.ARCHIVED
-  );
+  const tomorrowTasks = tasks.filter(task => {
+    if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) return false;
+    
+    const dueDate = getValidDate(task.dueDate);
+    if (!dueDate) return false;
+    
+    return isTomorrow(dueDate);
+  });
   
-  const highPriorityTasks = tasks.filter(task => 
-    (task.priority === TaskPriority.HIGH || task.priority === TaskPriority.URGENT) && 
-    task.status !== TaskStatus.DONE && task.status !== TaskStatus.ARCHIVED && 
-    // Exclude tasks that are already in other categories
-    !(task.dueDate && (isPast(task.dueDate) || isToday(task.dueDate) || isTomorrow(task.dueDate) || isThisWeek(task.dueDate)))
-  );
+  const thisWeekTasks = tasks.filter(task => {
+    if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) return false;
+    
+    const dueDate = getValidDate(task.dueDate);
+    if (!dueDate) return false;
+    
+    return isThisWeek(dueDate) && !isToday(dueDate) && !isTomorrow(dueDate);
+  });
+  
+  const highPriorityTasks = tasks.filter(task => {
+    if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) return false;
+    
+    // Skip tasks already in other categories
+    const dueDate = getValidDate(task.dueDate);
+    if (dueDate) {
+      if (isPast(dueDate) || isToday(dueDate) || isTomorrow(dueDate) || isThisWeek(dueDate)) {
+        return false;
+      }
+    }
+    
+    return task.priority === TaskPriority.HIGH || task.priority === TaskPriority.URGENT;
+  });
   
   // Get recently added tasks (last 3 days) that aren't in other categories
   const threeDaysAgo = addDays(now, -3);
-  const recentlyAddedTasks = tasks.filter(task => 
-    new Date(task.createdAt) >= threeDaysAgo && 
-    task.status !== TaskStatus.DONE && task.status !== TaskStatus.ARCHIVED && 
-    // Exclude tasks that are already in other categories
-    !(
-      (task.dueDate && (isPast(task.dueDate) || isToday(task.dueDate) || isTomorrow(task.dueDate) || isThisWeek(task.dueDate))) ||
-      ((task.priority === TaskPriority.HIGH || task.priority === TaskPriority.URGENT) && 
-       !(task.dueDate && (isPast(task.dueDate) || isToday(task.dueDate) || isTomorrow(task.dueDate) || isThisWeek(task.dueDate))))
-    )
+  const recentlyAddedTasks = tasks.filter(task => {
+    if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) return false;
+    
+    const createdDate = new Date(task.createdAt);
+    if (createdDate < threeDaysAgo) return false;
+    
+    // Skip tasks already in other categories
+    const dueDate = getValidDate(task.dueDate);
+    if (dueDate) {
+      if (isPast(dueDate) || isToday(dueDate) || isTomorrow(dueDate) || isThisWeek(dueDate)) {
+        return false;
+      }
+    }
+    
+    if (task.priority === TaskPriority.HIGH || task.priority === TaskPriority.URGENT) {
+      return false;
+    }
+    
+    return true;
+  });
+  
+  // Debug log for each category
+  console.log('MyFocusView - Categorized tasks:',
+    '\nOverdue:', overdueTasks.length,
+    '\nToday:', todayTasks.length,
+    '\nTomorrow:', tomorrowTasks.length,
+    '\nThis Week:', thisWeekTasks.length,
+    '\nHigh Priority:', highPriorityTasks.length,
+    '\nRecently Added:', recentlyAddedTasks.length
   );
   
   // If there are no tasks to display, show empty state

@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { useTaskStore } from '@/store/taskStore/taskStore';
+import React, { useMemo } from 'react';
+import { useTaskStore } from '@/store';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle, Clock, CalendarDays, Flag } from 'lucide-react';
@@ -8,12 +8,21 @@ import { AlertCircle, Clock, CalendarDays, Flag } from 'lucide-react';
 export function FocusOverview() {
   const taskStore = useTaskStore();
 
-  // Get counts for each task group
-  const overdueTasks = taskStore.getOverdueTasks();
-  const todayTasks = taskStore.getTasksDueToday();
-  const tomorrowTasks = taskStore.getTasksDueTomorrow();
-  const thisWeekTasks = taskStore.getTasksDueThisWeek();
-  const highPriorityTasks = taskStore.getHighPriorityTasks();
+  // Use useMemo to prevent unnecessary recalculations
+  const overdueTasks = useMemo(() => taskStore.getOverdueTasks(), [taskStore.tasks]);
+  const todayTasks = useMemo(() => taskStore.getTasksDueToday(), [taskStore.tasks]);
+  const tomorrowTasks = useMemo(() => taskStore.getTasksDueTomorrow(), [taskStore.tasks]);
+  const thisWeekTasks = useMemo(() => taskStore.getTasksDueThisWeek(), [taskStore.tasks]);
+  const highPriorityTasks = useMemo(() => taskStore.getHighPriorityTasks(), [taskStore.tasks]);
+
+  // Debug log task counts
+  console.log("FocusOverview - Task counts:", {
+    overdue: overdueTasks.length,
+    today: todayTasks.length,
+    tomorrow: tomorrowTasks.length,
+    thisWeek: thisWeekTasks.length,
+    highPriority: highPriorityTasks.length
+  });
 
   // Prepare data for chart
   const data = [
