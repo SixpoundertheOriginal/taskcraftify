@@ -4,9 +4,8 @@ import { TaskCard } from './TaskCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Loader2, Filter, FilterX } from 'lucide-react';
-import { ActiveFiltersDisplay } from './ActiveFiltersDisplay';
-import { FilterSidebar } from './FilterSidebar';
+import { CheckCircle, Loader2 } from 'lucide-react';
+import { FilterBar } from './FilterBar';
 import { TaskStatus } from '@/types/task';
 import { MyFocusView } from './MyFocusView';
 import {
@@ -111,33 +110,6 @@ export function TaskList() {
     }
   }, [filters, setFilters]);
   
-  const clearStatusFilter = useCallback(() => {
-    const { status, ...restFilters } = filters;
-    setFilters(restFilters);
-    setActiveTab('all');
-  }, [filters, setFilters]);
-  
-  const clearPriorityFilter = useCallback(() => {
-    const { priority, ...restFilters } = filters;
-    setFilters(restFilters);
-  }, [filters, setFilters]);
-  
-  const clearDateFilters = useCallback(() => {
-    const { dueDateFrom, dueDateTo, ...restFilters } = filters;
-    setFilters(restFilters);
-  }, [filters, setFilters]);
-  
-  const clearSearchFilter = useCallback(() => {
-    setSearchQuery('');
-    const { searchQuery, ...restFilters } = filters;
-    setFilters(restFilters);
-  }, [filters, setFilters]);
-  
-  const clearTagsFilter = useCallback(() => {
-    const { tags, ...restFilters } = filters;
-    setFilters(restFilters);
-  }, [filters, setFilters]);
-  
   const clearAllFilters = useCallback(() => {
     setFilters({});
     setSearchQuery('');
@@ -173,7 +145,6 @@ export function TaskList() {
         <Sheet open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen}>
           <SheetTrigger asChild>
             <Button variant="outline" className="flex items-center gap-2">
-              <Filter className="h-4 w-4" />
               <span>Filters</span>
               {Object.keys(filters).length > 0 && (
                 <span className="ml-1 bg-primary text-primary-foreground rounded-full w-5 h-5 text-xs flex items-center justify-center">
@@ -183,57 +154,27 @@ export function TaskList() {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="p-0 w-[80%] max-w-sm">
-            <FilterSidebar
-              filters={filters}
-              setFilters={setFilters}
-              allTags={allTags}
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              clearAllFilters={clearAllFilters}
-            />
+            {/* Future mobile sidebar content */}
           </SheetContent>
         </Sheet>
       </div>
       
       <SidebarProvider defaultOpen={false}>
         <div className="flex w-full">
-          <div className="hidden md:block">
-            <FilterSidebar
-              filters={filters}
-              setFilters={setFilters}
-              allTags={allTags}
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              clearAllFilters={clearAllFilters}
-            />
-          </div>
-          
           <SidebarInset className="flex-1 p-0">
             <div className="p-6 space-y-6">
               <div className="flex items-center gap-2">
                 <SidebarTrigger className="hidden md:flex" />
                 <h1 className="text-2xl font-bold">Tasks</h1>
-                {Object.keys(filters).length > 0 && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="ml-auto text-xs"
-                    onClick={clearAllFilters}
-                  >
-                    <FilterX className="h-3.5 w-3.5 mr-1" />
-                    Clear all filters
-                  </Button>
-                )}
               </div>
               
-              <ActiveFiltersDisplay 
+              <FilterBar 
                 filters={filters}
-                onClearStatusFilter={clearStatusFilter}
-                onClearPriorityFilter={clearPriorityFilter}
-                onClearDateFilters={clearDateFilters}
-                onClearSearchFilter={clearSearchFilter}
-                onClearTagsFilter={clearTagsFilter}
-                onClearAllFilters={clearAllFilters}
+                setFilters={setFilters}
+                clearAllFilters={clearAllFilters}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                allTags={allTags}
               />
               
               <Tabs defaultValue="active" value={activeTab} onValueChange={handleTabChange} className="w-full">

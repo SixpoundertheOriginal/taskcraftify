@@ -1,11 +1,8 @@
-
 export { TaskList } from './TaskList';
-export { TaskCard } from './TaskCard';
+export { KanbanBoard } from './KanbanBoard';
 export { TaskForm } from './TaskForm';
+export { TaskCard } from './TaskCard';
+export { FilterBar } from './FilterBar';
 export { ViewToggle } from './ViewToggle';
 export { FloatingActionButton } from './FloatingActionButton';
-export { KanbanBoard } from './KanbanBoard';
-export { ActiveFiltersDisplay } from './ActiveFiltersDisplay';
-export { TaskAttachments } from './TaskAttachments';
-export { StatsChart } from './StatsChart';
 export { MyFocusView } from './MyFocusView';
