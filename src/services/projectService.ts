@@ -89,6 +89,7 @@ export const ProjectService = {
 
   async updateProject(projectUpdate: UpdateProjectDTO): Promise<ServiceResult<Project>> {
     try {
+      // Use Record<string, any> to avoid TypeScript property checking
       const projectUpdateData: Record<string, any> = {
         id: projectUpdate.id
       };
