@@ -22,6 +22,8 @@ export interface Database {
           updated_at: string
           tags: string[] | null
           project_id: string | null
+          task_group_id: string | null
+          position: number
         }
         Insert: {
           id?: string
@@ -35,6 +37,8 @@ export interface Database {
           updated_at?: string
           tags?: string[] | null
           project_id?: string | null
+          task_group_id?: string | null
+          position?: number
         }
         Update: {
           id?: string
@@ -48,6 +52,8 @@ export interface Database {
           updated_at?: string
           tags?: string[] | null
           project_id?: string | null
+          task_group_id?: string | null
+          position?: number
         }
       }
       profiles: {
@@ -241,6 +247,41 @@ export interface Database {
           updated_at?: string
           user_id?: string
           parent_project_id?: string | null
+        }
+      }
+      task_groups: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          project_id: string | null
+          color: string | null
+          position: number
+          created_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          project_id?: string | null
+          color?: string | null
+          position?: number
+          created_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          project_id?: string | null
+          color?: string | null
+          position?: number
+          created_at?: string
+          updated_at?: string
+          user_id?: string
         }
       }
     }

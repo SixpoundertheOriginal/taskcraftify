@@ -1,33 +1,62 @@
 
-import { Button } from '@/components/ui/button';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { cn } from '@/lib/utils';
-import { KanbanSquare, List } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { List, Kanban, LayoutGrid } from "lucide-react";
 
-export type ViewMode = 'list' | 'kanban';
+export type ViewMode = 'list' | 'kanban' | 'groups';
 
 interface ViewToggleProps {
   activeView: ViewMode;
-  onViewChange: (view: ViewMode) => void;
+  onViewChange: (mode: ViewMode) => void;
 }
 
 export function ViewToggle({ activeView, onViewChange }: ViewToggleProps) {
   return (
-    <ToggleGroup type="single" value={activeView} onValueChange={(value: string) => {
-      if (value) onViewChange(value as ViewMode);
-    }} className="border rounded-md p-0.5 bg-muted/30">
-      <ToggleGroupItem value="list" aria-label="List view" className={cn(
-        "rounded-md h-8 w-8 p-0 transition-all duration-150", 
-        activeView === "list" ? "bg-background text-primary shadow-sm" : "hover:bg-muted/70"
-      )}>
-        <List className="h-4 w-4" />
-      </ToggleGroupItem>
-      <ToggleGroupItem value="kanban" aria-label="Kanban view" className={cn(
-        "rounded-md h-8 w-8 p-0 transition-all duration-150",
-        activeView === "kanban" ? "bg-background text-primary shadow-sm" : "hover:bg-muted/70"
-      )}>
-        <KanbanSquare className="h-4 w-4" />
-      </ToggleGroupItem>
-    </ToggleGroup>
+    <div className="flex bg-muted rounded-md overflow-hidden">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => onViewChange('list')}
+        className={cn(
+          "h-8 px-2 rounded-none",
+          activeView === 'list' 
+            ? "bg-background text-foreground shadow-sm" 
+            : "text-muted-foreground hover:text-foreground"
+        )}
+      >
+        <List className="h-4 w-4 mr-1" />
+        List
+      </Button>
+      
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => onViewChange('kanban')}
+        className={cn(
+          "h-8 px-2 rounded-none",
+          activeView === 'kanban' 
+            ? "bg-background text-foreground shadow-sm" 
+            : "text-muted-foreground hover:text-foreground"
+        )}
+      >
+        <Kanban className="h-4 w-4 mr-1" />
+        Kanban
+      </Button>
+      
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => onViewChange('groups')}
+        className={cn(
+          "h-8 px-2 rounded-none",
+          activeView === 'groups' 
+            ? "bg-background text-foreground shadow-sm" 
+            : "text-muted-foreground hover:text-foreground"
+        )}
+      >
+        <LayoutGrid className="h-4 w-4 mr-1" />
+        Groups
+      </Button>
+    </div>
   );
 }

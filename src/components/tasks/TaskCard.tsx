@@ -1,420 +1,266 @@
 
-import { useState, useCallback, memo } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { useState } from 'react';
+import { Task, TaskPriority, TaskStatus, countCompletedSubtasks } from '@/types/task';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { useTaskStore, useProjectStore } from '@/store';
+import { 
+  Clock, 
+  Calendar, 
+  CheckCircle2, 
+  AlertCircle, 
+  Tag,
+  ChevronDown,
+  ChevronRight
+} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
-import { 
-  CheckCircle, 
-  Circle,
-  Clock, 
-  Loader2, 
-  MoreHorizontal, 
-  Tag,
-  Trash,
-  ListChecks,
-  MessageSquare,
-  GripVertical,
-  // New icons for status badges
-  CircleCheck,
-  AlertCircle,
-  ArrowRight,
-  Clock3,
-  Archive,
-  // New icons for priority badges
-  Flag,
-  AlertTriangle,
-  Flame,
-  ArrowDown
-} from 'lucide-react';
-import { Task, TaskStatus, TaskPriority, countCompletedSubtasks } from '@/types/task';
-import { 
-  formatDate, 
-  getPriorityColor, 
-  getPriorityLabel, 
-  getStatusColor, 
-  getStatusLabel, 
-  isOverdue 
-} from '@/lib/utils';
-import { useTaskStore, useProjectStore } from '@/store';
-import { cn } from '@/lib/utils';
-import { ProjectBadge } from '@/components/projects';
-import { toast } from '@/hooks/use-toast';
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
-import { useIsMobile } from '@/hooks/use-mobile';
-import { TaskForm } from './TaskForm';
-import { useDraggable } from '@dnd-kit/core';
-import { Separator } from '@/components/ui/separator';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface TaskCardProps {
   task: Task;
-  isCompact?: boolean; // For optionally showing a more compact view
+  className?: string;
+  compact?: boolean;
 }
 
-// Helper function to get status icon
-const getStatusIcon = (status: TaskStatus) => {
-  switch (status) {
-    case TaskStatus.TODO:
-      return <Clock3 className="h-3 w-3" />;
-    case TaskStatus.IN_PROGRESS:
-      return <ArrowRight className="h-3 w-3" />;
-    case TaskStatus.DONE:
-      return <CircleCheck className="h-3 w-3" />;
-    case TaskStatus.ARCHIVED:
-      return <Archive className="h-3 w-3" />;
-    case TaskStatus.BACKLOG:
-      return <AlertCircle className="h-3 w-3" />;
-    default:
-      return <Clock3 className="h-3 w-3" />;
-  }
+export const priorityConfig = {
+  [TaskPriority.LOW]: { label: 'Low', color: 'bg-muted text-muted-foreground' },
+  [TaskPriority.MEDIUM]: { label: 'Medium', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' },
+  [TaskPriority.HIGH]: { label: 'High', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300' },
+  [TaskPriority.URGENT]: { label: 'Urgent', color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' }
 };
 
-// Helper function to get priority icon
-const getPriorityIcon = (priority: TaskPriority) => {
-  switch (priority) {
-    case TaskPriority.LOW:
-      return <ArrowDown className="h-3 w-3" />;
-    case TaskPriority.MEDIUM:
-      return <Flag className="h-3 w-3" />;
-    case TaskPriority.HIGH:
-      return <AlertTriangle className="h-3 w-3" />;
-    case TaskPriority.URGENT:
-      return <Flame className="h-3 w-3" />;
-    default:
-      return <Flag className="h-3 w-3" />;
-  }
+export const statusConfig = {
+  [TaskStatus.BACKLOG]: { label: 'Backlog', color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300' },
+  [TaskStatus.TODO]: { label: 'To Do', color: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300' },
+  [TaskStatus.IN_PROGRESS]: { label: 'In Progress', color: 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-300' },
+  [TaskStatus.DONE]: { label: 'Done', color: 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-300' },
+  [TaskStatus.ARCHIVED]: { label: 'Archived', color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300' }
 };
 
-function TaskCardComponent({ task, isCompact = false }: TaskCardProps) {
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
-  const { updateTask, deleteTask } = useTaskStore();
-  const { projects } = useProjectStore();
-  const isMobile = useIsMobile();
+export function TaskCard({ task, className, compact = false }: TaskCardProps) {
+  const { updateTask, setCurrentTask } = useTaskStore();
+  const { projects, selectedProjectId } = useProjectStore();
+  const [isOpen, setIsOpen] = useState(false);
   
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+  const project = task.projectId 
+    ? projects.find(p => p.id === task.projectId) 
+    : undefined;
+    
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition
+  } = useSortable({
     id: task.id,
     data: {
+      type: 'task',
       task
     }
   });
   
-  const style = transform ? {
-    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-    zIndex: 999,
-    opacity: 0.8,
-    boxShadow: '0 5px 10px rgba(0, 0, 0, 0.15)'
-  } : undefined;
-  
-  const project = task.projectId ? projects.find(p => p.id === task.projectId) : null;
-  
-  const subtaskCounts = countCompletedSubtasks(task);
-  
-  const handleStatusChange = useCallback(async (status: TaskStatus) => {
-    try {
-      setIsUpdating(true);
-      await updateTask({ id: task.id, status });
-      toast({
-        title: "Task updated",
-        description: `Task status changed to ${getStatusLabel(status)}`
-      });
-    } catch (error) {
-      console.error('Error updating task status:', error);
-      toast({
-        title: "Failed to update task",
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
-        variant: "destructive"
-      });
-    } finally {
-      setIsUpdating(false);
-    }
-  }, [task.id, updateTask]);
-
-  const handleDelete = useCallback(async () => {
-    try {
-      setIsDeleting(true);
-      await deleteTask(task.id);
-      toast({
-        title: "Task deleted",
-        description: "Task has been successfully deleted"
-      });
-    } catch (error) {
-      console.error('Error deleting task:', error);
-      toast({
-        title: "Failed to delete task",
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
-        variant: "destructive"
-      });
-      setIsDeleting(false);
-    }
-  }, [task.id, deleteTask]);
-
-  const handleCheckboxClick = useCallback(async (e: React.MouseEvent) => {
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition
+  };
+    
+  // Count completed subtasks
+  const { completed, total } = task.subtasks 
+    ? countCompletedSubtasks(task) 
+    : { completed: 0, total: 0 };
+    
+  const toggleCompletion = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
-    let newStatus = TaskStatus.DONE;
-    if (task.status === TaskStatus.DONE) {
-      newStatus = TaskStatus.TODO;
-    }
-    await handleStatusChange(newStatus);
-  }, [task.status, handleStatusChange]);
-
-  const handleCardClick = useCallback((e: React.MouseEvent) => {
-    if (
-      !isDragging && 
-      e.target instanceof Element && 
-      !e.target.closest('button') && 
-      !e.target.closest('select') && 
-      !e.target.closest('input') && 
-      !e.target.closest('textarea') &&
-      !e.target.closest('[role="combobox"]') && 
-      !e.target.closest('[data-radix-popper-content-wrapper]') &&
-      !e.target.closest('[role="tab"]') &&
-      !e.target.closest('label') &&
-      !e.target.closest('.drag-handle')
-    ) {
-      setIsTaskModalOpen(true);
-    }
-  }, [isDragging]);
-
-  const titleClassName = cn(
-    "font-medium text-base text-balance mr-2",
-    task.status === TaskStatus.DONE && "line-through text-muted-foreground"
-  );
-
-  return (
-    <>
-      <Card 
-        ref={setNodeRef}
-        style={{ 
-          ...style,
-          ...(project ? { borderLeftColor: project.color } : {})
-        }}
-        className={cn(
-          "group w-full transition-all duration-200 border border-border/40 shadow-sm",
-          "hover:shadow-md hover:border-border/80 cursor-pointer",
-          "hover:bg-muted/30", // Subtle background change on hover
-          project ? `border-l-4` : '',
-          isDragging ? "shadow-lg opacity-80" : "",
-          (isUpdating || isDeleting) ? 'opacity-70' : '',
-          isHovered ? "bg-muted/10" : ""
-        )}
-        onClick={handleCardClick}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        tabIndex={0}
-        role="button"
-        aria-label={`Task: ${task.title}`}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            setIsTaskModalOpen(true);
-          }
-        }}
-      >
-        <CardContent className="p-4 relative">
-          <div className="flex items-start gap-3">
-            <button
-              onClick={handleCheckboxClick}
-              className={cn(
-                "mt-0.5 flex-shrink-0 transition-all duration-150",
-                "hover:scale-110", // Scale effect on hover
-                "active:scale-95" // Press effect
-              )}
-              disabled={isUpdating || isDeleting}
-              aria-label={task.status === TaskStatus.DONE ? "Mark as not done" : "Mark as done"}
-            >
-              {task.status === TaskStatus.DONE ? (
-                <CheckCircle className="h-5 w-5 text-primary animate-scale-in" />
-              ) : (
-                <Circle className={cn(
-                  "h-5 w-5 text-muted-foreground",
-                  "hover:text-primary hover:drop-shadow-sm", // Enhanced hover effect
-                  isHovered ? "text-primary/70" : ""
-                )} />
-              )}
-            </button>
-            
-            <div className="flex-1 min-w-0">
-              <div className="flex justify-between items-start w-full">
-                <div className="flex-1 min-w-0">
-                  <h3 className={titleClassName}>
-                    {task.title}
-                  </h3>
-                </div>
-                <div className="flex items-center gap-1 z-10 ml-auto shrink-0">
-                  <div 
-                    className="drag-handle h-6 flex items-center justify-center cursor-grab opacity-50 hover:opacity-100 pr-1"
-                    {...attributes}
-                    {...listeners}
-                  >
-                    <GripVertical className="h-4 w-4" />
-                  </div>
-                  
-                  {(isUpdating || isDeleting) ? (
-                    <Loader2 className="h-4 w-4 animate-spin ml-1" />
-                  ) : (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-6 w-6 rounded-full opacity-70 hover:opacity-100"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Task actions</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-[180px]">
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(TaskStatus.TODO); }}>
-                          Mark as To Do
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(TaskStatus.IN_PROGRESS); }}>
-                          Mark as In Progress
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(TaskStatus.DONE); }}>
-                          Mark as Done
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(TaskStatus.ARCHIVED); }}>
-                          Archive
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setIsTaskModalOpen(true); }}>
-                          View/Edit Task
-                        </DropdownMenuItem>
-                        <Separator className="my-1 bg-muted-foreground/20" />
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDelete(); }} className="text-destructive">
-                          <Trash className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                </div>
-              </div>
-              
-              <div className="flex flex-wrap gap-2 my-2">
-                <Badge 
-                  variant="outline" 
-                  size="sm" 
-                  className={cn(getStatusColor(task.status), "flex items-center gap-1")}
-                >
-                  {getStatusIcon(task.status)}
-                  <span>{getStatusLabel(task.status)}</span>
-                </Badge>
-                
-                <Badge 
-                  variant="outline" 
-                  size="sm" 
-                  className={cn(getPriorityColor(task.priority), "flex items-center gap-1")}
-                >
-                  {getPriorityIcon(task.priority)}
-                  <span>{getPriorityLabel(task.priority)}</span>
-                </Badge>
-                
-                {task.projectId && (
-                  <ProjectBadge projectId={task.projectId} />
-                )}
-                
-                {subtaskCounts.total > 0 && (
-                  <Badge 
-                    variant="outline" 
-                    size="sm" 
-                    className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 flex items-center gap-1"
-                  >
-                    <ListChecks className="h-3 w-3" />
-                    <span>{subtaskCounts.completed}/{subtaskCounts.total}</span>
-                  </Badge>
-                )}
-                
-                {task.comments && task.comments.length > 0 && (
-                  <Badge 
-                    variant="outline" 
-                    size="sm" 
-                    className="bg-green-50 text-green-600 hover:bg-green-100 flex items-center gap-1"
-                  >
-                    <MessageSquare className="h-3 w-3" />
-                    <span>{task.comments.length}</span>
-                  </Badge>
-                )}
-              </div>
-              
-              <Separator className="my-2 bg-muted-foreground/10" />
-              
-              <div className="flex justify-between items-center text-xs text-muted-foreground mt-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  {task.dueDate && (
-                    <div className={cn(
-                      "flex items-center",
-                      isOverdue(task.dueDate) ? 'text-destructive' : ''
-                    )}>
-                      <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
-                      {formatDate(task.dueDate)}
-                    </div>
-                  )}
-                  
-                  {subtaskCounts.total > 0 && (
-                    <div className="flex items-center">
-                      <ListChecks className="h-3 w-3 mr-1 flex-shrink-0" />
-                      <span>{subtaskCounts.completed}/{subtaskCounts.total}</span>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                  {task.comments && task.comments.length > 0 && (
-                    <div className="flex items-center">
-                      <MessageSquare className="h-3 w-3 mr-1 flex-shrink-0" />
-                      <span>{task.comments.length}</span>
-                    </div>
-                  )}
-                  
-                  {task.tags && task.tags.length > 0 && !isCompact && (
-                    <HoverCard>
-                      <HoverCardTrigger asChild>
-                        <div className="flex items-center cursor-help">
-                          <Tag className="h-3 w-3 mr-1 flex-shrink-0" />
-                          <span className="truncate max-w-[80px]">
-                            {task.tags.length > 1 
-                              ? `${task.tags[0]} +${task.tags.length - 1}` 
-                              : task.tags[0]}
-                          </span>
-                        </div>
-                      </HoverCardTrigger>
-                      <HoverCardContent className="w-auto p-2">
-                        <div className="flex flex-wrap gap-1">
-                          {task.tags.map(tag => (
-                            <Badge key={tag} variant="secondary" className="text-xs">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      </HoverCardContent>
-                    </HoverCard>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+    
+    const newStatus = task.status === TaskStatus.DONE 
+      ? TaskStatus.TODO 
+      : TaskStatus.DONE;
       
-      <TaskForm 
-        open={isTaskModalOpen}
-        onOpenChange={setIsTaskModalOpen}
-        taskToEdit={task}
-      />
-    </>
+    updateTask({
+      id: task.id,
+      status: newStatus
+    });
+  };
+  
+  const toggleExpand = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsOpen(!isOpen);
+  };
+  
+  // Function to handle status change from dropdown menu
+  const handleStatusChange = (status: TaskStatus) => {
+    updateTask({
+      id: task.id,
+      status
+    });
+  };
+  
+  return (
+    <div
+      ref={setNodeRef} 
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={cn(
+        "border rounded-md shadow-sm bg-card hover:shadow-md transition-shadow cursor-grab",
+        task.status === TaskStatus.DONE && "opacity-80",
+        isOpen ? "pb-2" : "pb-0",
+        className
+      )}
+    >
+      <div className="p-3 space-y-2">
+        <div className="flex items-start gap-2">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-5 w-5 shrink-0 rounded-full -mt-0.5" 
+            onClick={toggleCompletion}
+          >
+            <CheckCircle2 className={cn(
+              "h-4 w-4",
+              task.status === TaskStatus.DONE 
+                ? "text-green-500 fill-green-500" 
+                : "text-muted-foreground"
+            )} />
+            <span className="sr-only">
+              {task.status === TaskStatus.DONE ? "Mark as incomplete" : "Mark as complete"}
+            </span>
+          </Button>
+          
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-1">
+              {!compact && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-5 w-5 shrink-0 -ml-1 mt-0.5" 
+                  onClick={toggleExpand}
+                >
+                  {isOpen ? (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </Button>
+              )}
+              
+              <h3 className={cn(
+                "text-sm font-medium truncate",
+                task.status === TaskStatus.DONE && "line-through text-muted-foreground"
+              )}>
+                {task.title}
+              </h3>
+              
+              {!compact && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
+                      <span className="sr-only">Task menu</span>
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleStatusChange(TaskStatus.BACKLOG)}>
+                      Move to Backlog
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleStatusChange(TaskStatus.TODO)}>
+                      Move to Todo
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleStatusChange(TaskStatus.IN_PROGRESS)}>
+                      Move to In Progress
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleStatusChange(TaskStatus.DONE)}>
+                      Move to Done
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setCurrentTask(task)}>
+                      Open Task Details
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
+            
+            {(task.dueDate || project || task.tags?.length) && !compact && isOpen && (
+              <div className="mt-2 space-y-2">
+                {/* Task due date */}
+                {task.dueDate && (
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Calendar className="h-3.5 w-3.5" />
+                    <span>
+                      {format(task.dueDate, 'MMM d, yyyy')}
+                    </span>
+                  </div>
+                )}
+                
+                {/* Project */}
+                {project && !selectedProjectId && (
+                  <div className="flex items-center gap-1.5 text-xs">
+                    <Badge 
+                      variant="outline" 
+                      className="px-1 py-0 text-[10px] bg-purple-50 text-purple-700 dark:bg-purple-900 dark:text-purple-300"
+                    >
+                      {project.name}
+                    </Badge>
+                  </div>
+                )}
+                
+                {/* Tags */}
+                {task.tags && task.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {task.tags.map(tag => (
+                      <Badge 
+                        key={tag} 
+                        variant="outline" 
+                        className="px-1 py-0 text-[10px] bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                      >
+                        <Tag className="h-2.5 w-2.5 mr-0.5" />
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Subtasks */}
+                {total > 0 && (
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1.5">
+                    <div className="w-full bg-muted h-1.5 rounded-full overflow-hidden">
+                      <div 
+                        className="bg-primary h-full transition-all" 
+                        style={{ width: `${(completed / total) * 100}%` }} 
+                      />
+                    </div>
+                    <span className="whitespace-nowrap">
+                      {completed}/{total}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          
+          {!compact && (
+            <Badge className={cn(
+              "shrink-0 text-[10px] px-1 py-0 h-4",
+              priorityConfig[task.priority].color
+            )}>
+              {priorityConfig[task.priority].label}
+            </Badge>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
-
-export const TaskCard = memo(TaskCardComponent);

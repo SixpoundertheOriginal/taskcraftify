@@ -1,4 +1,3 @@
-
 // Import necessary modules
 import { Database } from '@/integrations/supabase/types';
 import { parseISO } from 'date-fns';
@@ -9,7 +8,7 @@ export enum TaskStatus {
   IN_PROGRESS = 'IN_PROGRESS',
   DONE = 'DONE',
   ARCHIVED = 'ARCHIVED',
-  BACKLOG = 'BACKLOG'  // Added BACKLOG status
+  BACKLOG = 'BACKLOG'
 }
 
 export enum TaskPriority {
@@ -26,9 +25,11 @@ export interface Task {
   description?: string;
   status: TaskStatus;
   priority: TaskPriority;
-  dueDate?: Date; // Changed to only accept Date objects
+  dueDate?: Date;
   tags?: string[];
   projectId?: string;
+  taskGroupId?: string;
+  position: number;
   subtasks?: Subtask[];
   comments?: Comment[];
   activities?: ActivityItem[];
@@ -41,9 +42,11 @@ export interface CreateTaskDTO {
   description?: string;
   status: TaskStatus;
   priority: TaskPriority;
-  dueDate?: Date;  // Changed to only accept Date objects
+  dueDate?: Date;
   tags?: string[];
   projectId?: string;
+  taskGroupId?: string;
+  position?: number;
 }
 
 export interface UpdateTaskDTO {
@@ -52,9 +55,11 @@ export interface UpdateTaskDTO {
   description?: string | null;
   status?: TaskStatus;
   priority?: TaskPriority;
-  dueDate?: Date | null;  // Changed to only accept Date or null
+  dueDate?: Date | null;
   tags?: string[] | null;
   projectId?: string | null;
+  taskGroupId?: string | null;
+  position?: number;
 }
 
 // API Task interface (from Supabase)
@@ -67,6 +72,8 @@ export interface APITask {
   due_date: string | null;
   tags: string[] | null;
   project_id: string | null;
+  task_group_id: string | null;
+  position: number;
   user_id: string;
   created_at: string;
   updated_at: string;
@@ -121,7 +128,7 @@ export interface ActivityItem {
   type: 'task_created' | 'task_updated' | 'task_deleted' | 'status_changed' | 
         'priority_changed' | 'due_date_changed' | 'subtask_added' | 'subtask_completed' | 
         'subtask_edited' | 'subtask_deleted' | 'comment_added' | 'comment_edited' | 
-        'comment_deleted' | 'tag_added' | 'tag_removed' | 'status_change' | 'edit';  // Added missing activity types
+        'comment_deleted' | 'tag_added' | 'tag_removed' | 'status_change' | 'edit';
   description: string;
   createdAt: Date;
   createdBy: string;
@@ -220,6 +227,8 @@ export const mapApiTaskToTask = (apiTask: APITask): Task => {
     dueDate,
     tags: apiTask.tags as string[] || [],
     projectId: apiTask.project_id || undefined,
+    taskGroupId: apiTask.task_group_id || undefined,
+    position: apiTask.position || 0,
     createdAt: new Date(apiTask.created_at),
     updatedAt: new Date(apiTask.updated_at)
   };

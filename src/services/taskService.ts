@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Task, 
@@ -126,6 +125,21 @@ export const TaskService = {
         return { data: null, error: new Error('User not authenticated') };
       }
 
+      // If task group is specified, get the highest position in that group
+      let position = 0;
+      if (taskData.taskGroupId) {
+        const { data: existingTasks } = await supabase
+          .from('tasks')
+          .select('position')
+          .eq('task_group_id', taskData.taskGroupId)
+          .order('position', { ascending: false })
+          .limit(1);
+          
+        if (existingTasks && existingTasks.length > 0) {
+          position = (existingTasks[0].position || 0) + 1;
+        }
+      }
+
       const taskInsert: TaskInsert = {
         title: taskData.title,
         description: taskData.description || null,
@@ -133,6 +147,9 @@ export const TaskService = {
         priority: taskData.priority as TaskPriorityDB,
         due_date: taskData.dueDate ? taskData.dueDate.toISOString() : null,
         tags: taskData.tags || null,
+        project_id: taskData.projectId || null,
+        task_group_id: taskData.taskGroupId || null,
+        position: taskData.position !== undefined ? taskData.position : position,
         user_id: userId
       };
       
@@ -172,6 +189,9 @@ export const TaskService = {
       if (taskUpdate.priority !== undefined) taskUpdateData.priority = taskUpdate.priority as TaskPriorityDB;
       if (taskUpdate.dueDate !== undefined) taskUpdateData.due_date = taskUpdate.dueDate ? taskUpdate.dueDate.toISOString() : null;
       if (taskUpdate.tags !== undefined) taskUpdateData.tags = taskUpdate.tags || null;
+      if (taskUpdate.projectId !== undefined) taskUpdateData.project_id = taskUpdate.projectId || null;
+      if (taskUpdate.taskGroupId !== undefined) taskUpdateData.task_group_id = taskUpdate.taskGroupId || null;
+      if (taskUpdate.position !== undefined) taskUpdateData.position = taskUpdate.position;
       
       const { data, error } = await supabase
         .from('tasks')

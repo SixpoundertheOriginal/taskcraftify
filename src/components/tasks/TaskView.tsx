@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { useTaskStore, useProjectStore } from '@/store';
 import { 
@@ -27,6 +26,7 @@ import { cn } from '@/lib/utils';
 import { MyFocusView } from './MyFocusView';
 import { KanbanBoard } from './KanbanBoard';
 import { ViewToggle, ViewMode } from './ViewToggle';
+import { TaskGroups } from './TaskGroups';
 
 export function TaskView() {
   const { 
@@ -45,13 +45,11 @@ export function TaskView() {
   
   const { selectedProjectId, projects } = useProjectStore();
   
-  // Local state
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<string>('my-tasks');
   const [activeViewMode, setActiveViewMode] = useState<ViewMode>('list');
   const [isInitialized, setIsInitialized] = useState(false);
   
-  // Initialize and fetch tasks
   useEffect(() => {
     if (isInitialized) return;
     
@@ -73,22 +71,18 @@ export function TaskView() {
     };
   }, [fetchTasks, setupTaskSubscription, refreshTaskCounts, isInitialized]);
   
-  // Set initial filters based on the active tab
   useEffect(() => {
-    // Initialize with active tasks
     if (activeTab === 'my-tasks' && Object.keys(filters).length === 0) {
       setFilters({ 
         status: [TaskStatus.TODO, TaskStatus.IN_PROGRESS] 
       });
     }
     
-    // Initialize search query from filters
     if (filters.searchQuery) {
       setSearchQuery(filters.searchQuery);
     }
   }, [filters, setFilters]);
   
-  // Memoized task lists
   const filteredTasks = useMemo(() => {
     return getFilteredTasks();
   }, [getFilteredTasks, tasks.length, filters]);
@@ -101,7 +95,6 @@ export function TaskView() {
     return getTasksDueToday();
   }, [getTasksDueToday, tasks.length]);
   
-  // Handle tab change
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     
@@ -124,30 +117,25 @@ export function TaskView() {
     }
   };
   
-  // Handle view mode change
   const handleViewModeChange = (mode: ViewMode) => {
     setActiveViewMode(mode);
   };
   
-  // Handle search input
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
     setFilters({ ...filters, searchQuery: query });
   };
   
-  // Clear all filters
   const clearAllFilters = () => {
     setFilters({});
     setSearchQuery('');
   };
   
-  // Determine if there are active filters
   const hasActiveFilters = Object.keys(filters).some(key => 
     key !== 'searchQuery' || (key === 'searchQuery' && filters.searchQuery && filters.searchQuery.trim() !== '')
   );
   
-  // Show loading state
   if (isLoading && tasks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-60">
@@ -157,7 +145,6 @@ export function TaskView() {
     );
   }
   
-  // Show error state
   if (error) {
     return (
       <div className="bg-destructive/10 border border-destructive text-destructive rounded-md p-4">
@@ -201,7 +188,6 @@ export function TaskView() {
         />
       </div>
       
-      {/* Active Filters */}
       {hasActiveFilters && (
         <div className="flex flex-wrap gap-2 items-center">
           <span className="text-xs text-muted-foreground">Active filters:</span>
@@ -307,7 +293,6 @@ export function TaskView() {
         <TabsContent value="my-tasks" className="mt-0">
           {activeViewMode === 'list' ? (
             <>
-              {/* Overdue Tasks Section */}
               {overdueTasks.length > 0 && (
                 <TaskGroup 
                   title="Overdue" 
@@ -322,7 +307,6 @@ export function TaskView() {
                 </TaskGroup>
               )}
               
-              {/* Due Today Section */}
               {tasksDueToday.length > 0 && (
                 <TaskGroup 
                   title="Due Today" 
@@ -337,7 +321,6 @@ export function TaskView() {
                 </TaskGroup>
               )}
               
-              {/* All Filtered Tasks */}
               <TaskGroup 
                 title="Tasks" 
                 count={filteredTasks.length}
@@ -359,8 +342,10 @@ export function TaskView() {
                 </div>
               </TaskGroup>
             </>
-          ) : (
+          ) : activeViewMode === 'kanban' ? (
             <KanbanBoard />
+          ) : (
+            <TaskGroups />
           )}
         </TabsContent>
         
@@ -386,8 +371,10 @@ export function TaskView() {
                 ))}
               </div>
             </TaskGroup>
-          ) : (
+          ) : activeViewMode === 'kanban' ? (
             <KanbanBoard />
+          ) : (
+            <TaskGroups />
           )}
         </TabsContent>
         
@@ -413,8 +400,10 @@ export function TaskView() {
                 ))}
               </div>
             </TaskGroup>
-          ) : (
+          ) : activeViewMode === 'kanban' ? (
             <KanbanBoard />
+          ) : (
+            <TaskGroups />
           )}
         </TabsContent>
       </Tabs>
