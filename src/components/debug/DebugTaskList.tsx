@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useTaskStore } from '@/store';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Refresh, Bug } from 'lucide-react';
+import { RefreshCw, Bug } from 'lucide-react';
 import { Task } from '@/types/task';
 
 export function DebugTaskList() {
@@ -129,7 +129,7 @@ export function DebugTaskList() {
             disabled={isLoading}
             className="flex items-center gap-1"
           >
-            <Refresh className="h-4 w-4" />
+            <RefreshCw className="h-4 w-4" />
             Force Refresh
           </Button>
           
