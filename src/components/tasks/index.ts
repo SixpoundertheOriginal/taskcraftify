@@ -8,3 +8,4 @@ export { KanbanBoard } from './KanbanBoard';
 export { ActiveFiltersDisplay } from './ActiveFiltersDisplay';
 export { TaskAttachments } from './TaskAttachments';
 export { StatsChart } from './StatsChart';
+export { MyFocusView } from './MyFocusView';

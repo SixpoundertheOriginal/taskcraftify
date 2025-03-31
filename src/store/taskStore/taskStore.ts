@@ -34,6 +34,10 @@ export type TaskStore = TaskSlice & FilterSlice & SubscriptionSlice & StatsSlice
   getTasksCountByStatus: () => Record<string, number>;
   getAverageDailyCompletionRate: () => number;
   
+  // Add missing task filter methods
+  getTasksDueToday: () => Task[];
+  getOverdueTasks: () => Task[];
+  
   fetchTask: (taskId: string) => Promise<Task | undefined>;
 };
 
@@ -141,6 +145,26 @@ export const useTaskStore = create<TaskStore>()(
           const daysDifference = Math.max(1, Math.ceil((now.getTime() - oldestCompletionDate.getTime()) / (1000 * 60 * 60 * 24)));
           
           return completedTasks.length / daysDifference;
+        },
+        
+        // Implement the missing task filter methods
+        getTasksDueToday: () => {
+          return taskSlice.tasks.filter(task => 
+            task.status !== TaskStatus.DONE && 
+            task.status !== TaskStatus.ARCHIVED && 
+            task.dueDate && 
+            isToday(task.dueDate)
+          );
+        },
+        
+        getOverdueTasks: () => {
+          return taskSlice.tasks.filter(task => 
+            task.status !== TaskStatus.DONE && 
+            task.status !== TaskStatus.ARCHIVED && 
+            task.dueDate && 
+            isPast(task.dueDate) && 
+            !isToday(task.dueDate)
+          );
         }
       };
     },

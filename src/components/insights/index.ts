@@ -3,4 +3,5 @@ export { InsightsPanel } from './InsightsPanel';
 export { ProductivityChart } from './ProductivityChart';
 export { TaskStatusChart } from './TaskStatusChart';
 export { PersonalizedGreeting } from './PersonalizedGreeting';
-// We're removing the FocusOverview export
+export { FocusOverview } from './FocusOverview';
+
