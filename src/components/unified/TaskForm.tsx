@@ -332,11 +332,8 @@ export function UnifiedTaskForm({
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
-                        role="combobox"
-                        aria-expanded={projectSelectorOpen}
                         className="w-full justify-between"
                         id="project"
-                        onClick={handleProjectClick}
                         type="button"
                       >
                         {projectId && currentProject ? (
@@ -355,16 +352,24 @@ export function UnifiedTaskForm({
                         <ChevronDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-full p-0 z-50">
+                    <PopoverContent className="w-[280px] p-0" align="start">
                       <Command>
-                        <CommandInput placeholder="Search projects..." className="h-9" />
+                        <CommandInput placeholder="Search projects..." />
                         <CommandList>
                           <CommandEmpty>No projects found.</CommandEmpty>
                           
                           <CommandGroup>
                             <CommandItem 
+                              className="flex items-center gap-2 cursor-pointer"
+                              onSelect={() => handleProjectSelect(undefined)}
+                            >
+                              <span>All Projects</span>
+                              {!projectId && <Check className="ml-auto h-4 w-4" />}
+                            </CommandItem>
+                            
+                            <CommandItem 
+                              className="flex items-center gap-2 cursor-pointer"
                               onSelect={() => handleProjectSelect('none')}
-                              className="flex items-center gap-2"
                             >
                               <span>No Project</span>
                               {projectId === 'none' && <Check className="ml-auto h-4 w-4" />}
@@ -378,8 +383,8 @@ export function UnifiedTaskForm({
                                 {projects.map((project) => (
                                   <CommandItem
                                     key={project.id}
+                                    className="flex items-center gap-2 cursor-pointer"
                                     onSelect={() => handleProjectSelect(project.id)}
-                                    className="flex items-center gap-2"
                                   >
                                     <div 
                                       className="w-3 h-3 rounded-full" 
@@ -536,11 +541,8 @@ export function UnifiedTaskForm({
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
-                      role="combobox"
-                      aria-expanded={projectSelectorOpen}
                       className="w-full justify-between"
                       id="project"
-                      onClick={handleProjectClick}
                       type="button"
                     >
                       {projectId && currentProject ? (
@@ -559,16 +561,24 @@ export function UnifiedTaskForm({
                       <ChevronDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-full p-0 z-50">
+                  <PopoverContent className="w-[280px] p-0" align="start">
                     <Command>
-                      <CommandInput placeholder="Search projects..." className="h-9" />
+                      <CommandInput placeholder="Search projects..." />
                       <CommandList>
                         <CommandEmpty>No projects found.</CommandEmpty>
                         
                         <CommandGroup>
                           <CommandItem 
+                            className="flex items-center gap-2 cursor-pointer"
+                            onSelect={() => handleProjectSelect(undefined)}
+                          >
+                            <span>All Projects</span>
+                            {!projectId && <Check className="ml-auto h-4 w-4" />}
+                          </CommandItem>
+                          
+                          <CommandItem 
+                            className="flex items-center gap-2 cursor-pointer"
                             onSelect={() => handleProjectSelect('none')}
-                            className="flex items-center gap-2"
                           >
                             <span>No Project</span>
                             {projectId === 'none' && <Check className="ml-auto h-4 w-4" />}
@@ -582,8 +592,8 @@ export function UnifiedTaskForm({
                               {projects.map((project) => (
                                 <CommandItem
                                   key={project.id}
+                                  className="flex items-center gap-2 cursor-pointer"
                                   onSelect={() => handleProjectSelect(project.id)}
-                                  className="flex items-center gap-2"
                                 >
                                   <div 
                                     className="w-3 h-3 rounded-full" 

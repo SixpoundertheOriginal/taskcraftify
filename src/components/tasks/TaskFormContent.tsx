@@ -34,7 +34,6 @@ import { SaveTemplateDialog } from './SaveTemplateDialog';
 import { TaskTemplate } from '@/types/template';
 import { templateService } from '@/services/templateService';
 import { SmartTemplateSelector } from './SmartTemplateSelector';
-import { ProjectSelector } from '@/components/projects/ProjectSelector';
 
 interface TaskFormContentProps {
   onSuccess: () => void;
@@ -57,6 +56,7 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
   );
   const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(undefined);
+  const [projectSelectorOpen, setProjectSelectorOpen] = useState(false);
   
   const { register, handleSubmit, reset, setValue, watch, control, formState: { errors } } = useForm<CreateTaskDTO>({
     defaultValues: taskToEdit ? {
@@ -105,7 +105,8 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
   
   const handleProjectSelect = (id: string | null) => {
     console.log("Project selected:", id);
-    setProjectId(id === 'none' ? undefined : id);
+    setProjectId(id === 'none' ? undefined : id === null ? undefined : id);
+    setProjectSelectorOpen(false);
   };
   
   const handleSelectTemplate = async (template: TaskTemplate) => {
@@ -214,6 +215,9 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
     }
   };
   
+  // Current project for display
+  const currentProject = projectId ? projects.find(p => p.id === projectId) : null;
+  
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
       {!taskToEdit && (
@@ -313,11 +317,79 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
       
       <div className="space-y-2">
         <label htmlFor="project" className="text-sm font-medium">Project</label>
-        <ProjectSelector 
-          selectedProjectId={projectId || null}
-          onProjectSelect={handleProjectSelect}
-          buttonClassName="w-full"
-        />
+        <Popover open={projectSelectorOpen} onOpenChange={setProjectSelectorOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className="w-full justify-between"
+              id="project"
+              type="button"
+            >
+              {projectId && currentProject ? (
+                <div className="flex items-center gap-2">
+                  <div 
+                    className="w-3 h-3 rounded-full" 
+                    style={{ backgroundColor: currentProject.color }}
+                  />
+                  <span>{currentProject.name}</span>
+                </div>
+              ) : projectId === 'none' ? (
+                <span>No Project</span>
+              ) : (
+                <span className="text-muted-foreground">Select project</span>
+              )}
+              <ChevronDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[280px] p-0" align="start">
+            <Command>
+              <CommandInput placeholder="Search projects..." />
+              <CommandList>
+                <CommandEmpty>No projects found.</CommandEmpty>
+                
+                <CommandGroup>
+                  <CommandItem 
+                    className="flex items-center gap-2 cursor-pointer"
+                    onSelect={() => handleProjectSelect(null)}
+                  >
+                    <span>All Projects</span>
+                    {projectId === null && <Check className="ml-auto h-4 w-4" />}
+                  </CommandItem>
+                  
+                  <CommandItem 
+                    className="flex items-center gap-2 cursor-pointer"
+                    onSelect={() => handleProjectSelect('none')}
+                  >
+                    <span>No Project</span>
+                    {projectId === 'none' && <Check className="ml-auto h-4 w-4" />}
+                  </CommandItem>
+                </CommandGroup>
+                
+                {projects.length > 0 && (
+                  <>
+                    <CommandSeparator />
+                    <CommandGroup heading="Your Projects">
+                      {projects.map((project) => (
+                        <CommandItem
+                          key={project.id}
+                          className="flex items-center gap-2 cursor-pointer"
+                          onSelect={() => handleProjectSelect(project.id)}
+                        >
+                          <div 
+                            className="w-3 h-3 rounded-full" 
+                            style={{ backgroundColor: project.color }}
+                          />
+                          <span>{project.name}</span>
+                          {projectId === project.id && <Check className="ml-auto h-4 w-4" />}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </>
+                )}
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
       </div>
       
       <div className="space-y-2">
