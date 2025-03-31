@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useTaskStore } from '@/store/taskStore/taskStore';
+import { useTaskStore } from '@/store';
 import { TaskCard } from './TaskCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -37,30 +37,24 @@ export function TaskList() {
   const [activeTab, setActiveTab] = useState<string>('focus');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   
-  // Get all unique tags from tasks
   const allTags = Array.from(new Set(tasks.flatMap(task => task.tags || []))).sort();
   
-  // Debug output
   console.log("TaskList render - Total tasks:", tasks.length);
   console.log("TaskList render - Active filters:", filters);
   
-  // Get filtered tasks
   const filteredTasks = getFilteredTasks();
   console.log("TaskList render - Filtered tasks:", filteredTasks.length);
   
   useEffect(() => {
     console.log("TaskList: Fetching tasks and setting up subscription");
     
-    // First fetch tasks directly
     fetchTasks().then((fetchedTasks) => {
       console.log("TaskList: Initial task fetch complete, tasks:", fetchedTasks.length);
-      // Ensure task counts are refreshed after tasks are loaded
       refreshTaskCounts();
     }).catch(err => {
       console.error("TaskList: Error fetching tasks:", err);
     });
     
-    // Then set up subscription for real-time updates
     const unsubscribe = setupTaskSubscription();
     
     return () => {
@@ -69,7 +63,6 @@ export function TaskList() {
     };
   }, [fetchTasks, setupTaskSubscription, refreshTaskCounts]);
   
-  // Initialize searchQuery from filters
   useEffect(() => {
     if (filters.searchQuery) {
       setSearchQuery(filters.searchQuery);
@@ -91,7 +84,6 @@ export function TaskList() {
     } else if (tab === 'archived') {
       setFilters({ ...filters, status: [TaskStatus.ARCHIVED] });
     } else if (tab === 'focus') {
-      // Clear all filters when switching to focus view
       setFilters({});
     }
   };
@@ -149,7 +141,6 @@ export function TaskList() {
     );
   }
   
-  // Debug output for task rendering
   console.log(`About to render tasks for tab "${activeTab}":`, 
     activeTab === 'focus' 
       ? 'Using FocusView component'
@@ -158,7 +149,6 @@ export function TaskList() {
   
   return (
     <div className="animate-fade-in">
-      {/* Mobile sheet for filters */}
       <div className="md:hidden mb-4">
         <Sheet open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen}>
           <SheetTrigger asChild>
@@ -185,7 +175,6 @@ export function TaskList() {
         </Sheet>
       </div>
       
-      {/* Desktop view with sidebar */}
       <SidebarProvider defaultOpen={false}>
         <div className="flex w-full">
           <div className="hidden md:block">
@@ -242,12 +231,10 @@ export function TaskList() {
                   </div>
                 )}
                 
-                {/* My Focus Tab */}
                 <TabsContent value="focus" className="mt-0">
                   <MyFocusView />
                 </TabsContent>
                 
-                {/* All Tab */}
                 <TabsContent value="all" className="mt-0">
                   {filteredTasks.length > 0 ? (
                     <div className="grid grid-cols-1 gap-4">
@@ -272,7 +259,6 @@ export function TaskList() {
                   )}
                 </TabsContent>
                 
-                {/* Keep existing code for active, completed, and archived tabs */}
                 <TabsContent value="active" className="mt-0">
                   {filteredTasks.length > 0 ? (
                     <div className="grid grid-cols-1 gap-4">

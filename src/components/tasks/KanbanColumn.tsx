@@ -1,5 +1,5 @@
 
-import { useTaskStore } from '@/store/taskStore/taskStore';
+import { useTaskStore } from '@/store';
 import { Task, TaskStatus } from '@/types/task';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
