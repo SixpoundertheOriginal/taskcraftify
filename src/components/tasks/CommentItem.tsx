@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, memo } from 'react';
 import { Comment } from '@/types/task';
 import { useTaskStore } from '@/store';
 import { toast } from '@/hooks/use-toast';
@@ -12,7 +12,7 @@ interface CommentItemProps {
   comment: Comment;
 }
 
-export function CommentItem({ comment }: CommentItemProps) {
+function CommentItemComponent({ comment }: CommentItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [editValue, setEditValue] = useState(comment.content);
@@ -164,3 +164,6 @@ export function CommentItem({ comment }: CommentItemProps) {
     </div>
   );
 }
+
+// Memoize the component to prevent unnecessary rerenders
+export const CommentItem = memo(CommentItemComponent);

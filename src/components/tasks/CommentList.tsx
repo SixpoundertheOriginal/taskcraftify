@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useTaskStore } from '@/store';
 import { CommentItem } from './CommentItem';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,12 @@ export function CommentList({ taskId }: CommentListProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { tasks, fetchComments, createComment } = useTaskStore();
   
-  const task = tasks.find(t => t.id === taskId);
+  // Use useMemo to prevent recalculation when tasks array reference changes
+  // but the specific task we care about hasn't changed
+  const task = useMemo(() => {
+    return tasks.find(t => t.id === taskId);
+  }, [tasks, taskId]);
+  
   const comments = task?.comments || [];
   
   // Fetch comments on initial render
@@ -77,6 +82,10 @@ export function CommentList({ taskId }: CommentListProps) {
     setCommentText('');
   }, []);
   
+  const handleStartAddComment = useCallback(() => {
+    setIsAddingComment(true);
+  }, []);
+  
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between mb-2">
@@ -94,7 +103,7 @@ export function CommentList({ taskId }: CommentListProps) {
             variant="ghost" 
             size="sm" 
             className="h-7 text-xs"
-            onClick={() => setIsAddingComment(true)}
+            onClick={handleStartAddComment}
             disabled={isLoading}
           >
             <Plus className="h-3.5 w-3.5 mr-1" />

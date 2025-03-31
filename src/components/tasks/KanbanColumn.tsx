@@ -2,7 +2,7 @@
 import { useTaskStore } from '@/store';
 import { Task, TaskStatus } from '@/types/task';
 import { Plus } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useCallback, memo } from 'react';
 import { TaskCard } from './TaskCard';
 import { cn } from '@/lib/utils';
 import { TaskForm } from './TaskForm';
@@ -20,7 +20,7 @@ interface KanbanColumnProps {
   className?: string;
 }
 
-export function KanbanColumn({ id, title, tasks, status, className }: KanbanColumnProps) {
+function KanbanColumnComponent({ id, title, tasks, status, className }: KanbanColumnProps) {
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const isMobile = useIsMobile();
   
@@ -36,9 +36,10 @@ export function KanbanColumn({ id, title, tasks, status, className }: KanbanColu
     className
   );
   
-  const handleAddTask = () => {
+  // Memoize the handleAddTask handler to prevent recreation on rerenders
+  const handleAddTask = useCallback(() => {
     setIsTaskFormOpen(true);
-  };
+  }, []);
   
   return (
     <div 
@@ -115,3 +116,6 @@ export function KanbanColumn({ id, title, tasks, status, className }: KanbanColu
     </div>
   );
 }
+
+// Memoize the entire component to prevent unnecessary rerenders
+export const KanbanColumn = memo(KanbanColumnComponent);
