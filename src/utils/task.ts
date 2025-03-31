@@ -1,3 +1,4 @@
+
 // Import necessary modules
 import { Task, APITask, TaskStatus, TaskPriority } from '@/types/task';
 import { parseISO, isValid, isPast, isToday, isTomorrow, isThisWeek } from 'date-fns';
@@ -48,6 +49,8 @@ export const mapApiTaskToTask = (apiTask: APITask): Task => {
     dueDate,
     tags: apiTask.tags as string[] || [],
     projectId: apiTask.project_id || undefined,
+    taskGroupId: apiTask.task_group_id || undefined,
+    position: apiTask.position || 0,
     createdAt: new Date(apiTask.created_at),
     updatedAt: new Date(apiTask.updated_at)
   };
@@ -157,7 +160,8 @@ export function createMockTask(): Task {
     dueDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3), // 3 days from now
     tags: ['sample', 'test'],
     projectId: '',
-    position: 0, // Added position property
+    taskGroupId: undefined,
+    position: 0,
     createdAt: new Date(),
     updatedAt: new Date()
   };

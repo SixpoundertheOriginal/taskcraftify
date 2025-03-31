@@ -65,7 +65,6 @@ export const TaskService = {
         return { data: null, error: new Error(error.message) };
       }
 
-      // Enhanced debugging: Log raw API data with explicit type information
       console.log('Raw API task data before mapping:', 
         data?.map((task: any) => ({
           id: task.id,
@@ -85,7 +84,6 @@ export const TaskService = {
       
       console.log(`Fetched ${mappedTasks.length} tasks`);
       
-      // Enhanced debugging: Log mapped tasks with better type information
       console.log('Mapped tasks with projectId and dueDate values:', 
         mappedTasks.map(t => ({ 
           id: t.id, 
@@ -125,7 +123,6 @@ export const TaskService = {
         return { data: null, error: new Error('User not authenticated') };
       }
 
-      // If task group is specified, get the highest position in that group
       let position = 0;
       if (taskData.taskGroupId) {
         const { data: existingTasks } = await supabase
@@ -243,16 +240,13 @@ export const TaskService = {
   subscribeToTasks(callback: (tasks: Task[]) => void): (() => void) {
     console.log("Setting up realtime subscription to tasks table");
     
-    // Create a unique channel name to avoid conflicts with multiple subscriptions
     const channelName = `tasks-channel-${Math.random().toString(36).substring(2, 9)}`;
     
-    // Create channel with reconnection capability
     const channel = supabase
       .channel(channelName, {
         config: {
           broadcast: { self: true },
           presence: { key: '' }
-          // Removed invalid retry_interval property
         }
       })
       .on('postgres_changes', 
@@ -263,7 +257,6 @@ export const TaskService = {
             payload.old && typeof payload.old === 'object' && 'id' in payload.old ? payload.old.id : 'unknown'
           }`);
           
-          // When any change happens, refresh the task list
           try {
             const result = await this.fetchTasks();
             if (result.data) {
@@ -279,7 +272,6 @@ export const TaskService = {
       .subscribe((status) => {
         console.log(`Tasks subscription status: ${status}`);
         
-        // If the subscription fails, log detailed information
         if (status === 'CHANNEL_ERROR') {
           console.error('Subscription encountered an error, will automatically retry');
         } else if (status === 'TIMED_OUT') {
@@ -291,7 +283,6 @@ export const TaskService = {
         }
       });
 
-    // Return improved unsubscribe function with logging
     return () => {
       console.log(`Removing tasks subscription for channel: ${channelName}`);
       try {

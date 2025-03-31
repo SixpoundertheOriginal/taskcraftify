@@ -1,6 +1,13 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { TaskGroup, CreateTaskGroupDTO, UpdateTaskGroupDTO, APITaskGroup, mapApiTaskGroupToTaskGroup, mapTaskGroupToApiTaskGroup } from '@/types/taskGroup';
+import { 
+  TaskGroup, 
+  CreateTaskGroupDTO, 
+  UpdateTaskGroupDTO, 
+  APITaskGroup, 
+  mapApiTaskGroupToTaskGroup, 
+  mapTaskGroupToApiTaskGroup 
+} from '@/types/taskGroup';
 import { Task, mapApiTaskToTask } from '@/types/task';
 
 interface ServiceResult<T> {
@@ -258,7 +265,7 @@ export const TaskGroupService = {
           .from('tasks')
           .update({
             position: update.position,
-            task_group_id: update.taskGroupId
+            task_group_id: update.taskGroupId || null
           })
           .eq('id', update.id)
           .eq('user_id', userId);
