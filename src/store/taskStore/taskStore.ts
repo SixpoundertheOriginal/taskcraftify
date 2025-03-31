@@ -57,6 +57,10 @@ export const useTaskStore = create<TaskStore>()(
       const statsSlice = createStatsSlice(set, get, store);
       const attachmentSlice = createAttachmentSlice(set, get, store);
       
+      // Cached categorized tasks for performance
+      let cachedCategorizedTasks: CategorizedTasks | null = null;
+      let lastTasksLength = -1;
+      
       return {
         ...taskSlice,
         ...filterSlice,
@@ -78,6 +82,9 @@ export const useTaskStore = create<TaskStore>()(
             if (!Object.values(TaskStatus).includes(taskStatus)) {
               throw new Error(`Invalid task status: ${status}`);
             }
+            
+            // Clear cache on task updates
+            cachedCategorizedTasks = null;
             
             await taskSlice.updateTask({
               id: taskId,
@@ -123,28 +130,39 @@ export const useTaskStore = create<TaskStore>()(
         },
         
         getCategorizedTasks: () => {
-          return categorizeTasks(taskSlice.tasks);
+          const tasks = taskSlice.tasks;
+          
+          // Use cached result if tasks haven't changed
+          if (cachedCategorizedTasks && lastTasksLength === tasks.length) {
+            return cachedCategorizedTasks;
+          }
+          
+          console.log("[TaskStore] Recalculating categorized tasks");
+          cachedCategorizedTasks = categorizeTasks(tasks);
+          lastTasksLength = tasks.length;
+          
+          return cachedCategorizedTasks;
         },
         
         getOverdueTasks: () => {
           console.log("[TaskStore] Getting overdue tasks, using efficient categorization");
-          return categorizeTasks(taskSlice.tasks)[TaskCategory.OVERDUE];
+          return get().getCategorizedTasks()[TaskCategory.OVERDUE];
         },
         
         getTasksDueToday: () => {
-          return categorizeTasks(taskSlice.tasks)[TaskCategory.TODAY];
+          return get().getCategorizedTasks()[TaskCategory.TODAY];
         },
         
         getTasksDueTomorrow: () => {
-          return categorizeTasks(taskSlice.tasks)[TaskCategory.TOMORROW];
+          return get().getCategorizedTasks()[TaskCategory.TOMORROW];
         },
         
         getTasksDueThisWeek: () => {
-          return categorizeTasks(taskSlice.tasks)[TaskCategory.THIS_WEEK];
+          return get().getCategorizedTasks()[TaskCategory.THIS_WEEK];
         },
         
         getHighPriorityTasks: () => {
-          return categorizeTasks(taskSlice.tasks)[TaskCategory.HIGH_PRIORITY];
+          return get().getCategorizedTasks()[TaskCategory.HIGH_PRIORITY];
         },
         
         getTasksCountByStatus: () => {

@@ -9,27 +9,32 @@ import { categorizeTasks, TaskCategory } from '@/utils/task';
 export function FocusOverview() {
   const { tasks } = useTaskStore();
 
-  // Use the more efficient categorization function
-  const categorized = useMemo(() => categorizeTasks(tasks), [tasks]);
+  // Use the more efficient categorization function with memoization
+  const categorized = useMemo(() => {
+    console.log("FocusOverview - Recalculating categorized tasks");
+    return categorizeTasks(tasks);
+  }, [tasks]);
 
-  // Debug log task counts
-  console.log("FocusOverview - Task counts:", {
-    overdue: categorized[TaskCategory.OVERDUE].length,
-    today: categorized[TaskCategory.TODAY].length,
-    tomorrow: categorized[TaskCategory.TOMORROW].length,
-    thisWeek: categorized[TaskCategory.THIS_WEEK].length,
-    highPriority: categorized[TaskCategory.HIGH_PRIORITY].length,
-    totalTasks: tasks.length
-  });
+  // Debug log task counts - move inside the memo to prevent extra logging
+  const data = useMemo(() => {
+    console.log("FocusOverview - Task counts:", {
+      overdue: categorized[TaskCategory.OVERDUE].length,
+      today: categorized[TaskCategory.TODAY].length,
+      tomorrow: categorized[TaskCategory.TOMORROW].length,
+      thisWeek: categorized[TaskCategory.THIS_WEEK].length,
+      highPriority: categorized[TaskCategory.HIGH_PRIORITY].length,
+      totalTasks: tasks.length
+    });
 
-  // Prepare data for chart
-  const data = [
-    { name: 'Overdue', value: categorized[TaskCategory.OVERDUE].length, color: '#ef4444', icon: <AlertCircle className="h-4 w-4" /> },
-    { name: 'Today', value: categorized[TaskCategory.TODAY].length, color: '#f97316', icon: <Clock className="h-4 w-4" /> },
-    { name: 'Tomorrow', value: categorized[TaskCategory.TOMORROW].length, color: '#3b82f6', icon: <Clock className="h-4 w-4" /> },
-    { name: 'This Week', value: categorized[TaskCategory.THIS_WEEK].length, color: '#8b5cf6', icon: <CalendarDays className="h-4 w-4" /> },
-    { name: 'High Priority', value: categorized[TaskCategory.HIGH_PRIORITY].length, color: '#ec4899', icon: <Flag className="h-4 w-4" /> }
-  ].filter(item => item.value > 0);
+    // Prepare data for chart
+    return [
+      { name: 'Overdue', value: categorized[TaskCategory.OVERDUE].length, color: '#ef4444', icon: <AlertCircle className="h-4 w-4" /> },
+      { name: 'Today', value: categorized[TaskCategory.TODAY].length, color: '#f97316', icon: <Clock className="h-4 w-4" /> },
+      { name: 'Tomorrow', value: categorized[TaskCategory.TOMORROW].length, color: '#3b82f6', icon: <Clock className="h-4 w-4" /> },
+      { name: 'This Week', value: categorized[TaskCategory.THIS_WEEK].length, color: '#8b5cf6', icon: <CalendarDays className="h-4 w-4" /> },
+      { name: 'High Priority', value: categorized[TaskCategory.HIGH_PRIORITY].length, color: '#ec4899', icon: <Flag className="h-4 w-4" /> }
+    ].filter(item => item.value > 0);
+  }, [categorized, tasks.length]);
 
   // If there are no tasks to display
   if (data.length === 0) {

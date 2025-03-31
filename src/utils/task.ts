@@ -94,11 +94,23 @@ export interface CategorizedTasks extends Record<string, Task[]> {
   [TaskCategory.ACTIVE]: Task[];
 }
 
+// Cache for categorizeTasks
+let lastTasksHash: string = '';
+let cachedCategorization: CategorizedTasks | null = null;
+
 /**
  * Efficiently categorize tasks in a single pass
  * Each task will only appear in the highest priority category
  */
 export const categorizeTasks = (tasks: Task[]): CategorizedTasks => {
+  // Generate a simple hash of tasks to detect changes
+  const tasksHash = JSON.stringify(tasks.map(t => `${t.id}-${t.status}-${t.dueDate}`));
+  
+  // Return cached result if tasks haven't changed
+  if (cachedCategorization && tasksHash === lastTasksHash) {
+    return cachedCategorization;
+  }
+  
   console.log(`Categorizing ${tasks.length} tasks in a single pass`);
   
   const threeDaysAgo = new Date();
@@ -167,10 +179,14 @@ export const categorizeTasks = (tasks: Task[]): CategorizedTasks => {
     // Note: task is already in ACTIVE category
   });
   
-  // Log category counts
+  // Log category counts - only log once per categorization
   Object.entries(result).forEach(([category, tasks]) => {
     console.log(`Category ${category}: ${tasks.length} tasks`);
   });
+  
+  // Save the result in cache
+  cachedCategorization = result;
+  lastTasksHash = tasksHash;
   
   return result;
 };
