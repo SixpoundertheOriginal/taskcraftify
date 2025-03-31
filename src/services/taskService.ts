@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Task, 
@@ -18,22 +17,17 @@ import {
 import { parseISO } from 'date-fns';
 import { Database } from '@/integrations/supabase/types';
 
-// Define the specific types from the database for type-safety
 type TaskPriorityDB = Database['public']['Enums']['task_priority'];
 type TaskStatusDB = Database['public']['Enums']['task_status'];
 
-// Type for Supabase task insert
 type TaskInsert = Database['public']['Tables']['tasks']['Insert'];
 type TaskUpdate = Database['public']['Tables']['tasks']['Update'];
 
-// Service result type for consistent error handling
 interface ServiceResult<T> {
   data: T | null;
   error: Error | null;
 }
 
-// Add this debug function at an appropriate location in the file:
-// For debugging purposes, let's examine how dueDate is being handled
 const debugTaskDateMapping = (apiTask: APITask, mappedTask: Task) => {
   console.log(`Task mapping debug for "${apiTask.title}" (${apiTask.id}):`);
   console.log(`  Raw due_date from API: ${apiTask.due_date} (${typeof apiTask.due_date})`);
@@ -59,6 +53,8 @@ const debugTaskDateMapping = (apiTask: APITask, mappedTask: Task) => {
 export const TaskService = {
   async fetchTasks(): Promise<ServiceResult<Task[]>> {
     try {
+      console.log("TaskService.fetchTasks(): Starting task fetch");
+      
       const { data, error } = await supabase
         .from('tasks')
         .select('*')
@@ -82,10 +78,10 @@ export const TaskService = {
         }))
       );
       
-      const mappedTasks = (data as APITask[]).map(apiTask => {
+      const mappedTasks = Array.isArray(data) ? (data as APITask[]).map(apiTask => {
         const task = mapApiTaskToTask(apiTask);
         return debugTaskDateMapping(apiTask, task);
-      });
+      }) : [];
       
       console.log(`Fetched ${mappedTasks.length} tasks`);
       
@@ -129,7 +125,6 @@ export const TaskService = {
         return { data: null, error: new Error('User not authenticated') };
       }
 
-      // Convert the task data to a properly typed insert object
       const taskInsert: TaskInsert = {
         title: taskData.title,
         description: taskData.description || null,
@@ -166,12 +161,10 @@ export const TaskService = {
 
   async updateTask(taskUpdate: UpdateTaskDTO): Promise<ServiceResult<Task>> {
     try {
-      // Create a properly typed update object
       const taskUpdateData: TaskUpdate = {
         id: taskUpdate.id
       };
       
-      // Only add properties that are defined in the update DTO
       if (taskUpdate.title !== undefined) taskUpdateData.title = taskUpdate.title;
       if (taskUpdate.description !== undefined) taskUpdateData.description = taskUpdate.description || null;
       if (taskUpdate.status !== undefined) taskUpdateData.status = taskUpdate.status as TaskStatusDB;
@@ -269,7 +262,6 @@ export const TaskService = {
       console.log('DIRECT DATABASE QUERY FOR TASK COUNTS:');
       console.log('----------------------------------------');
       
-      // Get total count of tasks
       const { count: totalCount, error: totalError } = await supabase
         .from('tasks')
         .select('*', { count: 'exact', head: true });
@@ -278,11 +270,9 @@ export const TaskService = {
         throw new Error(`Error getting total task count: ${totalError.message}`);
       }
       
-      // Fix: Type-safe access for count which is now a number
       const totalTaskCount = totalCount || 0;
       console.log(`1. Total tasks in database: ${totalTaskCount}`);
       
-      // Get count of tasks with no project
       const { count: noProjectCount, error: noProjectError } = await supabase
         .from('tasks')
         .select('*', { count: 'exact', head: true })
@@ -292,11 +282,9 @@ export const TaskService = {
         throw new Error(`Error getting no-project task count: ${noProjectError.message}`);
       }
       
-      // Fix: Type-safe access for count
       const noProjectTaskCount = noProjectCount || 0;
       console.log(`2. Tasks with no project: ${noProjectTaskCount}`);
       
-      // Get counts by project
       const { data: projectData, error: projectError } = await supabase
         .from('tasks')
         .select('project_id');
@@ -305,7 +293,6 @@ export const TaskService = {
         throw new Error(`Error getting project task counts: ${projectError.message}`);
       }
       
-      // Count tasks by project ID
       const projectCounts: Record<string, number> = {};
       projectData?.forEach(row => {
         const projectId = row.project_id || 'null';
@@ -317,7 +304,6 @@ export const TaskService = {
         console.log(`   Project "${projectId}": ${count} tasks`);
       });
       
-      // Debug: Fetch and log raw task data
       const { data: rawTasks, error: rawError } = await supabase
         .from('tasks')
         .select('id, title, project_id')
@@ -328,7 +314,6 @@ export const TaskService = {
       } else {
         console.log('4. Sample of raw task data from database:');
         rawTasks?.forEach((task, index) => {
-          // More explicit type logging
           console.log(`   Task ${index + 1}: id=${task.id}, title=${task.title}, project_id=${
             task.project_id === null ? 'null' : task.project_id
           }, type=${typeof task.project_id}, JSON=${JSON.stringify(task.project_id)}`);
@@ -418,7 +403,6 @@ export const TaskService = {
         return { data: null, error: new Error(error.message) };
       }
 
-      // Create activity log for subtask creation
       await this.createActivityLog({
         taskId: subtaskData.taskId,
         type: 'subtask_added',
@@ -463,7 +447,6 @@ export const TaskService = {
         return { data: null, error: new Error(error.message) };
       }
 
-      // Get task information for activity log
       const { data: subtaskData } = await supabase
         .from('subtasks')
         .select('task_id')
@@ -471,14 +454,12 @@ export const TaskService = {
         .single();
 
       if (subtaskData && subtaskUpdate.completed !== undefined) {
-        // Create activity log for subtask completion status change
         await this.createActivityLog({
           taskId: subtaskData.task_id,
           type: 'subtask_completed',
           description: `${subtaskUpdate.completed ? 'Completed' : 'Reopened'} subtask: ${data.title}`
         });
       } else if (subtaskData && subtaskUpdate.title !== undefined) {
-        // Create activity log for subtask edit
         await this.createActivityLog({
           taskId: subtaskData.task_id,
           type: 'subtask_edited',
@@ -507,7 +488,6 @@ export const TaskService = {
 
   async deleteSubtask(id: string): Promise<ServiceResult<void>> {
     try {
-      // Get task information for activity log
       const { data: subtaskData } = await supabase
         .from('subtasks')
         .select('task_id, title')
@@ -525,7 +505,6 @@ export const TaskService = {
       }
 
       if (subtaskData) {
-        // Create activity log for subtask deletion
         await this.createActivityLog({
           taskId: subtaskData.task_id,
           type: 'subtask_deleted',
@@ -606,7 +585,6 @@ export const TaskService = {
         return { data: null, error: new Error(error.message) };
       }
 
-      // Create activity log for comment addition
       await this.createActivityLog({
         taskId: commentData.taskId,
         type: 'comment_added',
@@ -650,7 +628,6 @@ export const TaskService = {
         return { data: null, error: new Error(error.message) };
       }
 
-      // Create activity log for comment edit
       await this.createActivityLog({
         taskId: data.task_id,
         type: 'comment_edited',
@@ -679,7 +656,6 @@ export const TaskService = {
 
   async deleteComment(id: string): Promise<ServiceResult<void>> {
     try {
-      // Get task information for activity log
       const { data: commentData } = await supabase
         .from('comments')
         .select('task_id')
@@ -697,7 +673,6 @@ export const TaskService = {
       }
 
       if (commentData) {
-        // Create activity log for comment deletion
         await this.createActivityLog({
           taskId: commentData.task_id,
           type: 'comment_deleted',

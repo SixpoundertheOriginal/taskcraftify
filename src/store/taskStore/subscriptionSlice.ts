@@ -33,6 +33,11 @@ export const createSubscriptionSlice: StateCreator<
     
     // Then set up the subscription for real-time updates
     const unsubscribe = TaskService.subscribeToTasks((tasks) => {
+      if (!Array.isArray(tasks)) {
+        console.error("Subscription received non-array tasks:", tasks);
+        return;
+      }
+      
       console.log("Task subscription updated with", tasks.length, "tasks");
       
       // Log task distribution by status

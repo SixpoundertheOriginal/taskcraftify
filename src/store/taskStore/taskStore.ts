@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { Task, TaskStatus, TaskPriority } from '@/types/task';
@@ -116,7 +117,7 @@ export const useTaskStore = create<TaskStore>()(
           
           return taskSlice.tasks.filter(task => 
             task.dueDate && 
-            isAfter(task.dueDate, today) && 
+            isAfter(task.dueDate, weekStart) && 
             isBefore(task.dueDate, weekEnd) &&
             task.status !== TaskStatus.DONE && 
             task.status !== TaskStatus.ARCHIVED
@@ -132,18 +133,15 @@ export const useTaskStore = create<TaskStore>()(
         },
         
         getTasksCountByStatus: () => {
-          const { byStatus } = statsSlice.taskCounts;
-          if (Object.keys(byStatus).length > 0) {
-            console.log("Using pre-calculated status counts:", byStatus);
-            return byStatus;
-          }
-          
           const counts: Record<string, number> = {};
+          const allStatuses = Object.values(TaskStatus);
           
-          Object.values(TaskStatus).forEach(status => {
+          // Initialize all status counts to 0
+          allStatuses.forEach(status => {
             counts[status] = 0;
           });
           
+          // Count tasks by status
           taskSlice.tasks.forEach(task => {
             counts[task.status] = (counts[task.status] || 0) + 1;
           });
@@ -152,52 +150,21 @@ export const useTaskStore = create<TaskStore>()(
         },
         
         getAverageDailyCompletionRate: () => {
-          const doneTasks = taskSlice.tasks.filter(task => task.status === TaskStatus.DONE);
+          const completedTasks = taskSlice.tasks.filter(task => task.status === TaskStatus.DONE);
+          if (completedTasks.length === 0) return 0;
           
-          if (doneTasks.length === 0) {
-            return 0;
-          }
+          const oldestCompletionDate = completedTasks.reduce((oldest, task) => {
+            const updatedAt = new Date(task.updatedAt);
+            return updatedAt < oldest ? updatedAt : oldest;
+          }, new Date());
           
-          const completionDates = doneTasks.map(task => task.updatedAt);
-          const earliestDate = new Date(Math.min(...completionDates.map(date => date.getTime())));
-          const latestDate = new Date(Math.max(...completionDates.map(date => date.getTime())));
+          const now = new Date();
+          const daysDifference = Math.max(1, Math.ceil((now.getTime() - oldestCompletionDate.getTime()) / (1000 * 60 * 60 * 24)));
           
-          const daysDiff = Math.max(
-            1, 
-            Math.ceil((latestDate.getTime() - earliestDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
-          );
-          
-          return Number((doneTasks.length / daysDiff).toFixed(1));
-        },
-        
-        refreshTaskCounts: statsSlice.refreshTaskCounts,
-        
-        setTaskStatus: async (taskId: string, status: string): Promise<void> => {
-          await taskSlice.updateTask({
-            id: taskId,
-            status: status as TaskStatus
-          });
-          
-          statsSlice.refreshTaskCounts();
-        },
-        
-        toggleSubtaskCompletion: async (subtaskId: string, completed: boolean): Promise<void> => {
-          await taskSlice.updateSubtask({
-            id: subtaskId,
-            completed
-          });
-        },
-        
-        diagnosticDatabaseQuery: async () => {
-          return {
-            taskCounts: statsSlice.taskCounts,
-            tasksByStatus: taskSlice.tasks.reduce((acc, task) => {
-              acc[task.status] = (acc[task.status] || 0) + 1;
-              return acc;
-            }, {} as Record<string, number>)
-          };
+          return completedTasks.length / daysDifference;
         }
       };
-    }
+    },
+    { name: 'task-store' }
   )
 );

@@ -69,18 +69,20 @@ export const createTaskSlice: StateCreator<
     set({ isLoading: true, error: null });
     
     try {
+      console.log("TaskSlice.fetchTasks(): Starting fetch");
       const result = await TaskService.fetchTasks();
       
       if (result.error) {
+        console.error("Error in fetchTasks:", result.error);
         throw result.error;
       }
       
-      if (!result.data) {
-        throw new Error('No task data returned');
-      }
+      // Make sure we have an array of tasks even if data is null or undefined
+      const tasks = result.data || [];
+      console.log(`TaskSlice.fetchTasks(): Received ${tasks.length} tasks`);
       
-      set({ tasks: result.data, isLoading: false });
-      return result.data;
+      set({ tasks, isLoading: false });
+      return tasks;
     } catch (error) {
       console.error('Error fetching tasks:', error);
       set({ 
