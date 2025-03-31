@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useTaskStore } from '@/store';
 import { Task, TaskStatus } from '@/types/task';
@@ -33,6 +32,7 @@ export function MyFocusView() {
     thisWeek: true,
     highPriority: true,
     recentlyAdded: true,
+    allActive: true,
   });
   
   // Toggle group expansion
@@ -98,6 +98,11 @@ export function MyFocusView() {
     return true;
   });
   
+  // Get all active tasks for fallback
+  const activeTasks = tasks.filter(task => 
+    task.status !== TaskStatus.DONE && task.status !== TaskStatus.ARCHIVED
+  );
+  
   // Debug log for each category
   console.log('MyFocusView - Categorized tasks:',
     '\nOverdue:', overdueTasks.length,
@@ -105,7 +110,8 @@ export function MyFocusView() {
     '\nTomorrow:', tomorrowTasks.length,
     '\nThis Week:', thisWeekTasks.length,
     '\nHigh Priority:', highPriorityTasks.length,
-    '\nRecently Added:', recentlyAddedTasks.length
+    '\nRecently Added:', recentlyAddedTasks.length,
+    '\nTotal Active Tasks:', activeTasks.length
   );
   
   const hasNoFocusTasks = 
@@ -116,42 +122,30 @@ export function MyFocusView() {
     highPriorityTasks.length === 0 && 
     recentlyAddedTasks.length === 0;
   
-  // Handle edge case: no tasks meet focus criteria, but we have tasks
-  if (hasNoFocusTasks && tasks.length > 0) {
-    console.log('MyFocusView - No tasks matching focus criteria but have', tasks.length, 'total tasks');
+  // Handle edge case: no tasks meet focus criteria, but we have active tasks
+  if (hasNoFocusTasks && activeTasks.length > 0) {
+    console.log('MyFocusView - No tasks matching focus criteria but have', activeTasks.length, 'active tasks');
     
-    // Check how many active tasks exist
-    const activeTasks = tasks.filter(t => 
-      t.status !== TaskStatus.DONE && t.status !== TaskStatus.ARCHIVED
-    );
-    
-    console.log('MyFocusView - Active tasks count:', activeTasks.length);
-    
-    // If we have active tasks but none are showing in focus view, show them as fallback
-    if (activeTasks.length > 0) {
-      console.log('MyFocusView - Showing all active tasks as fallback');
-      
-      return (
-        <div className="space-y-8 animate-fade-in">
-          {/* Focus Overview */}
-          <FocusOverview />
-          
-          {/* Show all active tasks */}
-          <div className="space-y-6">
-            <TaskGroup
-              title="All Active Tasks"
-              count={activeTasks.length}
-              tasks={activeTasks}
-              accentColor="bg-emerald-500"
-              icon={<Plus className="h-4 w-4 text-emerald-500" />}
-              isExpanded={true}
-              onToggle={() => {}}
-              badgeColor="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
-            />
-          </div>
+    return (
+      <div className="space-y-8 animate-fade-in">
+        {/* Focus Overview */}
+        <FocusOverview />
+        
+        {/* Show all active tasks */}
+        <div className="space-y-6">
+          <TaskGroup
+            title="All Active Tasks"
+            count={activeTasks.length}
+            tasks={activeTasks}
+            accentColor="bg-emerald-500"
+            icon={<Plus className="h-4 w-4 text-emerald-500" />}
+            isExpanded={expandedGroups.allActive}
+            onToggle={() => toggleGroup('allActive')}
+            badgeColor="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
+          />
         </div>
-      );
-    }
+      </div>
+    );
   }
   
   if (hasNoFocusTasks) {

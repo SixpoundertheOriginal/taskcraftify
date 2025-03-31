@@ -41,3 +41,28 @@ export const mapApiTaskToTask = (apiTask: APITask): Task => {
     updatedAt: new Date(apiTask.updated_at)
   };
 };
+
+/**
+ * Helper function to safely validate and convert a date value
+ */
+export const getValidDate = (dateValue: Date | string | null | undefined): Date | null => {
+  if (!dateValue) return null;
+  
+  try {
+    // If it's already a Date object, ensure it's valid
+    if (dateValue instanceof Date) {
+      return isNaN(dateValue.getTime()) ? null : dateValue;
+    }
+    
+    // If it's a string, parse it properly
+    if (typeof dateValue === 'string') {
+      const parsedDate = parseISO(dateValue);
+      return isNaN(parsedDate.getTime()) ? null : parsedDate;
+    }
+    
+    return null;
+  } catch (e) {
+    console.error('Invalid date value:', dateValue);
+    return null;
+  }
+};

@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { Task, TaskStatus, TaskPriority } from '@/types/task';
@@ -7,6 +6,7 @@ import { FilterSlice, createFilterSlice } from './filterSlice';
 import { SubscriptionSlice, createSubscriptionSlice } from './subscriptionSlice';
 import { StatsSlice, createStatsSlice } from './statsSlice';
 import { AttachmentSlice, createAttachmentSlice } from './attachmentSlice';
+import { getValidDate } from '@/utils/task';
 import { 
   isAfter, 
   isBefore, 
@@ -53,28 +53,6 @@ export const useTaskStore = create<TaskStore>()(
       const subscriptionSlice = createSubscriptionSlice(set, get, store);
       const statsSlice = createStatsSlice(set, get, store);
       const attachmentSlice = createAttachmentSlice(set, get, store);
-      
-      const getValidDate = (dateValue: Date | string | null | undefined): Date | null => {
-        if (!dateValue) return null;
-        
-        try {
-          // If it's already a Date object, use it directly
-          if (dateValue instanceof Date) {
-            return isNaN(dateValue.getTime()) ? null : dateValue;
-          }
-          
-          // If it's a string, try to parse it
-          if (typeof dateValue === 'string') {
-            const parsedDate = parseISO(dateValue);
-            return isNaN(parsedDate.getTime()) ? null : parsedDate;
-          }
-          
-          return null;
-        } catch (e) {
-          console.error('Invalid date value:', dateValue);
-          return null;
-        }
-      };
       
       return {
         ...taskSlice,
@@ -151,6 +129,7 @@ export const useTaskStore = create<TaskStore>()(
               id: task.id,
               title: task.title,
               dueDate: task.dueDate,
+              status: task.status,
               validDate: getValidDate(task.dueDate)
             }));
           console.log("[TaskStore] Tasks with due dates before filtering:", tasksWithDates);
@@ -167,13 +146,16 @@ export const useTaskStore = create<TaskStore>()(
               return false;
             }
             
-            // Debug what's happening with dates
-            console.log(`Task ${task.id} "${task.title}" due date:`, dueDate, 
-              "isPast:", isPast(dueDate), 
-              "isToday:", isToday(dueDate));
-            
             // A task is overdue if it's due date is in the past and not today
-            return isPast(dueDate) && !isToday(dueDate);
+            const isTaskOverdue = isPast(dueDate) && !isToday(dueDate);
+            
+            // Debug what's happening with dates for this task
+            console.log(`Task "${task.title}" due date: ${dueDate.toISOString()}, 
+              isPast: ${isPast(dueDate)}, 
+              isToday: ${isToday(dueDate)},
+              isOverdue: ${isTaskOverdue}`);
+            
+            return isTaskOverdue;
           });
         },
         
@@ -185,6 +167,7 @@ export const useTaskStore = create<TaskStore>()(
               id: task.id,
               title: task.title,
               dueDate: task.dueDate,
+              status: task.status,
               isToday: task.dueDate ? isToday(getValidDate(task.dueDate) || new Date()) : false
             }));
           console.log("[TaskStore] Tasks with dates for Today check:", tasksWithDates);
@@ -202,12 +185,11 @@ export const useTaskStore = create<TaskStore>()(
             }
             
             // Debug date check
-            console.log(`Task ${task.id} "${task.title}" due today check:`, 
-              "dueDate:", dueDate, 
-              "isToday:", isToday(dueDate));
+            const isDueToday = isToday(dueDate);
+            console.log(`Task "${task.title}" due today check: ${dueDate.toISOString()}, isToday: ${isDueToday}`);
             
             // A task is due today if its due date is today
-            return isToday(dueDate);
+            return isDueToday;
           });
         },
         
@@ -219,6 +201,7 @@ export const useTaskStore = create<TaskStore>()(
               id: task.id,
               title: task.title,
               dueDate: task.dueDate,
+              status: task.status,
               isTomorrow: task.dueDate ? isTomorrow(getValidDate(task.dueDate) || new Date()) : false
             }));
           console.log("[TaskStore] Tasks with dates for Tomorrow check:", tasksWithDates);
@@ -236,12 +219,11 @@ export const useTaskStore = create<TaskStore>()(
             }
             
             // Debug date check
-            console.log(`Task ${task.id} "${task.title}" due tomorrow check:`, 
-              "dueDate:", dueDate, 
-              "isTomorrow:", isTomorrow(dueDate));
+            const isDueTomorrow = isTomorrow(dueDate);
+            console.log(`Task "${task.title}" due tomorrow check: ${dueDate.toISOString()}, isTomorrow: ${isDueTomorrow}`);
             
             // A task is due tomorrow if its due date is tomorrow
-            return isTomorrow(dueDate);
+            return isDueTomorrow;
           });
         },
         
@@ -253,6 +235,7 @@ export const useTaskStore = create<TaskStore>()(
               id: task.id,
               title: task.title,
               dueDate: task.dueDate,
+              status: task.status,
               isThisWeek: task.dueDate ? isThisWeek(getValidDate(task.dueDate) || new Date()) : false,
               isToday: task.dueDate ? isToday(getValidDate(task.dueDate) || new Date()) : false,
               isTomorrow: task.dueDate ? isTomorrow(getValidDate(task.dueDate) || new Date()) : false
@@ -272,14 +255,18 @@ export const useTaskStore = create<TaskStore>()(
             }
             
             // Debug date check
-            console.log(`Task ${task.id} "${task.title}" due this week check:`, 
-              "dueDate:", dueDate, 
-              "isThisWeek:", isThisWeek(dueDate),
-              "isToday:", isToday(dueDate),
-              "isTomorrow:", isTomorrow(dueDate));
+            const isDueThisWeek = isThisWeek(dueDate);
+            const isDueToday = isToday(dueDate);
+            const isDueTomorrow = isTomorrow(dueDate);
+            
+            console.log(`Task "${task.title}" due this week check: ${dueDate.toISOString()}, 
+              isThisWeek: ${isDueThisWeek},
+              isToday: ${isDueToday},
+              isTomorrow: ${isDueTomorrow},
+              inThisWeekCategory: ${isDueThisWeek && !isDueToday && !isDueTomorrow}`);
             
             // A task is due this week if it's due date is this week, but not today or tomorrow
-            return isThisWeek(dueDate) && !isToday(dueDate) && !isTomorrow(dueDate);
+            return isDueThisWeek && !isDueToday && !isDueTomorrow;
           });
         },
         
@@ -304,9 +291,11 @@ export const useTaskStore = create<TaskStore>()(
               return false;
             }
             
-            // High priority tasks with no due date
-            if (!task.dueDate) {
-              return task.priority === TaskPriority.HIGH || task.priority === TaskPriority.URGENT;
+            // Check if it's high priority
+            const isHighPriority = task.priority === TaskPriority.HIGH || task.priority === TaskPriority.URGENT;
+            
+            if (!isHighPriority) {
+              return false;
             }
             
             // Skip tasks that are already covered by date-based filters
@@ -315,12 +304,13 @@ export const useTaskStore = create<TaskStore>()(
               // If the task is already in one of the date-based categories, skip it
               if (isPast(dueDate) || isToday(dueDate) || isTomorrow(dueDate) || 
                   (isThisWeek(dueDate) && !isToday(dueDate) && !isTomorrow(dueDate))) {
+                console.log(`High priority task "${task.title}" already categorized by date: ${dueDate.toISOString()}`);
                 return false;
               }
             }
             
-            // Include task if it's high priority
-            return task.priority === TaskPriority.HIGH || task.priority === TaskPriority.URGENT;
+            console.log(`Including high priority task "${task.title}" in High Priority category`);
+            return true;
           });
         },
         
