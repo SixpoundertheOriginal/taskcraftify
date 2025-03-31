@@ -53,6 +53,32 @@ export const useTaskStore = create<TaskStore>()(
           return filterSlice.getFilteredTasks();
         },
         
+        refreshTaskCounts: statsSlice.refreshTaskCounts,
+        
+        setTaskStatus: async (taskId: string, status: string): Promise<void> => {
+          try {
+            await taskSlice.updateTask({
+              id: taskId,
+              status: status
+            });
+          } catch (error) {
+            console.error("Error setting task status:", error);
+            throw error;
+          }
+        },
+        
+        toggleSubtaskCompletion: async (subtaskId: string, completed: boolean): Promise<void> => {
+          try {
+            await taskSlice.updateSubtask({
+              id: subtaskId,
+              completed
+            });
+          } catch (error) {
+            console.error("Error toggling subtask completion:", error);
+            throw error;
+          }
+        },
+        
         fetchTask: async (taskId: string): Promise<Task | undefined> => {
           try {
             const existingTask = get().tasks.find(t => t.id === taskId);
