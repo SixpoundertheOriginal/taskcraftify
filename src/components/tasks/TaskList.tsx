@@ -8,7 +8,7 @@ import { CheckCircle, Loader2, Filter, FilterX } from 'lucide-react';
 import { ActiveFiltersDisplay } from './ActiveFiltersDisplay';
 import { FilterSidebar } from './FilterSidebar';
 import { TaskStatus } from '@/types/task';
-// Remove MyFocusView import
+import { MyFocusView } from './MyFocusView';
 import {
   SidebarProvider,
   SidebarInset,
@@ -35,8 +35,7 @@ export function TaskList() {
   } = useTaskStore();
   
   const [searchQuery, setSearchQuery] = useState('');
-  // Change default tab from 'focus' to 'all'
-  const [activeTab, setActiveTab] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<string>('active');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   
@@ -78,6 +77,14 @@ export function TaskList() {
   }, [fetchTasks, setupTaskSubscription, refreshTaskCounts, isInitialized]);
   
   useEffect(() => {
+    if (activeTab === 'active' && Object.keys(filters).length === 0) {
+      setFilters({ 
+        status: [TaskStatus.TODO, TaskStatus.IN_PROGRESS] 
+      });
+    }
+  }, []);
+  
+  useEffect(() => {
     if (filters.searchQuery) {
       setSearchQuery(filters.searchQuery);
     }
@@ -87,7 +94,6 @@ export function TaskList() {
     console.log("TaskList: Tab changed to", tab);
     setActiveTab(tab);
     
-    // Important: Create a new filters object to ensure the change is detected
     const newFilters = { ...filters };
     
     if (tab === 'all') {
@@ -101,8 +107,8 @@ export function TaskList() {
       setFilters(newFilters);
     } else if (tab === 'archived') {
       newFilters.status = [TaskStatus.ARCHIVED];
+      setFilters(newFilters);
     }
-    // Remove the 'focus' case
   }, [filters, setFilters]);
   
   const clearStatusFilter = useCallback(() => {
@@ -135,12 +141,9 @@ export function TaskList() {
   const clearAllFilters = useCallback(() => {
     setFilters({});
     setSearchQuery('');
-    // Change from 'focus' to 'all'
     setActiveTab('all');
   }, [setFilters]);
   
-  // Determine if we should show the loading indicator or error state
-  // Remove 'focus' check
   const showLoading = isLoading && tasks.length === 0;
   const showError = error;
   
@@ -233,11 +236,10 @@ export function TaskList() {
                 onClearAllFilters={clearAllFilters}
               />
               
-              <Tabs defaultValue="all" value={activeTab} onValueChange={handleTabChange} className="w-full">
+              <Tabs defaultValue="active" value={activeTab} onValueChange={handleTabChange} className="w-full">
                 <TabsList className="w-full mb-6 bg-muted/50 backdrop-blur-sm">
-                  {/* Remove the Focus tab */}
-                  <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
                   <TabsTrigger value="active" className="flex-1">Active</TabsTrigger>
+                  <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
                   <TabsTrigger value="completed" className="flex-1">Completed</TabsTrigger>
                   <TabsTrigger value="archived" className="flex-1">Archived</TabsTrigger>
                 </TabsList>
@@ -247,26 +249,6 @@ export function TaskList() {
                     <Loader2 className="h-5 w-5 animate-spin text-primary" />
                   </div>
                 )}
-                
-                {/* Remove Focus tab content */}
-                
-                <TabsContent value="all" className="mt-0">
-                  {filteredTasks.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-4">
-                      {filteredTasks.map(task => (
-                        <TaskCard key={task.id} task={task} />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-60 text-center">
-                      <CheckCircle className="h-12 w-12 text-muted-foreground/30 mb-4" />
-                      <h3 className="text-lg font-medium">No tasks found</h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {Object.keys(filters).length > 0 ? 'Try different filters' : 'Create your first task to get started'}
-                      </p>
-                    </div>
-                  )}
-                </TabsContent>
                 
                 <TabsContent value="active" className="mt-0">
                   {filteredTasks.length > 0 ? (
@@ -281,6 +263,24 @@ export function TaskList() {
                       <h3 className="text-lg font-medium">No active tasks</h3>
                       <p className="text-sm text-muted-foreground mt-1">
                         {Object.keys(filters).length > 0 ? 'Try different filters' : 'All your tasks are completed or archived'}
+                      </p>
+                    </div>
+                  )}
+                </TabsContent>
+                
+                <TabsContent value="all" className="mt-0">
+                  {filteredTasks.length > 0 ? (
+                    <div className="grid grid-cols-1 gap-4">
+                      {filteredTasks.map(task => (
+                        <TaskCard key={task.id} task={task} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-60 text-center">
+                      <CheckCircle className="h-12 w-12 text-muted-foreground/30 mb-4" />
+                      <h3 className="text-lg font-medium">No tasks found</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {Object.keys(filters).length > 0 ? 'Try different filters' : 'Create your first task to get started'}
                       </p>
                     </div>
                   )}

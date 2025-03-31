@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { CheckCircle, Loader2, ChevronLeft, ChevronRight, Filter, FilterX } from 'lucide-react';
 import { useTaskStore } from '@/store';
@@ -267,8 +266,8 @@ export function KanbanBoard() {
               
               <Tabs defaultValue="kanban" value={activeTab} onValueChange={handleTabChange} className="w-full">
                 <TabsList className="w-full mb-6 bg-muted/50 backdrop-blur-sm">
-                  <TabsTrigger value="focus" className="flex-1">My Focus</TabsTrigger>
                   <TabsTrigger value="kanban" className="flex-1">Kanban</TabsTrigger>
+                  <TabsTrigger value="focus" className="flex-1">My Focus</TabsTrigger>
                 </TabsList>
                 
                 {/* My Focus Tab */}
