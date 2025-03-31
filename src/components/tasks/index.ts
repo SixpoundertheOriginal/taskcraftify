@@ -9,3 +9,4 @@ export { FloatingActionButton } from './FloatingActionButton';
 export { MyFocusView } from './MyFocusView';
 export { TaskFormContent } from './TaskFormContent';
 export { TaskGroup } from './TaskGroup';
+export { TaskView } from './TaskView';

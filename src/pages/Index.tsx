@@ -1,5 +1,6 @@
+
 import { useState } from 'react';
-import { TaskList, KanbanBoard, ViewToggle, FloatingActionButton } from '@/components/tasks';
+import { TaskView, KanbanBoard, ViewToggle, FloatingActionButton } from '@/components/tasks';
 import { CalendarView } from '@/components/calendar';
 import { IntegrationsSettings } from '@/components/settings';
 import { ViewMode } from '@/components/tasks/ViewToggle';
@@ -28,7 +29,6 @@ import { useAuth } from '@/auth/AuthContext';
 import { Link } from 'react-router-dom';
 
 export default function Index() {
-  const [activeView, setActiveView] = useState<ViewMode>('list');
   const [activeTab, setActiveTab] = useState<string>('tasks');
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const { user } = useAuth();
@@ -158,10 +158,6 @@ export default function Index() {
                       <span className="hidden sm:inline">Integrations</span>
                     </TabsTrigger>
                   </TabsList>
-                  
-                  {activeTab === 'tasks' && (
-                    <ViewToggle activeView={activeView} onViewChange={setActiveView} />
-                  )}
                 </div>
               </div>
               
@@ -170,11 +166,7 @@ export default function Index() {
               )}
               
               <TabsContent value="tasks" className="mt-0">
-                {activeView === 'list' ? (
-                  <TaskList />
-                ) : (
-                  <KanbanBoard />
-                )}
+                <TaskView />
               </TabsContent>
               
               <TabsContent value="calendar" className="mt-0">
