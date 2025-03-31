@@ -82,8 +82,9 @@ export enum TaskCategory {
 
 /**
  * Structure for categorized tasks result
+ * Extending Record<string, Task[]> to make it compatible with string indexing
  */
-export interface CategorizedTasks {
+export interface CategorizedTasks extends Record<string, Task[]> {
   [TaskCategory.OVERDUE]: Task[];
   [TaskCategory.TODAY]: Task[];
   [TaskCategory.TOMORROW]: Task[];

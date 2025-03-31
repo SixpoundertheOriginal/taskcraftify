@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { Task, TaskStatus, TaskPriority } from '@/types/task';
@@ -6,7 +7,7 @@ import { FilterSlice, createFilterSlice } from './filterSlice';
 import { SubscriptionSlice, createSubscriptionSlice } from './subscriptionSlice';
 import { StatsSlice, createStatsSlice } from './statsSlice';
 import { AttachmentSlice, createAttachmentSlice } from './attachmentSlice';
-import { getValidDate, categorizeTasks, TaskCategory } from '@/utils/task';
+import { getValidDate, categorizeTasks, TaskCategory, CategorizedTasks } from '@/utils/task';
 import { 
   isAfter, 
   isBefore, 
@@ -31,7 +32,7 @@ export type TaskStore = TaskSlice & FilterSlice & SubscriptionSlice & StatsSlice
   toggleSubtaskCompletion: (subtaskId: string, completed: boolean) => Promise<void>;
   diagnosticDatabaseQuery?: () => Promise<any>;
   
-  getCategorizedTasks: () => Record<string, Task[]>;
+  getCategorizedTasks: () => CategorizedTasks;
   
   getOverdueTasks: () => Task[];
   getTasksDueToday: () => Task[];
