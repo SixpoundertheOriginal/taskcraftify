@@ -57,9 +57,17 @@ export const useTaskStore = create<TaskStore>()(
         
         setTaskStatus: async (taskId: string, status: string): Promise<void> => {
           try {
+            // Convert string status to TaskStatus enum value to match the type requirements
+            const taskStatus = status as TaskStatus;
+            
+            // Validate that the status is a valid TaskStatus value
+            if (!Object.values(TaskStatus).includes(taskStatus)) {
+              throw new Error(`Invalid task status: ${status}`);
+            }
+            
             await taskSlice.updateTask({
               id: taskId,
-              status: status
+              status: taskStatus
             });
           } catch (error) {
             console.error("Error setting task status:", error);
