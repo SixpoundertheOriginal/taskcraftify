@@ -6,7 +6,20 @@ import { FilterSlice, createFilterSlice } from './filterSlice';
 import { SubscriptionSlice, createSubscriptionSlice } from './subscriptionSlice';
 import { StatsSlice, createStatsSlice } from './statsSlice';
 import { AttachmentSlice, createAttachmentSlice } from './attachmentSlice';
-import { isAfter, isBefore, startOfTomorrow, endOfTomorrow, startOfToday, endOfToday, startOfWeek, endOfWeek, addDays } from 'date-fns';
+import { 
+  isAfter, 
+  isBefore, 
+  startOfTomorrow, 
+  endOfTomorrow, 
+  startOfToday, 
+  endOfToday, 
+  startOfWeek, 
+  endOfWeek, 
+  addDays,
+  isToday,
+  isTomorrow,
+  isThisWeek
+} from 'date-fns';
 
 export type TaskStore = TaskSlice & FilterSlice & SubscriptionSlice & StatsSlice & AttachmentSlice & {
   filteredTasks: Task[];
@@ -15,18 +28,15 @@ export type TaskStore = TaskSlice & FilterSlice & SubscriptionSlice & StatsSlice
   toggleSubtaskCompletion: (subtaskId: string, completed: boolean) => Promise<void>;
   diagnosticDatabaseQuery?: () => Promise<any>;
   
-  // Date-based task retrieval methods
   getOverdueTasks: () => Task[];
   getTasksDueToday: () => Task[];
   getTasksDueTomorrow: () => Task[];
   getTasksDueThisWeek: () => Task[];
   getHighPriorityTasks: () => Task[];
   
-  // Stats methods
   getTasksCountByStatus: () => Record<string, number>;
   getAverageDailyCompletionRate: () => number;
   
-  // Single task retrieval
   fetchTask: (taskId: string) => Promise<Task | undefined>;
 };
 
@@ -41,7 +51,6 @@ export const useTaskStore = create<TaskStore>()(
       const statsSlice = createStatsSlice(set, get, store);
       const attachmentSlice = createAttachmentSlice(set, get, store);
       
-      // Helper function to safely handle date comparisons
       const getValidDate = (dateValue: Date | string | null | undefined): Date | null => {
         if (!dateValue) return null;
         
