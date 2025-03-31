@@ -49,6 +49,7 @@ export const useTaskStore = create<TaskStore>()(
         ...attachmentSlice,
         
         get filteredTasks() {
+          console.log("[TaskStore] Computing filteredTasks, tasks count:", taskSlice.tasks.length);
           return filterSlice.getFilteredTasks();
         },
         
@@ -56,10 +57,8 @@ export const useTaskStore = create<TaskStore>()(
         
         setTaskStatus: async (taskId: string, status: string): Promise<void> => {
           try {
-            // Convert string status to TaskStatus enum value to match the type requirements
             const taskStatus = status as TaskStatus;
             
-            // Validate that the status is a valid TaskStatus value
             if (!Object.values(TaskStatus).includes(taskStatus)) {
               throw new Error(`Invalid task status: ${status}`);
             }
@@ -69,7 +68,7 @@ export const useTaskStore = create<TaskStore>()(
               status: taskStatus
             });
           } catch (error) {
-            console.error("Error setting task status:", error);
+            console.error("[TaskStore] Error setting task status:", error);
             throw error;
           }
         },
@@ -108,6 +107,7 @@ export const useTaskStore = create<TaskStore>()(
         },
         
         getOverdueTasks: () => {
+          console.log("[TaskStore] Getting overdue tasks, total tasks:", taskSlice.tasks.length);
           const now = new Date();
           return taskSlice.tasks.filter(task => 
             task.dueDate && 
@@ -169,12 +169,10 @@ export const useTaskStore = create<TaskStore>()(
           const counts: Record<string, number> = {};
           const allStatuses = Object.values(TaskStatus);
           
-          // Initialize all status counts to 0
           allStatuses.forEach(status => {
             counts[status] = 0;
           });
           
-          // Count tasks by status
           taskSlice.tasks.forEach(task => {
             counts[task.status] = (counts[task.status] || 0) + 1;
           });
