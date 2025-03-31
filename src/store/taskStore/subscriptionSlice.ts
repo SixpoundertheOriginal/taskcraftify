@@ -110,8 +110,14 @@ export const createSubscriptionSlice: StateCreator<
               
               if (tasksChanged) {
                 console.log("[SubscriptionSlice] Tasks have changed, updating store");
+                // Save current filters
+                const currentFilters = get().filters;
+                
                 // Update the tasks in the store
                 set({ tasks });
+                
+                // Reapply saved filters to ensure filtered views are correctly updated
+                set({ filters: { ...currentFilters } });
                 
                 // Force a refresh of task counts
                 const refreshTaskCounts = get().refreshTaskCounts;

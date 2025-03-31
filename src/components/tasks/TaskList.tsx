@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTaskStore } from '@/store';
 import { TaskCard } from './TaskCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -30,7 +31,8 @@ export function TaskList() {
     isLoading, 
     error, 
     setupTaskSubscription,
-    refreshTaskCounts
+    refreshTaskCounts,
+    isInitialLoadComplete
   } = useTaskStore();
   
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,17 +40,18 @@ export function TaskList() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   
-  const allTags = Array.from(new Set(tasks.flatMap(task => task.tags || []))).sort();
+  const allTags = useMemo(() => {
+    return Array.from(new Set(tasks.flatMap(task => task.tags || []))).sort();
+  }, [tasks]);
   
-  console.log("TaskList render - Total tasks:", tasks.length);
+  console.log("TaskList render - Total tasks:", tasks.length, "isLoading:", isLoading, "isInitialLoadComplete:", isInitialLoadComplete);
   
-  const filteredTasks = useCallback(() => {
+  const filteredTasks = useMemo(() => {
     console.log("Computing filtered tasks with filters:", filters);
     return getFilteredTasks();
   }, [getFilteredTasks, filters, tasks.length]);
   
-  const currentFilteredTasks = filteredTasks();
-  console.log("TaskList render - Filtered tasks:", currentFilteredTasks.length);
+  console.log("TaskList render - Filtered tasks:", filteredTasks.length);
   
   useEffect(() => {
     if (isInitialized) {
@@ -84,17 +87,21 @@ export function TaskList() {
     console.log("TaskList: Tab changed to", tab);
     setActiveTab(tab);
     
+    // Important: Create a new filters object to ensure the change is detected
+    const newFilters = { ...filters };
+    
     if (tab === 'all') {
-      setFilters({ ...filters, status: undefined });
+      delete newFilters.status;
+      setFilters(newFilters);
     } else if (tab === 'active') {
-      setFilters({ 
-        ...filters, 
-        status: [TaskStatus.TODO, TaskStatus.IN_PROGRESS] 
-      });
+      newFilters.status = [TaskStatus.TODO, TaskStatus.IN_PROGRESS];
+      setFilters(newFilters);
     } else if (tab === 'completed') {
-      setFilters({ ...filters, status: [TaskStatus.DONE] });
+      newFilters.status = [TaskStatus.DONE];
+      setFilters(newFilters);
     } else if (tab === 'archived') {
-      setFilters({ ...filters, status: [TaskStatus.ARCHIVED] });
+      newFilters.status = [TaskStatus.ARCHIVED];
+      setFilters(newFilters);
     } else if (tab === 'focus') {
       setFilters({});
     }
@@ -133,7 +140,11 @@ export function TaskList() {
     setActiveTab('focus');
   }, [setFilters]);
   
-  if (error && activeTab !== 'focus') {
+  // Determine if we should show the loading indicator or error state
+  const showLoading = isLoading && tasks.length === 0 && activeTab !== 'focus';
+  const showError = error && activeTab !== 'focus';
+  
+  if (showError) {
     return (
       <Alert variant="destructive" className="mb-6">
         <AlertTitle>Error loading tasks</AlertTitle>
@@ -144,7 +155,7 @@ export function TaskList() {
     );
   }
   
-  if (isLoading && tasks.length === 0 && activeTab !== 'focus') {
+  if (showLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-60">
         <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
@@ -242,9 +253,9 @@ export function TaskList() {
                 </TabsContent>
                 
                 <TabsContent value="all" className="mt-0">
-                  {currentFilteredTasks.length > 0 ? (
+                  {filteredTasks.length > 0 ? (
                     <div className="grid grid-cols-1 gap-4">
-                      {currentFilteredTasks.map(task => (
+                      {filteredTasks.map(task => (
                         <TaskCard key={task.id} task={task} />
                       ))}
                     </div>
@@ -260,9 +271,9 @@ export function TaskList() {
                 </TabsContent>
                 
                 <TabsContent value="active" className="mt-0">
-                  {currentFilteredTasks.length > 0 ? (
+                  {filteredTasks.length > 0 ? (
                     <div className="grid grid-cols-1 gap-4">
-                      {currentFilteredTasks.map(task => (
+                      {filteredTasks.map(task => (
                         <TaskCard key={task.id} task={task} />
                       ))}
                     </div>
@@ -278,9 +289,9 @@ export function TaskList() {
                 </TabsContent>
                 
                 <TabsContent value="completed" className="mt-0">
-                  {currentFilteredTasks.length > 0 ? (
+                  {filteredTasks.length > 0 ? (
                     <div className="grid grid-cols-1 gap-4">
-                      {currentFilteredTasks.map(task => (
+                      {filteredTasks.map(task => (
                         <TaskCard key={task.id} task={task} />
                       ))}
                     </div>
@@ -296,9 +307,9 @@ export function TaskList() {
                 </TabsContent>
                 
                 <TabsContent value="archived" className="mt-0">
-                  {currentFilteredTasks.length > 0 ? (
+                  {filteredTasks.length > 0 ? (
                     <div className="grid grid-cols-1 gap-4">
-                      {currentFilteredTasks.map(task => (
+                      {filteredTasks.map(task => (
                         <TaskCard key={task.id} task={task} />
                       ))}
                     </div>

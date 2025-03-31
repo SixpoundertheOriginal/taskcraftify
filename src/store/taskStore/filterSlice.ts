@@ -15,10 +15,12 @@ export const createFilterSlice: StateCreator<TaskStore, [], [], FilterSlice> = (
   filters: {},
   
   setFilters: (filters: TaskFilters) => {
+    console.log("[FilterSlice] Setting filters:", filters);
     set({ filters });
   },
   
   clearFilters: () => {
+    console.log("[FilterSlice] Clearing all filters");
     set({ filters: {} });
   },
   
@@ -29,7 +31,7 @@ export const createFilterSlice: StateCreator<TaskStore, [], [], FilterSlice> = (
     console.log(`Filtering ${tasks.length} tasks with filters:`, filters);
     
     // If there are no filters, return all tasks
-    if (Object.keys(filters).length === 0) {
+    if (!filters || Object.keys(filters).length === 0) {
       console.log('No filters applied, returning all tasks');
       return tasks;
     }
