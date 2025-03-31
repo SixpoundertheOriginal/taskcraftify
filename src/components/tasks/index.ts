@@ -8,3 +8,4 @@ export { ViewToggle } from './ViewToggle';
 export { FloatingActionButton } from './FloatingActionButton';
 export { MyFocusView } from './MyFocusView';
 export { TaskFormContent } from './TaskFormContent';
+export { TaskGroup } from './TaskGroup';

@@ -65,12 +65,62 @@ export function ProjectSelector({
     }
   }, [storeSelectedProjectId, filters, setFilters, externalSelectedProjectId]);
   
-  // Explicitly stop click propagation to prevent parent elements from handling clicks
-  const handleCommandItemClick = (e: React.MouseEvent, projectId: string | null) => {
-    e.preventDefault();
-    e.stopPropagation();
-    handleSelect(projectId);
-  };
+  // Create a task item component for improved clickability
+  const ProjectItem = ({ 
+    id, 
+    name, 
+    color, 
+    description, 
+    isSelected 
+  }: { 
+    id: string | null; 
+    name: string; 
+    color?: string; 
+    description?: string; 
+    isSelected: boolean;
+  }) => (
+    <div 
+      className="flex items-center gap-2 w-full px-2 py-1.5 cursor-pointer hover:bg-accent rounded-sm"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation(); 
+        console.log(`Clicking project: ${id}, ${name}`);
+        handleSelect(id);
+      }}
+    >
+      {color ? (
+        <div 
+          className="w-3 h-3 rounded-full flex-shrink-0 transition-transform hover:scale-110" 
+          style={{ backgroundColor: color }}
+        />
+      ) : id === 'none' ? (
+        <div className="w-3 h-3 rounded-full flex-shrink-0 bg-gray-300" />
+      ) : (
+        <Layers className="w-4 h-4 opacity-70 flex-shrink-0" />
+      )}
+      
+      <span className="truncate">{name}</span>
+      
+      {description && (
+        <Badge variant="secondary" className="ml-auto text-[10px] px-1 py-0 flex-shrink-0">
+          {description.length > 15 
+            ? description.slice(0, 15) + '...' 
+            : description
+          }
+        </Badge>
+      )}
+      
+      {isSelected && (
+        <motion.div
+          initial={{ scale: 0.5, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="ml-auto flex-shrink-0"
+        >
+          <Check className="h-4 w-4" />
+        </motion.div>
+      )}
+    </div>
+  );
   
   return (
     <>
@@ -87,6 +137,7 @@ export function ProjectSelector({
             )}
             onClick={(e) => {
               e.preventDefault();
+              e.stopPropagation();
               setOpen(!open);
             }}
           >
@@ -142,25 +193,21 @@ export function ProjectSelector({
               </CommandEmpty>
               
               <CommandGroup>
-                <CommandItem 
-                  onSelect={() => null} // Prevent default behavior
-                  className="flex items-center gap-2 cursor-pointer"
-                  onClick={(e) => handleCommandItemClick(e, null)}
-                >
-                  <Layers className="w-4 h-4 opacity-70" />
-                  <span>All Projects</span>
-                  {!effectiveProjectId && <Check className="ml-auto h-4 w-4" />}
-                </CommandItem>
+                <div className="px-1">
+                  <ProjectItem 
+                    id={null} 
+                    name="All Projects" 
+                    isSelected={!effectiveProjectId} 
+                  />
+                </div>
                 
-                <CommandItem 
-                  onSelect={() => null} // Prevent default behavior
-                  className="flex items-center gap-2 cursor-pointer"
-                  onClick={(e) => handleCommandItemClick(e, 'none')}
-                >
-                  <div className="w-3 h-3 rounded-full bg-gray-300" />
-                  <span>No Project</span>
-                  {effectiveProjectId === 'none' && <Check className="ml-auto h-4 w-4" />}
-                </CommandItem>
+                <div className="px-1">
+                  <ProjectItem 
+                    id="none" 
+                    name="No Project" 
+                    isSelected={effectiveProjectId === 'none'} 
+                  />
+                </div>
               </CommandGroup>
               
               {favoriteProjects.length > 0 && (
@@ -177,19 +224,15 @@ export function ProjectSelector({
                       if (!project) return null;
                       
                       return (
-                        <CommandItem
-                          key={project.id}
-                          onSelect={() => null} // Prevent default behavior
-                          className="flex items-center gap-2 cursor-pointer"
-                          onClick={(e) => handleCommandItemClick(e, project.id)}
-                        >
-                          <div 
-                            className="w-3 h-3 rounded-full" 
-                            style={{ backgroundColor: project.color }}
+                        <div key={project.id} className="px-1">
+                          <ProjectItem
+                            id={project.id}
+                            name={project.name}
+                            color={project.color}
+                            description={project.description}
+                            isSelected={effectiveProjectId === project.id}
                           />
-                          <span className="truncate">{project.name}</span>
-                          {effectiveProjectId === project.id && <Check className="ml-auto h-4 w-4" />}
-                        </CommandItem>
+                        </div>
                       );
                     })}
                   </CommandGroup>
@@ -210,19 +253,15 @@ export function ProjectSelector({
                       if (!project) return null;
                       
                       return (
-                        <CommandItem
-                          key={project.id}
-                          onSelect={() => null} // Prevent default behavior
-                          className="flex items-center gap-2 cursor-pointer"
-                          onClick={(e) => handleCommandItemClick(e, project.id)}
-                        >
-                          <div 
-                            className="w-3 h-3 rounded-full" 
-                            style={{ backgroundColor: project.color }}
+                        <div key={project.id} className="px-1">
+                          <ProjectItem
+                            id={project.id}
+                            name={project.name}
+                            color={project.color}
+                            description={project.description}
+                            isSelected={effectiveProjectId === project.id}
                           />
-                          <span className="truncate">{project.name}</span>
-                          {effectiveProjectId === project.id && <Check className="ml-auto h-4 w-4" />}
-                        </CommandItem>
+                        </div>
                       );
                     })}
                   </CommandGroup>
@@ -234,35 +273,15 @@ export function ProjectSelector({
                   <CommandSeparator />
                   <CommandGroup heading="All Projects">
                     {projects.map((project) => (
-                      <CommandItem
-                        key={project.id}
-                        onSelect={() => null} // Prevent default behavior
-                        className="flex items-center gap-2 group cursor-pointer"
-                        onClick={(e) => handleCommandItemClick(e, project.id)}
-                      >
-                        <div 
-                          className="w-3 h-3 rounded-full transition-transform group-hover:scale-110" 
-                          style={{ backgroundColor: project.color }}
+                      <div key={project.id} className="px-1">
+                        <ProjectItem
+                          id={project.id}
+                          name={project.name}
+                          color={project.color}
+                          description={project.description}
+                          isSelected={effectiveProjectId === project.id}
                         />
-                        <span className="truncate">{project.name}</span>
-                        {project.description && (
-                          <Badge variant="secondary" className="ml-auto text-[10px] px-1 py-0">
-                            {project.description.length > 15 
-                              ? project.description.slice(0, 15) + '...' 
-                              : project.description
-                            }
-                          </Badge>
-                        )}
-                        {effectiveProjectId === project.id && (
-                          <motion.div
-                            initial={{ scale: 0.5, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            className="ml-auto"
-                          >
-                            <Check className="h-4 w-4" />
-                          </motion.div>
-                        )}
-                      </CommandItem>
+                      </div>
                     ))}
                   </CommandGroup>
                 </>
@@ -270,9 +289,8 @@ export function ProjectSelector({
               
               <CommandSeparator />
               <CommandGroup>
-                <CommandItem
-                  onSelect={() => null} // Prevent default behavior
-                  className="flex items-center gap-2 text-primary cursor-pointer"
+                <div 
+                  className="flex items-center gap-2 text-primary cursor-pointer w-full px-2 py-1.5 hover:bg-accent rounded-sm"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -282,7 +300,7 @@ export function ProjectSelector({
                 >
                   <FolderPlus className="w-4 h-4" />
                   <span>Create New Project</span>
-                </CommandItem>
+                </div>
               </CommandGroup>
             </CommandList>
           </Command>
