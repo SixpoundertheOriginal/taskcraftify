@@ -1,17 +1,19 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, User, AlertCircle } from 'lucide-react';
+import { Plus, User, AlertCircle, Bug } from 'lucide-react';
 import { TaskForm } from '@/components/tasks';
 import { ThemeToggle } from './ThemeToggle';
 import { useAuth } from '@/auth/AuthContext';
 import { UserMenu } from './Header/UserMenu';
 import { useTaskStore } from '@/store';
 import { Alert } from '@/components/ui/alert';
+import { DebugTaskList } from './debug/DebugTaskList';
 
 export function Header() {
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [showDebug, setShowDebug] = useState(false);
   const { user } = useAuth();
   const { 
     tasks, 
@@ -73,6 +75,14 @@ export function Header() {
         </div>
         
         <div className="ml-auto flex items-center gap-2">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setShowDebug(!showDebug)}
+            className={showDebug ? "bg-yellow-100 text-yellow-800" : ""}
+          >
+            <Bug className="h-4 w-4" />
+          </Button>
           <ThemeToggle />
           <Button onClick={() => setIsTaskFormOpen(true)} className="gap-1">
             <Plus className="h-4 w-4" />
@@ -134,6 +144,8 @@ export function Header() {
           </div>
         </div>
       )}
+      
+      {showDebug && <DebugTaskList />}
       
       <TaskForm open={isTaskFormOpen} onOpenChange={setIsTaskFormOpen} />
     </header>

@@ -1,4 +1,3 @@
-
 import { TaskService } from '@/services/taskService';
 import { StateCreator } from 'zustand';
 import { TaskStore } from './taskStore';
@@ -29,7 +28,28 @@ export const createSubscriptionSlice: StateCreator<
     const fetchTasks = get().fetchTasks;
     set({ isLoading: true }); // Start loading state
     
-    fetchTasks()
+    // Keep track of cleanup functions
+    let subscriptionCleanup: (() => void) | null = null;
+    let subscriptionTimeout: number | null = null;
+    
+    // Cleanup function
+    const cleanup = () => {
+      console.log("[SubscriptionSlice] Cleaning up task subscription");
+      if (subscriptionTimeout) {
+        clearTimeout(subscriptionTimeout);
+        subscriptionTimeout = null;
+      }
+      
+      if (subscriptionCleanup) {
+        subscriptionCleanup();
+        subscriptionCleanup = null;
+      }
+      
+      set({ isInitialLoadComplete: false });
+    };
+    
+    // Before setting up a new subscription, perform the initial fetch
+    const initialPromise = fetchTasks()
       .then(tasks => {
         console.log("[SubscriptionSlice] Initial tasks load complete with", tasks.length, "tasks");
         
@@ -51,6 +71,8 @@ export const createSubscriptionSlice: StateCreator<
           isInitialLoadComplete: true,
           isLoading: false 
         });
+        
+        return tasks;
       })
       .catch(error => {
         console.error("[SubscriptionSlice] Error with initial tasks load:", error);
@@ -64,89 +86,92 @@ export const createSubscriptionSlice: StateCreator<
           description: "There was a problem loading your tasks. Please refresh the page.",
           variant: "destructive"
         });
+        
+        throw error; // Re-throw to indicate failure
       });
     
-    // Small delay before setting up real-time subscription to avoid racing with initial load
-    let subscriptionTimeout: number | null = null;
-    
-    // Clean-up function
-    const clearSubscriptionTimeout = () => {
-      if (subscriptionTimeout !== null) {
-        clearTimeout(subscriptionTimeout);
-        subscriptionTimeout = null;
-      }
-    };
-    
-    // Set up the subscription with a small delay
-    subscriptionTimeout = window.setTimeout(() => {
-      console.log("[SubscriptionSlice] Setting up real-time subscription after delay");
-      
-      // Then set up the subscription for real-time updates
-      const unsubscribe = TaskService.subscribeToTasks((tasks) => {
-        if (!Array.isArray(tasks)) {
-          console.error("[SubscriptionSlice] Subscription received non-array tasks:", tasks);
-          return;
-        }
-        
-        // Don't process subscription updates until initial load is complete
-        if (!get().isInitialLoadComplete) {
-          console.log("[SubscriptionSlice] Ignoring subscription update because initial load is not complete");
-          return;
-        }
-        
-        console.log("[SubscriptionSlice] Task subscription updated with", tasks.length, "tasks");
-        
-        if (tasks.length > 0) {
-          console.log("[SubscriptionSlice] Subscription task sample:", tasks[0]);
-        } else {
-          console.log("[SubscriptionSlice] No tasks available in subscription update");
-        }
-        
-        // Log task distribution by status
-        const tasksByStatus: Record<string, number> = {};
-        tasks.forEach(task => {
-          tasksByStatus[task.status] = (tasksByStatus[task.status] || 0) + 1;
-        });
-        console.log("[SubscriptionSlice] Task counts by status after subscription update:", tasksByStatus);
-        
-        // Check if tasks are different from what's in the store
-        const currentTasks = get().tasks;
-        const tasksChanged = tasks.length !== currentTasks.length || 
-          JSON.stringify(tasks.map(t => t.id).sort()) !== 
-          JSON.stringify(currentTasks.map(t => t.id).sort());
-        
-        if (tasksChanged) {
-          console.log("[SubscriptionSlice] Tasks have changed, updating store");
-          // Update the tasks in the store
-          set({ tasks });
+    // Set up the real-time subscription AFTER initial load completes
+    initialPromise.then(() => {
+      if (get().isInitialLoadComplete) {
+        // Initial load was successful, set up subscription with a small delay
+        subscriptionTimeout = window.setTimeout(() => {
+          console.log("[SubscriptionSlice] Setting up real-time subscription after delay");
           
-          // Force a complete refresh of task counts immediately
-          const refreshTaskCounts = get().refreshTaskCounts;
-          if (refreshTaskCounts) {
-            console.log("[SubscriptionSlice] Refreshing task counts after subscription update");
-            refreshTaskCounts();
-          } else {
-            console.error("[SubscriptionSlice] refreshTaskCounts not available in task store");
+          // Then set up the subscription for real-time updates
+          try {
+            const unsubscribe = TaskService.subscribeToTasks((tasks) => {
+              if (!Array.isArray(tasks)) {
+                console.error("[SubscriptionSlice] Subscription received non-array tasks:", tasks);
+                return;
+              }
+              
+              // Don't process subscription updates until initial load is complete
+              if (!get().isInitialLoadComplete) {
+                console.log("[SubscriptionSlice] Ignoring subscription update because initial load is not complete");
+                return;
+              }
+              
+              console.log("[SubscriptionSlice] Task subscription updated with", tasks.length, "tasks");
+              
+              if (tasks.length > 0) {
+                console.log("[SubscriptionSlice] Subscription task sample:", tasks[0]);
+              } else {
+                console.log("[SubscriptionSlice] No tasks available in subscription update");
+              }
+              
+              // Log task distribution by status
+              const tasksByStatus: Record<string, number> = {};
+              tasks.forEach(task => {
+                tasksByStatus[task.status] = (tasksByStatus[task.status] || 0) + 1;
+              });
+              console.log("[SubscriptionSlice] Task counts by status after subscription update:", tasksByStatus);
+              
+              // Check if tasks are different from what's in the store
+              const currentTasks = get().tasks;
+              const tasksChanged = tasks.length !== currentTasks.length || 
+                JSON.stringify(tasks.map(t => t.id).sort()) !== 
+                JSON.stringify(currentTasks.map(t => t.id).sort());
+              
+              if (tasksChanged) {
+                console.log("[SubscriptionSlice] Tasks have changed, updating store");
+                // Update the tasks in the store
+                set({ tasks });
+                
+                // Force a complete refresh of task counts immediately
+                const refreshTaskCounts = get().refreshTaskCounts;
+                if (refreshTaskCounts) {
+                  console.log("[SubscriptionSlice] Refreshing task counts after subscription update");
+                  refreshTaskCounts();
+                } else {
+                  console.error("[SubscriptionSlice] refreshTaskCounts not available in task store");
+                }
+              } else {
+                console.log("[SubscriptionSlice] No changes in tasks detected, store update skipped");
+              }
+            });
+            
+            // Store the unsubscribe function for cleanup
+            subscriptionCleanup = unsubscribe;
+            
+            // Clear the timeout reference
+            subscriptionTimeout = null;
+          } catch (subError) {
+            console.error("[SubscriptionSlice] Error setting up subscription:", subError);
+            set({ 
+              error: subError instanceof Error 
+                ? subError.message 
+                : 'Failed to set up real-time task updates' 
+            });
           }
-        } else {
-          console.log("[SubscriptionSlice] No changes in tasks detected, store update skipped");
-        }
-      });
-      
-      // Clear the timeout reference
-      subscriptionTimeout = null;
-      
-      return () => {
-        console.log("[SubscriptionSlice] Cleaning up task subscription");
-        clearSubscriptionTimeout();
-        unsubscribe();
-      };
-    }, 300); // Small delay to avoid race conditions
+        }, 300); // Small delay to avoid race conditions
+      } else {
+        console.warn("[SubscriptionSlice] Initial load was marked as incomplete, not setting up subscription");
+      }
+    }).catch(err => {
+      console.error("[SubscriptionSlice] Not setting up subscription due to initial load failure:", err);
+    });
     
-    return () => {
-      console.log("[SubscriptionSlice] Cleanup called for subscription");
-      clearSubscriptionTimeout();
-      set({ isInitialLoadComplete: false });
-    };
+    // Return cleanup function
+    return cleanup;
   },
 });
