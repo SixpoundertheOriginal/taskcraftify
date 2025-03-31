@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTaskStore } from '@/store';
 import { Task, TaskStatus } from '@/types/task';
 import { TaskCard } from './TaskCard';
@@ -9,30 +9,22 @@ import { Badge } from '@/components/ui/badge';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FocusOverview } from '@/components/insights';
+import { categorizeTasks, TaskCategory } from '@/utils/task';
 
 export function MyFocusView() {
-  const {
-    tasks,
-    isLoading,
-    error,
-    getOverdueTasks,
-    getTasksDueToday,
-    getTasksDueTomorrow,
-    getTasksDueThisWeek,
-    getHighPriorityTasks
-  } = useTaskStore();
+  const { tasks, isLoading, error } = useTaskStore();
   
   const isMobile = useIsMobile();
   
   // Group expansion state
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
-    overdue: true,
-    today: true,
-    tomorrow: true,
-    thisWeek: true,
-    highPriority: true,
-    recentlyAdded: true,
-    allActive: true,
+    [TaskCategory.OVERDUE]: true,
+    [TaskCategory.TODAY]: true,
+    [TaskCategory.TOMORROW]: true,
+    [TaskCategory.THIS_WEEK]: true,
+    [TaskCategory.HIGH_PRIORITY]: true,
+    [TaskCategory.RECENTLY_ADDED]: true,
+    [TaskCategory.ACTIVE]: true,
   });
   
   // Toggle group expansion
@@ -61,70 +53,32 @@ export function MyFocusView() {
     );
   }
   
-  // Use the store's helper functions for consistent behavior across the app
-  const overdueTasks = getOverdueTasks();
-  const todayTasks = getTasksDueToday();
-  const tomorrowTasks = getTasksDueTomorrow();
-  const thisWeekTasks = getTasksDueThisWeek();
-  const highPriorityTasks = getHighPriorityTasks();
-  
-  // Get recently added tasks (last 3 days) that aren't in other categories
-  const threeDaysAgo = new Date();
-  threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-  
-  const recentlyAddedTasks = tasks.filter(task => {
-    // Skip completed or archived tasks
-    if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) {
-      return false;
-    }
-    
-    // Must be created in the last 3 days
-    const createdDate = new Date(task.createdAt);
-    if (createdDate < threeDaysAgo) {
-      return false;
-    }
-    
-    // Skip tasks already in other categories
-    if (
-      overdueTasks.some(t => t.id === task.id) ||
-      todayTasks.some(t => t.id === task.id) ||
-      tomorrowTasks.some(t => t.id === task.id) ||
-      thisWeekTasks.some(t => t.id === task.id) ||
-      highPriorityTasks.some(t => t.id === task.id)
-    ) {
-      return false;
-    }
-    
-    return true;
-  });
-  
-  // Get all active tasks for fallback
-  const activeTasks = tasks.filter(task => 
-    task.status !== TaskStatus.DONE && task.status !== TaskStatus.ARCHIVED
-  );
+  // Use the more efficient categorization function
+  const categorized = categorizeTasks(tasks);
   
   // Debug log for each category
   console.log('MyFocusView - Categorized tasks:',
-    '\nOverdue:', overdueTasks.length,
-    '\nToday:', todayTasks.length,
-    '\nTomorrow:', tomorrowTasks.length,
-    '\nThis Week:', thisWeekTasks.length,
-    '\nHigh Priority:', highPriorityTasks.length,
-    '\nRecently Added:', recentlyAddedTasks.length,
-    '\nTotal Active Tasks:', activeTasks.length
+    '\nOverdue:', categorized[TaskCategory.OVERDUE].length,
+    '\nToday:', categorized[TaskCategory.TODAY].length,
+    '\nTomorrow:', categorized[TaskCategory.TOMORROW].length,
+    '\nThis Week:', categorized[TaskCategory.THIS_WEEK].length,
+    '\nHigh Priority:', categorized[TaskCategory.HIGH_PRIORITY].length,
+    '\nRecently Added:', categorized[TaskCategory.RECENTLY_ADDED].length,
+    '\nTotal Active Tasks:', categorized[TaskCategory.ACTIVE].length
   );
   
   const hasNoFocusTasks = 
-    overdueTasks.length === 0 && 
-    todayTasks.length === 0 && 
-    tomorrowTasks.length === 0 && 
-    thisWeekTasks.length === 0 && 
-    highPriorityTasks.length === 0 && 
-    recentlyAddedTasks.length === 0;
+    categorized[TaskCategory.OVERDUE].length === 0 && 
+    categorized[TaskCategory.TODAY].length === 0 && 
+    categorized[TaskCategory.TOMORROW].length === 0 && 
+    categorized[TaskCategory.THIS_WEEK].length === 0 && 
+    categorized[TaskCategory.HIGH_PRIORITY].length === 0 && 
+    categorized[TaskCategory.RECENTLY_ADDED].length === 0;
   
   // Handle edge case: no tasks meet focus criteria, but we have active tasks
-  if (hasNoFocusTasks && activeTasks.length > 0) {
-    console.log('MyFocusView - No tasks matching focus criteria but have', activeTasks.length, 'active tasks');
+  if (hasNoFocusTasks && categorized[TaskCategory.ACTIVE].length > 0) {
+    console.log('MyFocusView - No tasks matching focus criteria but have', 
+      categorized[TaskCategory.ACTIVE].length, 'active tasks');
     
     return (
       <div className="space-y-8 animate-fade-in">
@@ -135,12 +89,12 @@ export function MyFocusView() {
         <div className="space-y-6">
           <TaskGroup
             title="All Active Tasks"
-            count={activeTasks.length}
-            tasks={activeTasks}
+            count={categorized[TaskCategory.ACTIVE].length}
+            tasks={categorized[TaskCategory.ACTIVE]}
             accentColor="bg-emerald-500"
             icon={<Plus className="h-4 w-4 text-emerald-500" />}
-            isExpanded={expandedGroups.allActive}
-            onToggle={() => toggleGroup('allActive')}
+            isExpanded={expandedGroups[TaskCategory.ACTIVE]}
+            onToggle={() => toggleGroup(TaskCategory.ACTIVE)}
             badgeColor="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
           />
         </div>
@@ -160,85 +114,85 @@ export function MyFocusView() {
       {/* Task Groups */}
       <div className="space-y-6">
         {/* Overdue Tasks Group */}
-        {overdueTasks.length > 0 && (
+        {categorized[TaskCategory.OVERDUE].length > 0 && (
           <TaskGroup
             title="Overdue"
-            count={overdueTasks.length}
-            tasks={overdueTasks}
+            count={categorized[TaskCategory.OVERDUE].length}
+            tasks={categorized[TaskCategory.OVERDUE]}
             accentColor="bg-red-500"
             icon={<AlertCircle className="h-4 w-4 text-red-500" />}
-            isExpanded={expandedGroups.overdue}
-            onToggle={() => toggleGroup('overdue')}
+            isExpanded={expandedGroups[TaskCategory.OVERDUE]}
+            onToggle={() => toggleGroup(TaskCategory.OVERDUE)}
             badgeColor="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
           />
         )}
         
         {/* Due Today Group */}
-        {todayTasks.length > 0 && (
+        {categorized[TaskCategory.TODAY].length > 0 && (
           <TaskGroup
             title="Due Today"
-            count={todayTasks.length}
-            tasks={todayTasks}
+            count={categorized[TaskCategory.TODAY].length}
+            tasks={categorized[TaskCategory.TODAY]}
             accentColor="bg-amber-500"
             icon={<Clock className="h-4 w-4 text-amber-500" />}
-            isExpanded={expandedGroups.today}
-            onToggle={() => toggleGroup('today')}
+            isExpanded={expandedGroups[TaskCategory.TODAY]}
+            onToggle={() => toggleGroup(TaskCategory.TODAY)}
             badgeColor="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
           />
         )}
         
         {/* Due Tomorrow Group */}
-        {tomorrowTasks.length > 0 && (
+        {categorized[TaskCategory.TOMORROW].length > 0 && (
           <TaskGroup
             title="Due Tomorrow"
-            count={tomorrowTasks.length}
-            tasks={tomorrowTasks}
+            count={categorized[TaskCategory.TOMORROW].length}
+            tasks={categorized[TaskCategory.TOMORROW]}
             accentColor="bg-blue-500"
             icon={<Clock className="h-4 w-4 text-blue-500" />}
-            isExpanded={expandedGroups.tomorrow}
-            onToggle={() => toggleGroup('tomorrow')}
+            isExpanded={expandedGroups[TaskCategory.TOMORROW]}
+            onToggle={() => toggleGroup(TaskCategory.TOMORROW)}
             badgeColor="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
           />
         )}
         
         {/* Due This Week Group */}
-        {thisWeekTasks.length > 0 && (
+        {categorized[TaskCategory.THIS_WEEK].length > 0 && (
           <TaskGroup
             title="Due This Week"
-            count={thisWeekTasks.length}
-            tasks={thisWeekTasks}
+            count={categorized[TaskCategory.THIS_WEEK].length}
+            tasks={categorized[TaskCategory.THIS_WEEK]}
             accentColor="bg-indigo-500"
             icon={<CalendarRange className="h-4 w-4 text-indigo-500" />}
-            isExpanded={expandedGroups.thisWeek}
-            onToggle={() => toggleGroup('thisWeek')}
+            isExpanded={expandedGroups[TaskCategory.THIS_WEEK]}
+            onToggle={() => toggleGroup(TaskCategory.THIS_WEEK)}
             badgeColor="bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300"
           />
         )}
         
         {/* High Priority Group */}
-        {highPriorityTasks.length > 0 && (
+        {categorized[TaskCategory.HIGH_PRIORITY].length > 0 && (
           <TaskGroup
             title="High Priority"
-            count={highPriorityTasks.length}
-            tasks={highPriorityTasks}
+            count={categorized[TaskCategory.HIGH_PRIORITY].length}
+            tasks={categorized[TaskCategory.HIGH_PRIORITY]}
             accentColor="bg-purple-500"
             icon={<Flag className="h-4 w-4 text-purple-500" />}
-            isExpanded={expandedGroups.highPriority}
-            onToggle={() => toggleGroup('highPriority')}
+            isExpanded={expandedGroups[TaskCategory.HIGH_PRIORITY]}
+            onToggle={() => toggleGroup(TaskCategory.HIGH_PRIORITY)}
             badgeColor="bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
           />
         )}
         
         {/* Recently Added Group */}
-        {recentlyAddedTasks.length > 0 && (
+        {categorized[TaskCategory.RECENTLY_ADDED].length > 0 && (
           <TaskGroup
             title="Recently Added"
-            count={recentlyAddedTasks.length}
-            tasks={recentlyAddedTasks}
+            count={categorized[TaskCategory.RECENTLY_ADDED].length}
+            tasks={categorized[TaskCategory.RECENTLY_ADDED]}
             accentColor="bg-emerald-500"
             icon={<Plus className="h-4 w-4 text-emerald-500" />}
-            isExpanded={expandedGroups.recentlyAdded}
-            onToggle={() => toggleGroup('recentlyAdded')}
+            isExpanded={expandedGroups[TaskCategory.RECENTLY_ADDED]}
+            onToggle={() => toggleGroup(TaskCategory.RECENTLY_ADDED)}
             badgeColor="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
           />
         )}

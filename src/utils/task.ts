@@ -1,6 +1,6 @@
 
 import { Task, APITask, TaskStatus, TaskPriority } from '@/types/task';
-import { parseISO, isValid } from 'date-fns';
+import { parseISO, isValid, isPast, isToday, isTomorrow, isThisWeek } from 'date-fns';
 
 /**
  * Maps an API task object to a client-side Task object
@@ -65,4 +65,111 @@ export const getValidDate = (dateValue: Date | string | null | undefined): Date 
     console.error('Invalid date value:', dateValue);
     return null;
   }
+};
+
+/**
+ * Task category enum for the focus view
+ */
+export enum TaskCategory {
+  OVERDUE = 'overdue',
+  TODAY = 'today',
+  TOMORROW = 'tomorrow',
+  THIS_WEEK = 'thisWeek',
+  HIGH_PRIORITY = 'highPriority',
+  RECENTLY_ADDED = 'recentlyAdded',
+  ACTIVE = 'active'
+}
+
+/**
+ * Structure for categorized tasks result
+ */
+export interface CategorizedTasks {
+  [TaskCategory.OVERDUE]: Task[];
+  [TaskCategory.TODAY]: Task[];
+  [TaskCategory.TOMORROW]: Task[];
+  [TaskCategory.THIS_WEEK]: Task[];
+  [TaskCategory.HIGH_PRIORITY]: Task[];
+  [TaskCategory.RECENTLY_ADDED]: Task[];
+  [TaskCategory.ACTIVE]: Task[];
+}
+
+/**
+ * Efficiently categorize tasks in a single pass
+ * Each task will only appear in the highest priority category
+ */
+export const categorizeTasks = (tasks: Task[]): CategorizedTasks => {
+  console.log(`Categorizing ${tasks.length} tasks in a single pass`);
+  
+  const threeDaysAgo = new Date();
+  threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+  
+  // Initialize result structure
+  const result: CategorizedTasks = {
+    [TaskCategory.OVERDUE]: [],
+    [TaskCategory.TODAY]: [],
+    [TaskCategory.TOMORROW]: [],
+    [TaskCategory.THIS_WEEK]: [],
+    [TaskCategory.HIGH_PRIORITY]: [],
+    [TaskCategory.RECENTLY_ADDED]: [],
+    [TaskCategory.ACTIVE]: []
+  };
+  
+  // Process each task once
+  tasks.forEach(task => {
+    // Skip completed or archived tasks
+    if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) {
+      return;
+    }
+    
+    // Add to active tasks (all non-completed, non-archived tasks)
+    result[TaskCategory.ACTIVE].push(task);
+    
+    // Check date-based categories
+    const dueDate = getValidDate(task.dueDate);
+    
+    if (dueDate) {
+      // Check date categories in priority order
+      if (isPast(dueDate) && !isToday(dueDate)) {
+        result[TaskCategory.OVERDUE].push(task);
+        return; // No need to check other categories
+      }
+      
+      if (isToday(dueDate)) {
+        result[TaskCategory.TODAY].push(task);
+        return;
+      }
+      
+      if (isTomorrow(dueDate)) {
+        result[TaskCategory.TOMORROW].push(task);
+        return;
+      }
+      
+      if (isThisWeek(dueDate)) {
+        result[TaskCategory.THIS_WEEK].push(task);
+        return;
+      }
+    }
+    
+    // Check priority if not in any date category
+    if (task.priority === TaskPriority.HIGH || task.priority === TaskPriority.URGENT) {
+      result[TaskCategory.HIGH_PRIORITY].push(task);
+      return;
+    }
+    
+    // Check if recently added
+    const createdDate = new Date(task.createdAt);
+    if (createdDate >= threeDaysAgo) {
+      result[TaskCategory.RECENTLY_ADDED].push(task);
+      return;
+    }
+    
+    // Note: task is already in ACTIVE category
+  });
+  
+  // Log category counts
+  Object.entries(result).forEach(([category, tasks]) => {
+    console.log(`Category ${category}: ${tasks.length} tasks`);
+  });
+  
+  return result;
 };

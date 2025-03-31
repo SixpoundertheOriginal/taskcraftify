@@ -1,37 +1,33 @@
-
 import React, { useMemo } from 'react';
 import { useTaskStore } from '@/store';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle, Clock, CalendarDays, Flag } from 'lucide-react';
+import { categorizeTasks, TaskCategory } from '@/utils/task';
 
 export function FocusOverview() {
-  const taskStore = useTaskStore();
+  const { tasks } = useTaskStore();
 
-  // Use the store's functions directly to get consistent behavior
-  const overdueTasks = useMemo(() => taskStore.getOverdueTasks(), [taskStore.tasks]);
-  const todayTasks = useMemo(() => taskStore.getTasksDueToday(), [taskStore.tasks]);
-  const tomorrowTasks = useMemo(() => taskStore.getTasksDueTomorrow(), [taskStore.tasks]);
-  const thisWeekTasks = useMemo(() => taskStore.getTasksDueThisWeek(), [taskStore.tasks]);
-  const highPriorityTasks = useMemo(() => taskStore.getHighPriorityTasks(), [taskStore.tasks]);
+  // Use the more efficient categorization function
+  const categorized = useMemo(() => categorizeTasks(tasks), [tasks]);
 
   // Debug log task counts
   console.log("FocusOverview - Task counts:", {
-    overdue: overdueTasks.length,
-    today: todayTasks.length,
-    tomorrow: tomorrowTasks.length,
-    thisWeek: thisWeekTasks.length,
-    highPriority: highPriorityTasks.length,
-    totalTasks: taskStore.tasks.length
+    overdue: categorized[TaskCategory.OVERDUE].length,
+    today: categorized[TaskCategory.TODAY].length,
+    tomorrow: categorized[TaskCategory.TOMORROW].length,
+    thisWeek: categorized[TaskCategory.THIS_WEEK].length,
+    highPriority: categorized[TaskCategory.HIGH_PRIORITY].length,
+    totalTasks: tasks.length
   });
 
   // Prepare data for chart
   const data = [
-    { name: 'Overdue', value: overdueTasks.length, color: '#ef4444', icon: <AlertCircle className="h-4 w-4" /> },
-    { name: 'Today', value: todayTasks.length, color: '#f97316', icon: <Clock className="h-4 w-4" /> },
-    { name: 'Tomorrow', value: tomorrowTasks.length, color: '#3b82f6', icon: <Clock className="h-4 w-4" /> },
-    { name: 'This Week', value: thisWeekTasks.length, color: '#8b5cf6', icon: <CalendarDays className="h-4 w-4" /> },
-    { name: 'High Priority', value: highPriorityTasks.length, color: '#ec4899', icon: <Flag className="h-4 w-4" /> }
+    { name: 'Overdue', value: categorized[TaskCategory.OVERDUE].length, color: '#ef4444', icon: <AlertCircle className="h-4 w-4" /> },
+    { name: 'Today', value: categorized[TaskCategory.TODAY].length, color: '#f97316', icon: <Clock className="h-4 w-4" /> },
+    { name: 'Tomorrow', value: categorized[TaskCategory.TOMORROW].length, color: '#3b82f6', icon: <Clock className="h-4 w-4" /> },
+    { name: 'This Week', value: categorized[TaskCategory.THIS_WEEK].length, color: '#8b5cf6', icon: <CalendarDays className="h-4 w-4" /> },
+    { name: 'High Priority', value: categorized[TaskCategory.HIGH_PRIORITY].length, color: '#ec4899', icon: <Flag className="h-4 w-4" /> }
   ].filter(item => item.value > 0);
 
   // If there are no tasks to display
@@ -44,7 +40,7 @@ export function FocusOverview() {
         <CardContent>
           <div className="flex flex-col items-center justify-center py-6 text-center">
             <p className="text-muted-foreground mb-2">
-              {taskStore.tasks.length > 0 
+              {tasks.length > 0 
                 ? "You have tasks, but none currently match focus categories."
                 : "All caught up! You don't have any priority tasks right now."}
             </p>

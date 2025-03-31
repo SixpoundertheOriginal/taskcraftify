@@ -6,7 +6,7 @@ import { FilterSlice, createFilterSlice } from './filterSlice';
 import { SubscriptionSlice, createSubscriptionSlice } from './subscriptionSlice';
 import { StatsSlice, createStatsSlice } from './statsSlice';
 import { AttachmentSlice, createAttachmentSlice } from './attachmentSlice';
-import { getValidDate } from '@/utils/task';
+import { getValidDate, categorizeTasks, TaskCategory } from '@/utils/task';
 import { 
   isAfter, 
   isBefore, 
@@ -30,6 +30,8 @@ export type TaskStore = TaskSlice & FilterSlice & SubscriptionSlice & StatsSlice
   setTaskStatus: (taskId: string, status: string) => Promise<void>;
   toggleSubtaskCompletion: (subtaskId: string, completed: boolean) => Promise<void>;
   diagnosticDatabaseQuery?: () => Promise<any>;
+  
+  getCategorizedTasks: () => Record<string, Task[]>;
   
   getOverdueTasks: () => Task[];
   getTasksDueToday: () => Task[];
@@ -119,199 +121,29 @@ export const useTaskStore = create<TaskStore>()(
           }
         },
         
+        getCategorizedTasks: () => {
+          return categorizeTasks(taskSlice.tasks);
+        },
+        
         getOverdueTasks: () => {
-          console.log("[TaskStore] Getting overdue tasks, total tasks:", taskSlice.tasks.length);
-          
-          // Debug task dates before filtering
-          const tasksWithDates = taskSlice.tasks
-            .filter(task => task.dueDate)
-            .map(task => ({
-              id: task.id,
-              title: task.title,
-              dueDate: task.dueDate,
-              status: task.status,
-              validDate: getValidDate(task.dueDate)
-            }));
-          console.log("[TaskStore] Tasks with due dates before filtering:", tasksWithDates);
-          
-          return taskSlice.tasks.filter(task => {
-            // Skip completed or archived tasks
-            if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) {
-              return false;
-            }
-            
-            // We need a valid due date to check if it's overdue
-            const dueDate = getValidDate(task.dueDate);
-            if (!dueDate) {
-              return false;
-            }
-            
-            // A task is overdue if it's due date is in the past and not today
-            const isTaskOverdue = isPast(dueDate) && !isToday(dueDate);
-            
-            // Debug what's happening with dates for this task
-            console.log(`Task "${task.title}" due date: ${dueDate.toISOString()}, 
-              isPast: ${isPast(dueDate)}, 
-              isToday: ${isToday(dueDate)},
-              isOverdue: ${isTaskOverdue}`);
-            
-            return isTaskOverdue;
-          });
+          console.log("[TaskStore] Getting overdue tasks, using efficient categorization");
+          return categorizeTasks(taskSlice.tasks)[TaskCategory.OVERDUE];
         },
         
         getTasksDueToday: () => {
-          // Debug task dates before filtering
-          const tasksWithDates = taskSlice.tasks
-            .filter(task => task.dueDate)
-            .map(task => ({
-              id: task.id,
-              title: task.title,
-              dueDate: task.dueDate,
-              status: task.status,
-              isToday: task.dueDate ? isToday(getValidDate(task.dueDate) || new Date()) : false
-            }));
-          console.log("[TaskStore] Tasks with dates for Today check:", tasksWithDates);
-          
-          return taskSlice.tasks.filter(task => {
-            // Skip completed or archived tasks
-            if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) {
-              return false;
-            }
-            
-            // We need a valid due date to check if it's due today
-            const dueDate = getValidDate(task.dueDate);
-            if (!dueDate) {
-              return false;
-            }
-            
-            // Debug date check
-            const isDueToday = isToday(dueDate);
-            console.log(`Task "${task.title}" due today check: ${dueDate.toISOString()}, isToday: ${isDueToday}`);
-            
-            // A task is due today if its due date is today
-            return isDueToday;
-          });
+          return categorizeTasks(taskSlice.tasks)[TaskCategory.TODAY];
         },
         
         getTasksDueTomorrow: () => {
-          // Debug task dates before filtering
-          const tasksWithDates = taskSlice.tasks
-            .filter(task => task.dueDate)
-            .map(task => ({
-              id: task.id,
-              title: task.title,
-              dueDate: task.dueDate,
-              status: task.status,
-              isTomorrow: task.dueDate ? isTomorrow(getValidDate(task.dueDate) || new Date()) : false
-            }));
-          console.log("[TaskStore] Tasks with dates for Tomorrow check:", tasksWithDates);
-          
-          return taskSlice.tasks.filter(task => {
-            // Skip completed or archived tasks
-            if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) {
-              return false;
-            }
-            
-            // We need a valid due date to check if it's due tomorrow
-            const dueDate = getValidDate(task.dueDate);
-            if (!dueDate) {
-              return false;
-            }
-            
-            // Debug date check
-            const isDueTomorrow = isTomorrow(dueDate);
-            console.log(`Task "${task.title}" due tomorrow check: ${dueDate.toISOString()}, isTomorrow: ${isDueTomorrow}`);
-            
-            // A task is due tomorrow if its due date is tomorrow
-            return isDueTomorrow;
-          });
+          return categorizeTasks(taskSlice.tasks)[TaskCategory.TOMORROW];
         },
         
         getTasksDueThisWeek: () => {
-          // Debug task dates before filtering
-          const tasksWithDates = taskSlice.tasks
-            .filter(task => task.dueDate)
-            .map(task => ({
-              id: task.id,
-              title: task.title,
-              dueDate: task.dueDate,
-              status: task.status,
-              isThisWeek: task.dueDate ? isThisWeek(getValidDate(task.dueDate) || new Date()) : false,
-              isToday: task.dueDate ? isToday(getValidDate(task.dueDate) || new Date()) : false,
-              isTomorrow: task.dueDate ? isTomorrow(getValidDate(task.dueDate) || new Date()) : false
-            }));
-          console.log("[TaskStore] Tasks with dates for ThisWeek check:", tasksWithDates);
-          
-          return taskSlice.tasks.filter(task => {
-            // Skip completed or archived tasks
-            if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) {
-              return false;
-            }
-            
-            // We need a valid due date to check if it's due this week
-            const dueDate = getValidDate(task.dueDate);
-            if (!dueDate) {
-              return false;
-            }
-            
-            // Debug date check
-            const isDueThisWeek = isThisWeek(dueDate);
-            const isDueToday = isToday(dueDate);
-            const isDueTomorrow = isTomorrow(dueDate);
-            
-            console.log(`Task "${task.title}" due this week check: ${dueDate.toISOString()}, 
-              isThisWeek: ${isDueThisWeek},
-              isToday: ${isDueToday},
-              isTomorrow: ${isDueTomorrow},
-              inThisWeekCategory: ${isDueThisWeek && !isDueToday && !isDueTomorrow}`);
-            
-            // A task is due this week if it's due date is this week, but not today or tomorrow
-            return isDueThisWeek && !isDueToday && !isDueTomorrow;
-          });
+          return categorizeTasks(taskSlice.tasks)[TaskCategory.THIS_WEEK];
         },
         
         getHighPriorityTasks: () => {
-          // Debug high priority tasks
-          const highPriorityTasksInfo = taskSlice.tasks
-            .filter(task => 
-              task.priority === TaskPriority.HIGH || task.priority === TaskPriority.URGENT
-            )
-            .map(task => ({
-              id: task.id,
-              title: task.title,
-              priority: task.priority,
-              status: task.status,
-              dueDate: task.dueDate
-            }));
-          console.log("[TaskStore] High priority tasks before filtering:", highPriorityTasksInfo);
-          
-          return taskSlice.tasks.filter(task => {
-            // Skip completed or archived tasks
-            if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) {
-              return false;
-            }
-            
-            // Check if it's high priority
-            const isHighPriority = task.priority === TaskPriority.HIGH || task.priority === TaskPriority.URGENT;
-            
-            if (!isHighPriority) {
-              return false;
-            }
-            
-            // Skip tasks that are already covered by date-based filters
-            const dueDate = getValidDate(task.dueDate);
-            if (dueDate) {
-              // If the task is already in one of the date-based categories, skip it
-              if (isPast(dueDate) || isToday(dueDate) || isTomorrow(dueDate) || 
-                  (isThisWeek(dueDate) && !isToday(dueDate) && !isTomorrow(dueDate))) {
-                console.log(`High priority task "${task.title}" already categorized by date: ${dueDate.toISOString()}`);
-                return false;
-              }
-            }
-            
-            console.log(`Including high priority task "${task.title}" in High Priority category`);
-            return true;
-          });
+          return categorizeTasks(taskSlice.tasks)[TaskCategory.HIGH_PRIORITY];
         },
         
         getTasksCountByStatus: () => {
