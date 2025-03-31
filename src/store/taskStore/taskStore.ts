@@ -7,7 +7,6 @@ import { FilterSlice, createFilterSlice } from './filterSlice';
 import { SubscriptionSlice, createSubscriptionSlice } from './subscriptionSlice';
 import { StatsSlice, createStatsSlice } from './statsSlice';
 import { AttachmentSlice, createAttachmentSlice } from './attachmentSlice';
-import { getValidDate, categorizeTasks, TaskCategory, CategorizedTasks } from '@/utils/task';
 import { 
   isAfter, 
   isBefore, 
@@ -32,14 +31,6 @@ export type TaskStore = TaskSlice & FilterSlice & SubscriptionSlice & StatsSlice
   toggleSubtaskCompletion: (subtaskId: string, completed: boolean) => Promise<void>;
   diagnosticDatabaseQuery?: () => Promise<any>;
   
-  getCategorizedTasks: () => CategorizedTasks;
-  
-  getOverdueTasks: () => Task[];
-  getTasksDueToday: () => Task[];
-  getTasksDueTomorrow: () => Task[];
-  getTasksDueThisWeek: () => Task[];
-  getHighPriorityTasks: () => Task[];
-  
   getTasksCountByStatus: () => Record<string, number>;
   getAverageDailyCompletionRate: () => number;
   
@@ -56,10 +47,6 @@ export const useTaskStore = create<TaskStore>()(
       const subscriptionSlice = createSubscriptionSlice(set, get, store);
       const statsSlice = createStatsSlice(set, get, store);
       const attachmentSlice = createAttachmentSlice(set, get, store);
-      
-      // Cached categorized tasks for performance
-      let cachedCategorizedTasks: CategorizedTasks | null = null;
-      let lastTasksLength = -1;
       
       return {
         ...taskSlice,
@@ -82,9 +69,6 @@ export const useTaskStore = create<TaskStore>()(
             if (!Object.values(TaskStatus).includes(taskStatus)) {
               throw new Error(`Invalid task status: ${status}`);
             }
-            
-            // Clear cache on task updates
-            cachedCategorizedTasks = null;
             
             await taskSlice.updateTask({
               id: taskId,
@@ -127,42 +111,6 @@ export const useTaskStore = create<TaskStore>()(
             console.error("Error fetching single task:", error);
             return undefined;
           }
-        },
-        
-        getCategorizedTasks: () => {
-          const tasks = taskSlice.tasks;
-          
-          // Use cached result if tasks haven't changed
-          if (cachedCategorizedTasks && lastTasksLength === tasks.length) {
-            return cachedCategorizedTasks;
-          }
-          
-          console.log("[TaskStore] Recalculating categorized tasks");
-          cachedCategorizedTasks = categorizeTasks(tasks);
-          lastTasksLength = tasks.length;
-          
-          return cachedCategorizedTasks;
-        },
-        
-        getOverdueTasks: () => {
-          console.log("[TaskStore] Getting overdue tasks, using efficient categorization");
-          return get().getCategorizedTasks()[TaskCategory.OVERDUE];
-        },
-        
-        getTasksDueToday: () => {
-          return get().getCategorizedTasks()[TaskCategory.TODAY];
-        },
-        
-        getTasksDueTomorrow: () => {
-          return get().getCategorizedTasks()[TaskCategory.TOMORROW];
-        },
-        
-        getTasksDueThisWeek: () => {
-          return get().getCategorizedTasks()[TaskCategory.THIS_WEEK];
-        },
-        
-        getHighPriorityTasks: () => {
-          return get().getCategorizedTasks()[TaskCategory.HIGH_PRIORITY];
         },
         
         getTasksCountByStatus: () => {

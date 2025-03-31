@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTaskStore } from '@/store';
 import { TaskCard } from './TaskCard';
@@ -9,7 +8,7 @@ import { CheckCircle, Loader2, Filter, FilterX } from 'lucide-react';
 import { ActiveFiltersDisplay } from './ActiveFiltersDisplay';
 import { FilterSidebar } from './FilterSidebar';
 import { TaskStatus } from '@/types/task';
-import { MyFocusView } from './MyFocusView';
+// Remove MyFocusView import
 import {
   SidebarProvider,
   SidebarInset,
@@ -36,7 +35,8 @@ export function TaskList() {
   } = useTaskStore();
   
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<string>('focus');
+  // Change default tab from 'focus' to 'all'
+  const [activeTab, setActiveTab] = useState<string>('all');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   
@@ -101,10 +101,8 @@ export function TaskList() {
       setFilters(newFilters);
     } else if (tab === 'archived') {
       newFilters.status = [TaskStatus.ARCHIVED];
-      setFilters(newFilters);
-    } else if (tab === 'focus') {
-      setFilters({});
     }
+    // Remove the 'focus' case
   }, [filters, setFilters]);
   
   const clearStatusFilter = useCallback(() => {
@@ -137,12 +135,14 @@ export function TaskList() {
   const clearAllFilters = useCallback(() => {
     setFilters({});
     setSearchQuery('');
-    setActiveTab('focus');
+    // Change from 'focus' to 'all'
+    setActiveTab('all');
   }, [setFilters]);
   
   // Determine if we should show the loading indicator or error state
-  const showLoading = isLoading && tasks.length === 0 && activeTab !== 'focus';
-  const showError = error && activeTab !== 'focus';
+  // Remove 'focus' check
+  const showLoading = isLoading && tasks.length === 0;
+  const showError = error;
   
   if (showError) {
     return (
@@ -233,24 +233,22 @@ export function TaskList() {
                 onClearAllFilters={clearAllFilters}
               />
               
-              <Tabs defaultValue="focus" value={activeTab} onValueChange={handleTabChange} className="w-full">
+              <Tabs defaultValue="all" value={activeTab} onValueChange={handleTabChange} className="w-full">
                 <TabsList className="w-full mb-6 bg-muted/50 backdrop-blur-sm">
-                  <TabsTrigger value="focus" className="flex-1">My Focus</TabsTrigger>
+                  {/* Remove the Focus tab */}
                   <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
                   <TabsTrigger value="active" className="flex-1">Active</TabsTrigger>
                   <TabsTrigger value="completed" className="flex-1">Completed</TabsTrigger>
                   <TabsTrigger value="archived" className="flex-1">Archived</TabsTrigger>
                 </TabsList>
                 
-                {isLoading && tasks.length > 0 && activeTab !== 'focus' && (
+                {isLoading && tasks.length > 0 && (
                   <div className="flex justify-center mb-4">
                     <Loader2 className="h-5 w-5 animate-spin text-primary" />
                   </div>
                 )}
                 
-                <TabsContent value="focus" className="mt-0">
-                  <MyFocusView />
-                </TabsContent>
+                {/* Remove Focus tab content */}
                 
                 <TabsContent value="all" className="mt-0">
                   {filteredTasks.length > 0 ? (

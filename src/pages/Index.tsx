@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { TaskList, KanbanBoard, ViewToggle, FloatingActionButton } from '@/components/tasks';
 import { CalendarView } from '@/components/calendar';
@@ -24,7 +23,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CalendarDays, List, KanbanSquare, Settings, User } from 'lucide-react';
 import { QuickAddButton } from '@/components/quick-add';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { InsightsPanel } from '@/components/insights';
 import { PersonalizedGreeting } from '@/components/insights/PersonalizedGreeting';
 import { useAuth } from '@/auth/AuthContext';
 import { Link } from 'react-router-dom';
@@ -167,12 +165,8 @@ export default function Index() {
                 </div>
               </div>
               
-              {/* Add PersonalizedGreeting above InsightsPanel */}
               {showInsightsPanel && (
-                <>
-                  <PersonalizedGreeting />
-                  <InsightsPanel />
-                </>
+                <PersonalizedGreeting />
               )}
               
               <TabsContent value="tasks" className="mt-0">
