@@ -1,6 +1,6 @@
 
 import { Task, APITask, TaskStatus, TaskPriority } from '@/types/task';
-import { parseISO } from 'date-fns';
+import { parseISO, isValid } from 'date-fns';
 
 /**
  * Maps an API task object to a client-side Task object
@@ -15,7 +15,14 @@ export const mapApiTaskToTask = (apiTask: APITask): Task => {
     try {
       // Parse as ISO date string
       dueDate = parseISO(apiTask.due_date);
-      console.log(`  Converted dueDate to Date object: ${dueDate.toISOString()}`);
+      
+      // Validate the date
+      if (!isValid(dueDate)) {
+        console.error(`  Invalid date after parsing: ${apiTask.due_date}`);
+        dueDate = undefined;
+      } else {
+        console.log(`  Converted dueDate to Date object: ${dueDate.toISOString()}`);
+      }
     } catch (e) {
       console.error(`  Failed to parse date: ${apiTask.due_date}`, e);
     }

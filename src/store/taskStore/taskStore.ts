@@ -20,7 +20,8 @@ import {
   isToday,
   isTomorrow,
   isThisWeek,
-  isPast
+  isPast,
+  parseISO
 } from 'date-fns';
 
 export type TaskStore = TaskSlice & FilterSlice & SubscriptionSlice & StatsSlice & AttachmentSlice & {
@@ -57,8 +58,18 @@ export const useTaskStore = create<TaskStore>()(
         if (!dateValue) return null;
         
         try {
-          const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
-          return isNaN(date.getTime()) ? null : date;
+          // If it's already a Date object, use it directly
+          if (dateValue instanceof Date) {
+            return isNaN(dateValue.getTime()) ? null : dateValue;
+          }
+          
+          // If it's a string, try to parse it
+          if (typeof dateValue === 'string') {
+            const parsedDate = parseISO(dateValue);
+            return isNaN(parsedDate.getTime()) ? null : parsedDate;
+          }
+          
+          return null;
         } catch (e) {
           console.error('Invalid date value:', dateValue);
           return null;
@@ -144,6 +155,11 @@ export const useTaskStore = create<TaskStore>()(
             if (!dueDate) {
               return false;
             }
+            
+            // Debug what's happening with dates
+            console.log(`Task ${task.id} "${task.title}" due date:`, dueDate, 
+              "isPast:", isPast(dueDate), 
+              "isToday:", isToday(dueDate));
             
             // A task is overdue if it's due date is in the past and not today
             return isPast(dueDate) && !isToday(dueDate);
