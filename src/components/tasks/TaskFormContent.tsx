@@ -104,6 +104,7 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
   };
   
   const handleProjectSelect = (id: string | null) => {
+    console.log("Project selected:", id);
     setProjectId(id === 'none' ? undefined : id);
   };
   
@@ -315,6 +316,7 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
         <ProjectSelector 
           selectedProjectId={projectId || null}
           onProjectSelect={handleProjectSelect}
+          buttonClassName="w-full"
         />
       </div>
       

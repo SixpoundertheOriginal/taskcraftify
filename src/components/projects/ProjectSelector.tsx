@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useProjectStore, useTaskStore } from '@/store';
 import { Button } from '@/components/ui/button';
@@ -40,6 +41,7 @@ export function ProjectSelector({
   })();
   
   const handleSelect = (projectId: string | null) => {
+    console.log('ProjectSelector handleSelect called with:', projectId);
     if (onProjectSelect) {
       onProjectSelect(projectId);
     } else {
@@ -63,8 +65,11 @@ export function ProjectSelector({
     }
   }, [storeSelectedProjectId, filters, setFilters, externalSelectedProjectId]);
   
-  const handleCommandClick = (e: React.MouseEvent) => {
+  // Explicitly stop click propagation to prevent parent elements from handling clicks
+  const handleCommandItemClick = (e: React.MouseEvent, projectId: string | null) => {
+    e.preventDefault();
     e.stopPropagation();
+    handleSelect(projectId);
   };
   
   return (
@@ -80,6 +85,10 @@ export function ProjectSelector({
               "border border-input/50 hover:border-input focus:border-input focus-visible:ring-1 focus-visible:ring-ring",
               buttonClassName
             )}
+            onClick={(e) => {
+              e.preventDefault();
+              setOpen(!open);
+            }}
           >
             <div className="flex items-center gap-2 truncate">
               {effectiveProjectId === 'none' ? (
@@ -106,7 +115,7 @@ export function ProjectSelector({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[280px] p-0" align="start">
-          <Command onClick={handleCommandClick}>
+          <Command>
             <CommandInput placeholder="Search projects..." className="h-9" />
             <CommandList>
               <CommandEmpty>
@@ -119,7 +128,9 @@ export function ProjectSelector({
                     variant="outline" 
                     size="sm"
                     className="gap-1.5"
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
                       setOpen(false);
                       setIsProjectDialogOpen(true);
                     }}
@@ -132,8 +143,9 @@ export function ProjectSelector({
               
               <CommandGroup>
                 <CommandItem 
-                  onSelect={() => handleSelect(null)}
-                  className="flex items-center gap-2"
+                  onSelect={() => null} // Prevent default behavior
+                  className="flex items-center gap-2 cursor-pointer"
+                  onClick={(e) => handleCommandItemClick(e, null)}
                 >
                   <Layers className="w-4 h-4 opacity-70" />
                   <span>All Projects</span>
@@ -141,8 +153,9 @@ export function ProjectSelector({
                 </CommandItem>
                 
                 <CommandItem 
-                  onSelect={() => handleSelect('none')}
-                  className="flex items-center gap-2"
+                  onSelect={() => null} // Prevent default behavior
+                  className="flex items-center gap-2 cursor-pointer"
+                  onClick={(e) => handleCommandItemClick(e, 'none')}
                 >
                   <div className="w-3 h-3 rounded-full bg-gray-300" />
                   <span>No Project</span>
@@ -166,8 +179,9 @@ export function ProjectSelector({
                       return (
                         <CommandItem
                           key={project.id}
-                          onSelect={() => handleSelect(project.id)}
-                          className="flex items-center gap-2"
+                          onSelect={() => null} // Prevent default behavior
+                          className="flex items-center gap-2 cursor-pointer"
+                          onClick={(e) => handleCommandItemClick(e, project.id)}
                         >
                           <div 
                             className="w-3 h-3 rounded-full" 
@@ -198,8 +212,9 @@ export function ProjectSelector({
                       return (
                         <CommandItem
                           key={project.id}
-                          onSelect={() => handleSelect(project.id)}
-                          className="flex items-center gap-2"
+                          onSelect={() => null} // Prevent default behavior
+                          className="flex items-center gap-2 cursor-pointer"
+                          onClick={(e) => handleCommandItemClick(e, project.id)}
                         >
                           <div 
                             className="w-3 h-3 rounded-full" 
@@ -221,8 +236,9 @@ export function ProjectSelector({
                     {projects.map((project) => (
                       <CommandItem
                         key={project.id}
-                        onSelect={() => handleSelect(project.id)}
-                        className="flex items-center gap-2 group"
+                        onSelect={() => null} // Prevent default behavior
+                        className="flex items-center gap-2 group cursor-pointer"
+                        onClick={(e) => handleCommandItemClick(e, project.id)}
                       >
                         <div 
                           className="w-3 h-3 rounded-full transition-transform group-hover:scale-110" 
@@ -255,11 +271,14 @@ export function ProjectSelector({
               <CommandSeparator />
               <CommandGroup>
                 <CommandItem
-                  onSelect={() => {
+                  onSelect={() => null} // Prevent default behavior
+                  className="flex items-center gap-2 text-primary cursor-pointer"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     setOpen(false);
                     setIsProjectDialogOpen(true);
                   }}
-                  className="flex items-center gap-2 text-primary"
                 >
                   <FolderPlus className="w-4 h-4" />
                   <span>Create New Project</span>
