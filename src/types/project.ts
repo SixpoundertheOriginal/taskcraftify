@@ -8,12 +8,14 @@ export interface Project {
   color: string;
   createdAt: Date;
   updatedAt: Date;
+  parentProjectId?: string;
 }
 
 export interface CreateProjectDTO {
   name: string;
   description?: string;
   color: string;
+  parentProjectId?: string;
 }
 
 export interface UpdateProjectDTO {
@@ -21,6 +23,7 @@ export interface UpdateProjectDTO {
   name?: string;
   description?: string | null;
   color?: string;
+  parentProjectId?: string | null;
 }
 
 export interface APIProject {
@@ -31,6 +34,7 @@ export interface APIProject {
   color: string;
   created_at: string;
   updated_at: string;
+  parent_project_id: string | null;
 }
 
 // Convert API project to app project
@@ -42,6 +46,7 @@ export function mapApiProjectToProject(apiProject: APIProject): Project {
     color: apiProject.color,
     createdAt: new Date(apiProject.created_at),
     updatedAt: new Date(apiProject.updated_at),
+    parentProjectId: apiProject.parent_project_id || undefined,
   };
 }
 
@@ -51,6 +56,7 @@ export function mapProjectToApiProject(project: CreateProjectDTO | UpdateProject
     name: project.name,
     description: project.description || null,
     color: project.color,
+    parent_project_id: project.parentProjectId || null,
   };
 
   if (userId) {

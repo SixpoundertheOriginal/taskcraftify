@@ -30,7 +30,11 @@ import {
   Clock,
   PanelLeft,
   Grip,
-  Info
+  Info,
+  FolderTree,
+  FolderRoot,
+  FolderClosed,
+  FolderOpen
 } from 'lucide-react';
 import { useMemo, useCallback } from 'react';
 import { ProjectDialog } from './ProjectDialog';
@@ -67,6 +71,7 @@ export function ProjectList() {
   const [favoriteOpen, setFavoriteOpen] = useState(true);
   const [allProjectsOpen, setAllProjectsOpen] = useState(true);
   const [projectInfoId, setProjectInfoId] = useState<string | null>(null);
+  const [expandedProjects, setExpandedProjects] = useState<Record<string, boolean>>({});
   
   const { projects, selectedProjectId, selectProject, deleteProject, updateProject } = useProjectStore();
   const { filters, setFilters, tasks, refreshTaskCounts, fetchTasks, diagnosticDatabaseQuery } = useTaskStore();
@@ -80,6 +85,53 @@ export function ProjectList() {
     const saved = localStorage.getItem('favoriteProjects');
     return saved ? JSON.parse(saved) : [];
   });
+  
+  const projectHierarchy = useMemo(() => {
+    const topLevelProjects: Project[] = [];
+    const childrenMap: Record<string, Project[]> = {};
+    
+    projects.forEach(project => {
+      if (!project.parentProjectId) {
+        topLevelProjects.push(project);
+      } else {
+        if (!childrenMap[project.parentProjectId]) {
+          childrenMap[project.parentProjectId] = [];
+        }
+        childrenMap[project.parentProjectId].push(project);
+      }
+    });
+    
+    return { topLevelProjects, childrenMap };
+  }, [projects]);
+  
+  const toggleProjectExpansion = (projectId: string) => {
+    setExpandedProjects(prev => ({
+      ...prev,
+      [projectId]: !prev[projectId]
+    }));
+  };
+  
+  const hasChildren = (projectId: string) => {
+    return projectHierarchy.childrenMap[projectId] && projectHierarchy.childrenMap[projectId].length > 0;
+  };
+  
+  const getAllDescendantIds = (projectId: string): string[] => {
+    const children = projectHierarchy.childrenMap[projectId] || [];
+    let descendants = children.map(child => child.id);
+    
+    children.forEach(child => {
+      descendants = [...descendants, ...getAllDescendantIds(child.id)];
+    });
+    
+    return descendants;
+  };
+  
+  const getProjectTotalTaskCount = (projectId: string): number => {
+    const directCount = taskCounts[projectId] || 0;
+    const descendantIds = getAllDescendantIds(projectId);
+    const descendantCount = descendantIds.reduce((total, id) => total + (taskCounts[id] || 0), 0);
+    return directCount + descendantCount;
+  };
   
   useEffect(() => {
     if (selectedProjectId && selectedProjectId !== 'none') {
@@ -297,133 +349,172 @@ export function ProjectList() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedProjectId, sortedProjects, handleSelectProject]);
   
-  const renderProjectItem = (project: Project, isFavorite = false) => (
-    <SidebarMenuItem 
-      key={project.id} 
-      className="group relative transition-all duration-200"
-    >
-      <div className="absolute left-0 top-1/2 h-[60%] w-0.5 -translate-y-1/2 rounded-r-full bg-primary/70 opacity-0 transition-opacity data-[active=true]:opacity-100" 
-        data-active={selectedProjectId === project.id}
-      />
-      <SidebarMenuButton 
-        isActive={selectedProjectId === project.id}
-        onClick={() => handleSelectProject(project.id)}
-        className="group relative pl-6 pr-20 transition-all hover:pl-7"
-      >
-        <div className="relative">
+  const renderProjectHierarchy = (project: Project, isFavorite = false, level = 0) => {
+    const hasChildProjects = hasChildren(project.id);
+    const isExpanded = Boolean(expandedProjects[project.id]);
+    const childProjects = projectHierarchy.childrenMap[project.id] || [];
+    const totalTaskCount = getProjectTotalTaskCount(project.id);
+    
+    return (
+      <div key={project.id} className="relative">
+        <SidebarMenuItem className="group relative transition-all duration-200">
           <div 
-            className="absolute left-0 top-1/2 -ml-4 h-2 w-2 -translate-y-1/2 rounded-full transition-all group-hover:scale-110" 
-            style={{ backgroundColor: project.color }}
+            className="absolute left-0 top-1/2 h-[60%] w-0.5 -translate-y-1/2 rounded-r-full bg-primary/70 opacity-0 transition-opacity data-[active=true]:opacity-100" 
+            data-active={selectedProjectId === project.id}
           />
-          <span className="truncate max-w-[120px] inline-block">{project.name}</span>
-        </div>
-        
-        <SidebarMenuBadge className="absolute right-3 transition-all z-10">
-          {taskCounts[project.id] || 0}
-        </SidebarMenuBadge>
-        
-        <div className="absolute right-2 flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 z-20 bg-card/80 rounded-full">
-          {isFavorite ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  size="icon" 
-                  variant="ghost" 
-                  className="h-6 w-6 rounded-full p-0 text-yellow-400 hover:text-yellow-500"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleFavorite(project.id);
-                  }}
-                >
-                  <Star className="h-3.5 w-3.5" />
-                  <span className="sr-only">Unfavorite</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Unfavorite</TooltipContent>
-            </Tooltip>
-          ) : (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  size="icon" 
-                  variant="ghost" 
-                  className="h-6 w-6 rounded-full p-0 text-muted-foreground hover:text-foreground"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleFavorite(project.id);
-                  }}
-                >
-                  <Star className="h-3.5 w-3.5" />
-                  <span className="sr-only">Favorite</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Favorite</TooltipContent>
-            </Tooltip>
+          
+          <div className="relative flex items-center w-full">
+            {hasChildProjects && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 p-0.5 ml-0 mr-1 shrink-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleProjectExpansion(project.id);
+                }}
+              >
+                {isExpanded ? (
+                  <ChevronDown className="h-3.5 w-3.5" />
+                ) : (
+                  <ChevronRight className="h-3.5 w-3.5" />
+                )}
+              </Button>
+            )}
+            
+            <SidebarMenuButton 
+              isActive={selectedProjectId === project.id}
+              onClick={() => handleSelectProject(project.id)}
+              className={cn(
+                "group relative pl-2 pr-20 transition-all hover:pl-3",
+                hasChildProjects ? "" : "ml-6"
+              )}
+            >
+              <div className="relative">
+                <div 
+                  className="absolute left-0 top-1/2 -ml-4 h-2 w-2 -translate-y-1/2 rounded-full transition-all group-hover:scale-110" 
+                  style={{ backgroundColor: project.color }}
+                />
+                <span className="truncate max-w-[140px] inline-block">{project.name}</span>
+              </div>
+              
+              <SidebarMenuBadge className="absolute right-3 transition-all z-10">
+                {totalTaskCount || 0}
+              </SidebarMenuBadge>
+              
+              <div className="absolute right-2 flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 z-20 bg-card/80 rounded-full">
+                {isFavorite ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="h-6 w-6 rounded-full p-0 text-yellow-400 hover:text-yellow-500"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite(project.id);
+                        }}
+                      >
+                        <Star className="h-3.5 w-3.5" />
+                        <span className="sr-only">Unfavorite</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Unfavorite</TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="h-6 w-6 rounded-full p-0 text-muted-foreground hover:text-foreground"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite(project.id);
+                        }}
+                      >
+                        <Star className="h-3.5 w-3.5" />
+                        <span className="sr-only">Favorite</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Favorite</TooltipContent>
+                  </Tooltip>
+                )}
+                
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      className="h-6 w-6 rounded-full p-0 text-muted-foreground hover:text-foreground"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setProjectToEdit(project.id);
+                      }}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                      <span className="sr-only">Edit</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Edit</TooltipContent>
+                </Tooltip>
+                
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      className="h-6 w-6 rounded-full p-0 text-muted-foreground hover:text-destructive" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setProjectToDelete(project.id);
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      <span className="sr-only">Delete</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Delete</TooltipContent>
+                </Tooltip>
+                
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      className="h-6 w-6 rounded-full p-0 text-muted-foreground hover:text-foreground" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setProjectInfoId(projectInfoId === project.id ? null : project.id);
+                      }}
+                    >
+                      <Info className="h-3.5 w-3.5" />
+                      <span className="sr-only">Info</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Info</TooltipContent>
+                </Tooltip>
+              </div>
+            </SidebarMenuButton>
+          </div>
+          
+          {projectInfoId === project.id && project.description && (
+            <div className="mx-4 my-1 rounded-md bg-card/50 p-2 text-xs text-card-foreground">
+              {project.description}
+            </div>
           )}
-          
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                size="icon" 
-                variant="ghost" 
-                className="h-6 w-6 rounded-full p-0 text-muted-foreground hover:text-foreground"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleEditProject(project.id);
-                }}
-              >
-                <Pencil className="h-3.5 w-3.5" />
-                <span className="sr-only">Edit</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Edit</TooltipContent>
-          </Tooltip>
-          
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                size="icon" 
-                variant="ghost" 
-                className="h-6 w-6 rounded-full p-0 text-muted-foreground hover:text-destructive" 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setProjectToDelete(project.id);
-                }}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                <span className="sr-only">Delete</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Delete</TooltipContent>
-          </Tooltip>
-          
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                size="icon" 
-                variant="ghost" 
-                className="h-6 w-6 rounded-full p-0 text-muted-foreground hover:text-foreground" 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setProjectInfoId(projectInfoId === project.id ? null : project.id);
-                }}
-              >
-                <Info className="h-3.5 w-3.5" />
-                <span className="sr-only">Info</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Info</TooltipContent>
-          </Tooltip>
-        </div>
-      </SidebarMenuButton>
-      
-      {projectInfoId === project.id && project.description && (
-        <div className="mx-4 my-1 rounded-md bg-card/50 p-2 text-xs text-card-foreground">
-          {project.description}
-        </div>
-      )}
-    </SidebarMenuItem>
-  );
+        </SidebarMenuItem>
+        
+        {hasChildProjects && isExpanded && (
+          <div className="pl-6 ml-1 border-l border-dashed border-border/30 my-0.5">
+            {childProjects.map(childProject => 
+              renderProjectHierarchy(childProject, favoriteProjects.includes(childProject.id), level + 1)
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
   
   return (
     <TooltipProvider delayDuration={300}>
@@ -540,7 +631,7 @@ export function ProjectList() {
                 <SidebarMenu className="pl-2">
                   {favoriteProjects.map(id => {
                     const project = getProjectById(id);
-                    return project ? renderProjectItem(project, true) : null;
+                    return project ? renderProjectHierarchy(project, true) : null;
                   })}
                 </SidebarMenu>
               </CollapsibleContent>
@@ -640,7 +731,9 @@ export function ProjectList() {
                 </div>
               ) : (
                 <SidebarMenu className="pl-2">
-                  {sortedProjects.map(project => renderProjectItem(project, favoriteProjects.includes(project.id)))}
+                  {projectHierarchy.topLevelProjects.map(project => 
+                    renderProjectHierarchy(project, favoriteProjects.includes(project.id))
+                  )}
                   
                   <SidebarMenuItem>
                     <SidebarMenuButton 

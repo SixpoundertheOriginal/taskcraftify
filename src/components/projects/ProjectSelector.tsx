@@ -1,14 +1,15 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useProjectStore, useTaskStore } from '@/store';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from '@/components/ui/command';
-import { Check, ChevronDown, FolderPlus, Layers, Star, FileQuestion, Clock } from 'lucide-react';
+import { Check, ChevronDown, FolderPlus, Layers, Star, FileQuestion, Clock, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProjectDialog } from './ProjectDialog';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
+import { Project } from '@/types/project';
 
 interface ProjectSelectorProps {
   selectedProjectId?: string | null;
@@ -40,6 +41,43 @@ export function ProjectSelector({
     return saved ? JSON.parse(saved) : [];
   })();
   
+  // Organize projects into a hierarchy
+  const projectHierarchy = useMemo(() => {
+    const topLevelProjects: Project[] = [];
+    const childrenMap: Record<string, Project[]> = {};
+    
+    // First pass: organize projects into parent-child relationships
+    projects.forEach(project => {
+      if (!project.parentProjectId) {
+        topLevelProjects.push(project);
+      } else {
+        if (!childrenMap[project.parentProjectId]) {
+          childrenMap[project.parentProjectId] = [];
+        }
+        childrenMap[project.parentProjectId].push(project);
+      }
+    });
+    
+    return { topLevelProjects, childrenMap };
+  }, [projects]);
+  
+  // Get project path for breadcrumb display
+  const getProjectPath = (projectId: string): Project[] => {
+    const path: Project[] = [];
+    let current = projects.find(p => p.id === projectId);
+    
+    while (current) {
+      path.unshift(current);
+      if (!current.parentProjectId) break;
+      current = projects.find(p => p.id === current?.parentProjectId);
+      
+      // Safety check to prevent infinite loops
+      if (path.some(p => p.id === current?.id)) break;
+    }
+    
+    return path;
+  };
+  
   const handleSelect = (projectId: string | null) => {
     console.log('ProjectSelector handleSelect called with:', projectId);
     if (onProjectSelect) {
@@ -65,62 +103,50 @@ export function ProjectSelector({
     }
   }, [storeSelectedProjectId, filters, setFilters, externalSelectedProjectId]);
   
-  // Create a task item component for improved clickability
-  const ProjectItem = ({ 
-    id, 
-    name, 
-    color, 
-    description, 
-    isSelected 
-  }: { 
-    id: string | null; 
-    name: string; 
-    color?: string; 
-    description?: string; 
-    isSelected: boolean;
-  }) => (
-    <div 
-      className="flex items-center gap-2 w-full px-2 py-1.5 cursor-pointer hover:bg-accent rounded-sm"
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation(); 
-        console.log(`Clicking project: ${id}, ${name}`);
-        handleSelect(id);
-      }}
-    >
-      {color ? (
-        <div 
-          className="w-3 h-3 rounded-full flex-shrink-0 transition-transform hover:scale-110" 
-          style={{ backgroundColor: color }}
-        />
-      ) : id === 'none' ? (
-        <div className="w-3 h-3 rounded-full flex-shrink-0 bg-gray-300" />
-      ) : (
-        <Layers className="w-4 h-4 opacity-70 flex-shrink-0" />
-      )}
+  // Recursive render function for project hierarchy
+  const renderProjectHierarchy = (projects: Project[], level: number = 0): React.ReactNode => {
+    return projects.map(project => {
+      const childProjects = projectHierarchy.childrenMap[project.id];
+      const hasChildren = childProjects && childProjects.length > 0;
       
-      <span className="truncate">{name}</span>
-      
-      {description && (
-        <Badge variant="secondary" className="ml-auto text-[10px] px-1 py-0 flex-shrink-0">
-          {description.length > 15 
-            ? description.slice(0, 15) + '...' 
-            : description
-          }
-        </Badge>
-      )}
-      
-      {isSelected && (
-        <motion.div
-          initial={{ scale: 0.5, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="ml-auto flex-shrink-0"
-        >
-          <Check className="h-4 w-4" />
-        </motion.div>
-      )}
-    </div>
-  );
+      return (
+        <div key={project.id}>
+          <CommandItem
+            className={cn(
+              "flex items-center gap-2 cursor-pointer",
+              level > 0 && `pl-${4 + level * 4}`
+            )}
+            onSelect={() => handleSelect(project.id)}
+          >
+            <div 
+              className="w-3 h-3 rounded-full" 
+              style={{ backgroundColor: project.color }}
+            />
+            <span className="truncate">{project.name}</span>
+            {project.description && (
+              <Badge variant="secondary" className="ml-auto text-[10px] px-1 py-0 flex-shrink-0">
+                {project.description.length > 15 
+                  ? project.description.slice(0, 15) + '...' 
+                  : project.description
+                }
+              </Badge>
+            )}
+            {effectiveProjectId === project.id && (
+              <motion.div
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="ml-auto flex-shrink-0"
+              >
+                <Check className="h-4 w-4" />
+              </motion.div>
+            )}
+          </CommandItem>
+          
+          {hasChildren && renderProjectHierarchy(childProjects, level + 1)}
+        </div>
+      );
+    });
+  };
   
   return (
     <>
@@ -147,13 +173,23 @@ export function ProjectSelector({
                   <div className="w-3 h-3 rounded-full bg-gray-300" />
                   <span className="truncate">No Project</span>
                 </>
-              ) : effectiveProjectId ? (
+              ) : effectiveProjectId && currentProject ? (
                 <>
                   <div 
                     className="w-3 h-3 rounded-full" 
-                    style={{ backgroundColor: currentProject?.color || '#6E59A5' }}
+                    style={{ backgroundColor: currentProject.color }}
                   />
-                  <span className="truncate">{currentProject?.name || 'All Projects'}</span>
+                  <div className="flex flex-col">
+                    <span className="truncate text-sm">{currentProject.name}</span>
+                    {currentProject.parentProjectId && (
+                      <span className="text-xs text-muted-foreground truncate">
+                        {getProjectPath(currentProject.id)
+                          .slice(0, -1) // Remove the current project
+                          .map(p => p.name)
+                          .join(' > ')}
+                      </span>
+                    )}
+                  </div>
                 </>
               ) : (
                 <>
@@ -193,21 +229,23 @@ export function ProjectSelector({
               </CommandEmpty>
               
               <CommandGroup>
-                <div className="px-1">
-                  <ProjectItem 
-                    id={null} 
-                    name="All Projects" 
-                    isSelected={!effectiveProjectId} 
-                  />
-                </div>
+                <CommandItem 
+                  className="flex items-center gap-2 cursor-pointer"
+                  onSelect={() => handleSelect(null)}
+                >
+                  <Layers className="h-4 w-4 opacity-70" />
+                  <span>All Projects</span>
+                  {!effectiveProjectId && <Check className="ml-auto h-4 w-4" />}
+                </CommandItem>
                 
-                <div className="px-1">
-                  <ProjectItem 
-                    id="none" 
-                    name="No Project" 
-                    isSelected={effectiveProjectId === 'none'} 
-                  />
-                </div>
+                <CommandItem 
+                  className="flex items-center gap-2 cursor-pointer"
+                  onSelect={() => handleSelect('none')}
+                >
+                  <FileQuestion className="h-4 w-4 opacity-70" />
+                  <span>No Project</span>
+                  {effectiveProjectId === 'none' && <Check className="ml-auto h-4 w-4" />}
+                </CommandItem>
               </CommandGroup>
               
               {favoriteProjects.length > 0 && (
@@ -224,15 +262,18 @@ export function ProjectSelector({
                       if (!project) return null;
                       
                       return (
-                        <div key={project.id} className="px-1">
-                          <ProjectItem
-                            id={project.id}
-                            name={project.name}
-                            color={project.color}
-                            description={project.description}
-                            isSelected={effectiveProjectId === project.id}
+                        <CommandItem
+                          key={project.id}
+                          className="flex items-center gap-2 cursor-pointer"
+                          onSelect={() => handleSelect(project.id)}
+                        >
+                          <div 
+                            className="w-3 h-3 rounded-full" 
+                            style={{ backgroundColor: project.color }}
                           />
-                        </div>
+                          <span className="truncate">{project.name}</span>
+                          {effectiveProjectId === project.id && <Check className="ml-auto h-4 w-4" />}
+                        </CommandItem>
                       );
                     })}
                   </CommandGroup>
@@ -253,15 +294,18 @@ export function ProjectSelector({
                       if (!project) return null;
                       
                       return (
-                        <div key={project.id} className="px-1">
-                          <ProjectItem
-                            id={project.id}
-                            name={project.name}
-                            color={project.color}
-                            description={project.description}
-                            isSelected={effectiveProjectId === project.id}
+                        <CommandItem
+                          key={project.id}
+                          className="flex items-center gap-2 cursor-pointer"
+                          onSelect={() => handleSelect(project.id)}
+                        >
+                          <div 
+                            className="w-3 h-3 rounded-full" 
+                            style={{ backgroundColor: project.color }}
                           />
-                        </div>
+                          <span className="truncate">{project.name}</span>
+                          {effectiveProjectId === project.id && <Check className="ml-auto h-4 w-4" />}
+                        </CommandItem>
                       );
                     })}
                   </CommandGroup>
@@ -271,36 +315,24 @@ export function ProjectSelector({
               {projects.length > 0 && (
                 <>
                   <CommandSeparator />
-                  <CommandGroup heading="All Projects">
-                    {projects.map((project) => (
-                      <div key={project.id} className="px-1">
-                        <ProjectItem
-                          id={project.id}
-                          name={project.name}
-                          color={project.color}
-                          description={project.description}
-                          isSelected={effectiveProjectId === project.id}
-                        />
-                      </div>
-                    ))}
+                  <CommandGroup heading="Project Hierarchy">
+                    {renderProjectHierarchy(projectHierarchy.topLevelProjects)}
                   </CommandGroup>
                 </>
               )}
               
               <CommandSeparator />
               <CommandGroup>
-                <div 
-                  className="flex items-center gap-2 text-primary cursor-pointer w-full px-2 py-1.5 hover:bg-accent rounded-sm"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
+                <CommandItem 
+                  className="flex items-center gap-2 text-primary cursor-pointer"
+                  onSelect={() => {
                     setOpen(false);
                     setIsProjectDialogOpen(true);
                   }}
                 >
                   <FolderPlus className="w-4 h-4" />
                   <span>Create New Project</span>
-                </div>
+                </CommandItem>
               </CommandGroup>
             </CommandList>
           </Command>

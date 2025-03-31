@@ -59,6 +59,7 @@ export const ProjectService = {
         name: projectData.name,
         description: projectData.description || null,
         color: projectData.color,
+        parent_project_id: projectData.parentProjectId || null,
         user_id: userId
       };
       
@@ -95,6 +96,7 @@ export const ProjectService = {
       if (projectUpdate.name !== undefined) projectUpdateData.name = projectUpdate.name;
       if (projectUpdate.description !== undefined) projectUpdateData.description = projectUpdate.description || null;
       if (projectUpdate.color !== undefined) projectUpdateData.color = projectUpdate.color;
+      if (projectUpdate.parentProjectId !== undefined) projectUpdateData.parent_project_id = projectUpdate.parentProjectId || null;
       projectUpdateData.updated_at = new Date().toISOString();
       
       const { data, error } = await supabase
@@ -124,6 +126,32 @@ export const ProjectService = {
 
   async deleteProject(id: string): Promise<ServiceResult<void>> {
     try {
+      // First, get all child projects
+      const { data: childProjects, error: fetchError } = await supabase
+        .from('projects')
+        .select('id')
+        .eq('parent_project_id', id);
+        
+      if (fetchError) {
+        console.error('Error fetching child projects:', fetchError);
+        return { data: null, error: new Error(fetchError.message) };
+      }
+      
+      // Update all child projects to have no parent
+      if (childProjects && childProjects.length > 0) {
+        const childIds = childProjects.map(project => project.id);
+        const { error: updateError } = await supabase
+          .from('projects')
+          .update({ parent_project_id: null })
+          .in('id', childIds);
+          
+        if (updateError) {
+          console.error('Error updating child projects:', updateError);
+          return { data: null, error: new Error(updateError.message) };
+        }
+      }
+      
+      // Delete the project
       const { error } = await supabase
         .from('projects')
         .delete()

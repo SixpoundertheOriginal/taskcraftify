@@ -272,6 +272,7 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          parent_project_id: string | null
           updated_at: string
           user_id: string
         }
@@ -281,6 +282,7 @@ export type Database = {
           description?: string | null
           id?: string
           name: string
+          parent_project_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -290,10 +292,19 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
+          parent_project_id?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "projects_parent_project_id_fkey"
+            columns: ["parent_project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subtasks: {
         Row: {

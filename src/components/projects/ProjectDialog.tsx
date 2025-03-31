@@ -12,13 +12,26 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, ChevronDown, Check } from 'lucide-react';
 import { useProjectStore } from '@/store';
 import { Project, CreateProjectDTO, UpdateProjectDTO } from '@/types/project';
 import { toast } from '@/hooks/use-toast';
 import { ColorPicker } from './ColorPicker';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 
 interface ProjectDialogProps {
   open: boolean;
@@ -27,8 +40,10 @@ interface ProjectDialogProps {
 }
 
 export function ProjectDialog({ open, onOpenChange, projectToEdit }: ProjectDialogProps) {
-  const { addProject, updateProject, isSubmitting } = useProjectStore();
+  const { addProject, updateProject, isSubmitting, projects } = useProjectStore();
   const [selectedColor, setSelectedColor] = useState<string>(projectToEdit?.color || '#6E59A5');
+  const [parentProjectId, setParentProjectId] = useState<string | undefined>(projectToEdit?.parentProjectId);
+  const [parentSelectorOpen, setParentSelectorOpen] = useState(false);
   
   const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm<CreateProjectDTO | UpdateProjectDTO>({
     defaultValues: projectToEdit ? {
@@ -36,15 +51,39 @@ export function ProjectDialog({ open, onOpenChange, projectToEdit }: ProjectDial
       name: projectToEdit.name,
       description: projectToEdit.description,
       color: projectToEdit.color,
+      parentProjectId: projectToEdit.parentProjectId,
     } : {
       name: '',
       description: '',
       color: '#6E59A5',
+      parentProjectId: undefined,
     }
   });
   
   // Watch the project name to give live preview
   const projectName = watch('name');
+  
+  // Available parent projects (exclude self for editing and any child projects)
+  const availableParentProjects = projects.filter(p => {
+    if (projectToEdit) {
+      // Cannot select self as parent
+      if (p.id === projectToEdit.id) return false;
+      
+      // Cannot select any descendant as parent (would create a cycle)
+      let current = p;
+      while (current.parentProjectId) {
+        if (current.parentProjectId === projectToEdit.id) return false;
+        current = projects.find(parent => parent.id === current.parentProjectId) || current;
+        if (current.id === current.parentProjectId) break; // Safety check
+      }
+    }
+    return true;
+  });
+  
+  // Find current parent project for display
+  const currentParentProject = parentProjectId 
+    ? projects.find(p => p.id === parentProjectId) 
+    : undefined;
   
   // Update form when projectToEdit changes
   useEffect(() => {
@@ -53,22 +92,32 @@ export function ProjectDialog({ open, onOpenChange, projectToEdit }: ProjectDial
       setValue('name', projectToEdit.name);
       setValue('description', projectToEdit.description || '');
       setValue('color', projectToEdit.color);
+      setValue('parentProjectId', projectToEdit.parentProjectId);
       setSelectedColor(projectToEdit.color);
+      setParentProjectId(projectToEdit.parentProjectId);
     } else {
       reset({
         name: '',
         description: '',
         color: '#6E59A5',
+        parentProjectId: undefined,
       });
       setSelectedColor('#6E59A5');
+      setParentProjectId(undefined);
     }
   }, [projectToEdit, setValue, reset]);
+  
+  const handleParentProjectSelect = (id: string | undefined) => {
+    setParentProjectId(id);
+    setParentSelectorOpen(false);
+  };
   
   const onSubmit = async (data: CreateProjectDTO | UpdateProjectDTO) => {
     try {
       const projectData = {
         ...data,
-        color: selectedColor
+        color: selectedColor,
+        parentProjectId: parentProjectId,
       };
       
       if (projectToEdit) {
@@ -203,6 +252,71 @@ export function ProjectDialog({ open, onOpenChange, projectToEdit }: ProjectDial
             />
           </div>
           
+          <div className="space-y-2">
+            <label htmlFor="parentProject" className="text-sm font-medium">Parent Project</label>
+            <Popover open={parentSelectorOpen} onOpenChange={setParentSelectorOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={parentSelectorOpen}
+                  className="w-full justify-between"
+                  id="parentProject"
+                  type="button"
+                >
+                  {parentProjectId && currentParentProject ? (
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: currentParentProject.color }}
+                      />
+                      <span>{currentParentProject.name}</span>
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground">No parent project (top level)</span>
+                  )}
+                  <ChevronDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[300px] p-0">
+                <Command>
+                  <CommandInput placeholder="Search projects..." />
+                  <CommandList>
+                    <CommandEmpty>No projects found.</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem
+                        className="flex items-center gap-2 cursor-pointer"
+                        onSelect={() => handleParentProjectSelect(undefined)}
+                      >
+                        <span>No parent project (top level)</span>
+                        {!parentProjectId && <Check className="ml-auto h-4 w-4" />}
+                      </CommandItem>
+                    </CommandGroup>
+                    
+                    {availableParentProjects.length > 0 && (
+                      <CommandGroup heading="Available Parent Projects">
+                        {availableParentProjects.map((project) => (
+                          <CommandItem
+                            key={project.id}
+                            className="flex items-center gap-2 cursor-pointer"
+                            onSelect={() => handleParentProjectSelect(project.id)}
+                          >
+                            <div 
+                              className="w-3 h-3 rounded-full" 
+                              style={{ backgroundColor: project.color }}
+                            />
+                            <span>{project.name}</span>
+                            {parentProjectId === project.id && <Check className="ml-auto h-4 w-4" />}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    )}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+          
           <div className="pt-4 space-y-4">
             <div className="flex items-center rounded-md border p-4">
               <div 
@@ -216,6 +330,12 @@ export function ProjectDialog({ open, onOpenChange, projectToEdit }: ProjectDial
                 <p className="text-xs text-muted-foreground">
                   {watch('description') || "No description provided"}
                 </p>
+                {parentProjectId && currentParentProject && (
+                  <p className="text-xs mt-1">
+                    <span className="text-muted-foreground">Parent: </span>
+                    <span className="font-medium">{currentParentProject.name}</span>
+                  </p>
+                )}
               </div>
             </div>
             
