@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useTaskGroupStore } from '@/store/taskGroupStore/taskGroupStore';
 import { useTaskStore, useProjectStore } from '@/store';
@@ -24,7 +23,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { CreateTaskGroupDTO } from '@/types/taskGroup';
-import { useRouter } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 export function TaskGroups() {
   const { selectedProjectId, projects } = useProjectStore();
@@ -51,9 +50,8 @@ export function TaskGroups() {
     })
   );
   
-  const router = useRouter();
+  const navigate = useNavigate();
   
-  // Initialize task groups and subscription
   useEffect(() => {
     if (selectedProjectId) {
       fetchTaskGroups(selectedProjectId);
@@ -66,23 +64,18 @@ export function TaskGroups() {
     };
   }, [selectedProjectId, fetchTaskGroups, setupTaskGroupSubscription]);
   
-  // Filter tasks by project
   const projectTasks = tasks.filter(task => 
     task.projectId === selectedProjectId
   );
   
-  // Group tasks by task_group_id
   const tasksByGroup: Record<string, Task[]> = {};
   
-  // First, initialize with empty arrays for all groups
   taskGroups.forEach(group => {
     tasksByGroup[group.id] = [];
   });
   
-  // Special "Ungrouped" category for tasks without a group
   tasksByGroup['ungrouped'] = [];
   
-  // Then populate with tasks
   projectTasks.forEach(task => {
     if (task.taskGroupId && tasksByGroup[task.taskGroupId]) {
       tasksByGroup[task.taskGroupId].push(task);
@@ -91,49 +84,39 @@ export function TaskGroups() {
     }
   });
   
-  // Sort tasks within each group by position
   Object.keys(tasksByGroup).forEach(groupId => {
     tasksByGroup[groupId].sort((a, b) => a.position - b.position);
   });
   
-  // Handle drag start
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     setActiveId(active.id as string);
     
-    // If dragging a task, store its ID
     if (active.data?.current?.type === 'task') {
       setActiveTaskId(active.id as string);
     }
   };
   
-  // Handle drag over for moving tasks between groups
   const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
     
-    // Skip if no over element or same element
     if (!over || active.id === over.id) return;
     
-    // Only handle task drags
     if (active.data?.current?.type !== 'task') return;
     
     const activeTask = tasks.find(t => t.id === active.id);
     if (!activeTask) return;
     
-    // Handle dropping a task over a group
     if (over.data?.current?.type === 'group') {
       const targetGroupId = over.id as string;
       
-      // Skip if task is already in this group
       if (activeTask.taskGroupId === targetGroupId) return;
       
-      // Get the highest position in the target group
       const tasksInTargetGroup = tasksByGroup[targetGroupId] || [];
       const highestPosition = tasksInTargetGroup.length > 0 
         ? Math.max(...tasksInTargetGroup.map(t => t.position)) + 1 
         : 0;
       
-      // Update task's group and position
       updateTask({
         id: activeTask.id,
         taskGroupId: targetGroupId,
@@ -142,24 +125,20 @@ export function TaskGroups() {
     }
   };
   
-  // Handle drag end
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     
     setActiveId(null);
     setActiveTaskId(null);
     
-    // Skip if no over element
     if (!over) return;
     
-    // Handle task reordering within the same group
     if (active.data?.current?.type === 'task' && over.data?.current?.type === 'task') {
       const activeTask = tasks.find(t => t.id === active.id);
       const overTask = tasks.find(t => t.id === over.id);
       
       if (!activeTask || !overTask) return;
       
-      // Only reorder if in the same group
       if (activeTask.taskGroupId === overTask.taskGroupId) {
         const groupId = activeTask.taskGroupId || 'ungrouped';
         const tasksInGroup = [...tasksByGroup[groupId]];
@@ -170,7 +149,6 @@ export function TaskGroups() {
         if (oldIndex !== -1 && newIndex !== -1) {
           const reorderedTasks = arrayMove(tasksInGroup, oldIndex, newIndex);
           
-          // Update positions in the database
           const positionUpdates = reorderedTasks.map((task, index) => ({
             id: task.id,
             position: index
@@ -182,10 +160,8 @@ export function TaskGroups() {
     }
   };
   
-  // Selected project
   const selectedProject = projects.find(p => p.id === selectedProjectId);
   
-  // Form for adding new group
   const form = useForm<CreateTaskGroupDTO>({
     defaultValues: {
       name: '',
@@ -193,7 +169,6 @@ export function TaskGroups() {
     }
   });
   
-  // Handle form submission
   const onSubmit = async (data: CreateTaskGroupDTO) => {
     try {
       await createTaskGroup({
@@ -267,7 +242,6 @@ export function TaskGroups() {
         onDragEnd={handleDragEnd}
       >
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Render each task group */}
           {taskGroups.map(group => (
             <TaskGroupColumn 
               key={group.id} 
@@ -277,7 +251,6 @@ export function TaskGroups() {
             />
           ))}
           
-          {/* Ungrouped tasks */}
           <TaskGroupColumn 
             key="ungrouped" 
             group={{ id: 'ungrouped', name: 'Ungrouped Tasks', position: 9999 } as TaskGroupType} 

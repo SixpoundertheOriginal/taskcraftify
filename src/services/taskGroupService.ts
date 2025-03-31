@@ -1,219 +1,272 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { 
-  TaskGroup, 
-  CreateTaskGroupDTO, 
-  UpdateTaskGroupDTO, 
-  mapApiTaskGroupToTaskGroup, 
-  APITaskGroup 
-} from '@/types/taskGroup';
-import { Database } from '@/types/database';
+import { TaskGroup, CreateTaskGroupDTO, UpdateTaskGroupDTO, APITaskGroup, mapApiTaskGroupToTaskGroup, mapTaskGroupToApiTaskGroup } from '@/types/taskGroup';
+import { Task, mapApiTaskToTask } from '@/types/task';
+import { useAuth } from '@/auth/AuthContext';
 
-// Service result type for consistent error handling
 interface ServiceResult<T> {
-  data: T | null;
-  error: Error | null;
+  data?: T;
+  error?: Error;
 }
 
 export const TaskGroupService = {
-  async fetchTaskGroups(projectId?: string): Promise<ServiceResult<TaskGroup[]>> {
+  async fetchTaskGroups(): Promise<ServiceResult<TaskGroup[]>> {
     try {
-      let query = supabase
+      // Get the user's ID
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+
+      if (!userId) {
+        return {
+          error: new Error('User not authenticated')
+        };
+      }
+
+      const { data, error } = await supabase
         .from('task_groups')
         .select('*')
+        .eq('user_id', userId)
         .order('position', { ascending: true });
-        
-      if (projectId) {
-        query = query.eq('project_id', projectId);
-      }
-      
-      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching task groups:', error);
-        return { data: null, error: new Error(error.message) };
+        return { error: new Error(error.message) };
       }
 
-      return { 
-        data: (data as APITaskGroup[]).map(mapApiTaskGroupToTaskGroup), 
-        error: null 
-      };
+      if (!data) {
+        return { data: [] };
+      }
+
+      const taskGroups = (data as unknown as APITaskGroup[]).map(apiGroup => 
+        mapApiTaskGroupToTaskGroup(apiGroup)
+      );
+
+      return { data: taskGroups };
     } catch (error) {
-      console.error('Unexpected error fetching task groups:', error);
-      return { 
-        data: null, 
-        error: error instanceof Error ? error : new Error('Unknown error occurred') 
+      console.error('Error in fetchTaskGroups:', error);
+      return {
+        error: error instanceof Error 
+          ? error 
+          : new Error('An unknown error occurred while fetching task groups')
       };
     }
   },
 
   async createTaskGroup(taskGroupData: CreateTaskGroupDTO): Promise<ServiceResult<TaskGroup>> {
     try {
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      
-      if (userError) {
-        console.error('Error getting user:', userError);
-        return { data: null, error: new Error(userError.message) };
-      }
-      
-      const userId = userData.user?.id;
+      // Get the user's ID
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+
       if (!userId) {
-        return { data: null, error: new Error('User not authenticated') };
+        return {
+          error: new Error('User not authenticated')
+        };
       }
 
-      // Get the highest position for ordering
-      let position = 0;
-      if (taskGroupData.projectId) {
-        const { data: existingGroups } = await supabase
-          .from('task_groups')
-          .select('position')
-          .eq('project_id', taskGroupData.projectId)
-          .order('position', { ascending: false })
-          .limit(1);
-          
-        if (existingGroups && existingGroups.length > 0) {
-          position = (existingGroups[0].position || 0) + 1;
-        }
+      // Get current highest position
+      const { data: positionData, error: positionError } = await supabase
+        .from('task_groups')
+        .select('position')
+        .eq('user_id', userId)
+        .order('position', { ascending: false })
+        .limit(1);
+
+      if (positionError) {
+        console.error('Error getting highest position:', positionError);
+        return { error: new Error(positionError.message) };
       }
 
-      const taskGroupInsert = {
-        name: taskGroupData.name,
-        description: taskGroupData.description || null,
-        project_id: taskGroupData.projectId || null,
-        color: taskGroupData.color || null,
-        position: taskGroupData.position !== undefined ? taskGroupData.position : position,
-        user_id: userId
-      };
-      
+      const highestPosition = positionData && positionData.length > 0 ? positionData[0].position : -1;
+      const newPosition = taskGroupData.position !== undefined ? taskGroupData.position : highestPosition + 1;
+
+      const apiTaskGroup = mapTaskGroupToApiTaskGroup({
+        ...taskGroupData,
+        position: newPosition
+      }, userId);
+
       const { data, error } = await supabase
         .from('task_groups')
-        .insert(taskGroupInsert)
-        .select()
+        .insert(apiTaskGroup)
+        .select('*')
         .single();
 
       if (error) {
         console.error('Error creating task group:', error);
-        return { data: null, error: new Error(error.message) };
+        return { error: new Error(error.message) };
       }
 
-      return { 
-        data: mapApiTaskGroupToTaskGroup(data as APITaskGroup), 
-        error: null 
-      };
+      if (!data) {
+        return { error: new Error('No data returned from create operation') };
+      }
+
+      const taskGroup = mapApiTaskGroupToTaskGroup(data as unknown as APITaskGroup);
+      return { data: taskGroup };
     } catch (error) {
-      console.error('Unexpected error creating task group:', error);
-      return { 
-        data: null, 
-        error: error instanceof Error ? error : new Error('Unknown error occurred')
+      console.error('Error in createTaskGroup:', error);
+      return {
+        error: error instanceof Error 
+          ? error 
+          : new Error('An unknown error occurred while creating task group')
       };
     }
   },
 
   async updateTaskGroup(taskGroupUpdate: UpdateTaskGroupDTO): Promise<ServiceResult<TaskGroup>> {
     try {
-      // Use Record<string, any> to avoid TypeScript property checking
-      const taskGroupUpdateData: Record<string, any> = {
-        id: taskGroupUpdate.id
-      };
-      
-      if (taskGroupUpdate.name !== undefined) taskGroupUpdateData.name = taskGroupUpdate.name;
-      if (taskGroupUpdate.description !== undefined) taskGroupUpdateData.description = taskGroupUpdate.description || null;
-      if (taskGroupUpdate.projectId !== undefined) taskGroupUpdateData.project_id = taskGroupUpdate.projectId || null;
-      if (taskGroupUpdate.color !== undefined) taskGroupUpdateData.color = taskGroupUpdate.color || null;
-      if (taskGroupUpdate.position !== undefined) taskGroupUpdateData.position = taskGroupUpdate.position;
-      taskGroupUpdateData.updated_at = new Date().toISOString();
-      
+      // Get the user's ID
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+
+      if (!userId) {
+        return {
+          error: new Error('User not authenticated')
+        };
+      }
+
+      const apiTaskGroup = mapTaskGroupToApiTaskGroup(taskGroupUpdate);
+
       const { data, error } = await supabase
         .from('task_groups')
-        .update(taskGroupUpdateData)
+        .update(apiTaskGroup)
         .eq('id', taskGroupUpdate.id)
-        .select()
+        .eq('user_id', userId)
+        .select('*')
         .single();
 
       if (error) {
         console.error('Error updating task group:', error);
-        return { data: null, error: new Error(error.message) };
+        return { error: new Error(error.message) };
       }
 
-      return { 
-        data: mapApiTaskGroupToTaskGroup(data as APITaskGroup), 
-        error: null 
-      };
+      if (!data) {
+        return { error: new Error('No data returned from update operation') };
+      }
+
+      const taskGroup = mapApiTaskGroupToTaskGroup(data as unknown as APITaskGroup);
+      return { data: taskGroup };
     } catch (error) {
-      console.error('Unexpected error updating task group:', error);
-      return { 
-        data: null, 
-        error: error instanceof Error ? error : new Error('Unknown error occurred')
+      console.error('Error in updateTaskGroup:', error);
+      return {
+        error: error instanceof Error 
+          ? error 
+          : new Error('An unknown error occurred while updating task group')
       };
     }
   },
 
   async deleteTaskGroup(id: string): Promise<ServiceResult<void>> {
     try {
+      // Get the user's ID
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+
+      if (!userId) {
+        return {
+          error: new Error('User not authenticated')
+        };
+      }
+
       const { error } = await supabase
         .from('task_groups')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', userId);
 
       if (error) {
         console.error('Error deleting task group:', error);
-        return { data: null, error: new Error(error.message) };
+        return { error: new Error(error.message) };
       }
 
-      return { data: null, error: null };
+      return {};
     } catch (error) {
-      console.error('Unexpected error deleting task group:', error);
-      return { 
-        data: null, 
-        error: error instanceof Error ? error : new Error('Unknown error occurred')
+      console.error('Error in deleteTaskGroup:', error);
+      return {
+        error: error instanceof Error 
+          ? error 
+          : new Error('An unknown error occurred while deleting task group')
       };
     }
   },
 
-  async updateTaskPositions(tasks: { id: string; position: number }[]): Promise<ServiceResult<void>> {
+  async getTasksInGroup(groupId: string): Promise<ServiceResult<Task[]>> {
     try {
-      // Use a transaction to update all task positions
-      const updatePromises = tasks.map(task => 
-        supabase
-          .from('tasks')
-          .update({ position: task.position })
-          .eq('id', task.id)
-      );
-      
-      await Promise.all(updatePromises);
-      
-      return { data: null, error: null };
+      // Get the user's ID
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+
+      if (!userId) {
+        return {
+          error: new Error('User not authenticated')
+        };
+      }
+
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('task_group_id', groupId)
+        .order('position', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching tasks in group:', error);
+        return { error: new Error(error.message) };
+      }
+
+      if (!data) {
+        return { data: [] };
+      }
+
+      // Map the API tasks to our Task interface
+      const tasks = data.map(apiTask => mapApiTaskToTask(apiTask));
+      return { data: tasks };
     } catch (error) {
-      console.error('Unexpected error updating task positions:', error);
-      return { 
-        data: null, 
-        error: error instanceof Error ? error : new Error('Unknown error occurred')
+      console.error('Error in getTasksInGroup:', error);
+      return {
+        error: error instanceof Error 
+          ? error 
+          : new Error('An unknown error occurred while fetching tasks in group')
       };
     }
   },
 
-  subscribeToTaskGroups(callback: (taskGroups: TaskGroup[]) => void): (() => void) {
-    const channel = supabase
-      .channel('public:task_groups')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'task_groups' }, 
-        async () => {
-          try {
-            const result = await this.fetchTaskGroups();
-            if (result.data) {
-              callback(result.data);
-            } else if (result.error) {
-              console.error('Error refreshing task groups after changes:', result.error);
-            }
-          } catch (error) {
-            console.error('Error in subscription callback:', error);
-          }
-        }
-      )
-      .subscribe();
+  async updateTaskPositions(taskUpdates: { id: string; position: number; taskGroupId?: string }[]): Promise<ServiceResult<void>> {
+    try {
+      // Get the user's ID
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+      if (!userId) {
+        return {
+          error: new Error('User not authenticated')
+        };
+      }
+
+      // We need to perform updates one by one to ensure atomicity
+      for (const update of taskUpdates) {
+        const { error } = await supabase
+          .from('tasks')
+          .update({
+            position: update.position,
+            task_group_id: update.taskGroupId
+          })
+          .eq('id', update.id)
+          .eq('user_id', userId);
+
+        if (error) {
+          console.error('Error updating task position:', error);
+          return { error: new Error(error.message) };
+        }
+      }
+
+      return {};
+    } catch (error) {
+      console.error('Error in updateTaskPositions:', error);
+      return {
+        error: error instanceof Error 
+          ? error 
+          : new Error('An unknown error occurred while updating task positions')
+      };
+    }
   }
 };

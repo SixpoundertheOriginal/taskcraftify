@@ -1,33 +1,7 @@
+import { Task } from '@/types/task';
 
-import { useState } from 'react';
-import { Task, TaskPriority, TaskStatus, countCompletedSubtasks } from '@/types/task';
-import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import { useTaskStore, useProjectStore } from '@/store';
-import { 
-  Clock, 
-  Calendar, 
-  CheckCircle2, 
-  AlertCircle, 
-  Tag,
-  ChevronDown,
-  ChevronRight
-} from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-
-interface TaskCardProps {
+export interface TaskCardProps {
   task: Task;
-  className?: string;
   compact?: boolean;
 }
 
