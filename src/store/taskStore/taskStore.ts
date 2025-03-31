@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { Task, TaskStatus, TaskPriority } from '@/types/task';
@@ -137,53 +138,41 @@ export const useTaskStore = create<TaskStore>()(
             const dueDate = getValidDate(task.dueDate);
             if (!dueDate) return false;
             
-            return isBefore(dueDate, now) && !isToday(dueDate);
+            return isPast(dueDate) && !isToday(dueDate);
           });
         },
         
         getTasksDueToday: () => {
-          const today = startOfToday();
-          const endOfDay = endOfToday();
-          
           return taskSlice.tasks.filter(task => {
             if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) return false;
             
             const dueDate = getValidDate(task.dueDate);
             if (!dueDate) return false;
             
-            return dueDate >= today && dueDate <= endOfDay;
+            return isToday(dueDate);
           });
         },
         
         getTasksDueTomorrow: () => {
-          const tomorrow = startOfTomorrow();
-          const endOfTomorrowDay = endOfTomorrow();
-          
           return taskSlice.tasks.filter(task => {
             if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) return false;
             
             const dueDate = getValidDate(task.dueDate);
             if (!dueDate) return false;
             
-            return dueDate >= tomorrow && dueDate <= endOfTomorrowDay;
+            return isTomorrow(dueDate);
           });
         },
         
         getTasksDueThisWeek: () => {
-          const today = startOfToday();
-          const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 }); // Start on Monday
-          const weekEnd = endOfWeek(new Date(), { weekStartsOn: 1 }); // End on Sunday
-          
           return taskSlice.tasks.filter(task => {
             if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) return false;
             
             const dueDate = getValidDate(task.dueDate);
             if (!dueDate) return false;
             
-            // Exclude today and tomorrow
-            const isNotTodayOrTomorrow = !isToday(dueDate) && !isTomorrow(dueDate);
-            
-            return isNotTodayOrTomorrow && dueDate >= today && dueDate <= weekEnd;
+            // Include tasks due this week except today and tomorrow
+            return isThisWeek(dueDate) && !isToday(dueDate) && !isTomorrow(dueDate);
           });
         },
         
@@ -191,11 +180,15 @@ export const useTaskStore = create<TaskStore>()(
           return taskSlice.tasks.filter(task => {
             if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) return false;
             
-            // Only include high priority tasks that aren't already covered by date-based filters
+            // For high priority tasks, we include those with undefined due dates
+            if (!task.dueDate) {
+              return task.priority === TaskPriority.HIGH || task.priority === TaskPriority.URGENT;
+            }
+            
+            // Skip tasks that are already covered by date-based filters
             const dueDate = getValidDate(task.dueDate);
             if (dueDate) {
-              const now = new Date();
-              if (isBefore(dueDate, now) || isToday(dueDate) || isTomorrow(dueDate) || 
+              if (isPast(dueDate) || isToday(dueDate) || isTomorrow(dueDate) || 
                   (isThisWeek(dueDate) && !isToday(dueDate) && !isTomorrow(dueDate))) {
                 return false;
               }

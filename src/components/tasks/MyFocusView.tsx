@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useTaskStore } from '@/store';
 import { Task, TaskStatus, TaskPriority } from '@/types/task';
@@ -36,9 +35,11 @@ export function MyFocusView() {
   
   // Debug tasks
   useEffect(() => {
-    console.log('MyFocusView - All tasks:', tasks);
+    console.log('MyFocusView - All tasks:', tasks.length);
     if (tasks.length > 0) {
-      console.log('MyFocusView - First task due date:', tasks[0].dueDate, 'type:', typeof tasks[0].dueDate);
+      const firstTask = tasks[0];
+      console.log('MyFocusView - First task:', firstTask.id, firstTask.title);
+      console.log('MyFocusView - First task due date:', firstTask.dueDate, 'type:', typeof firstTask.dueDate);
     }
   }, [tasks]);
   
@@ -62,8 +63,6 @@ export function MyFocusView() {
   
   // Get the current date at the start of the day for accurate comparisons
   const now = startOfDay(new Date());
-  const tomorrow = addDays(now, 1);
-  const nextWeek = addDays(now, 7);
   
   // Ensure dueDate is a proper Date object before comparisons
   const getValidDate = (dateValue: Date | string | null | undefined): Date | null => {
@@ -115,13 +114,20 @@ export function MyFocusView() {
     return isThisWeek(dueDate) && !isToday(dueDate) && !isTomorrow(dueDate);
   });
   
+  // Get high priority tasks that aren't already in other categories
   const highPriorityTasks = tasks.filter(task => {
     if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) return false;
+    
+    // Include tasks with no due date but high priority
+    if (!task.dueDate) {
+      return task.priority === TaskPriority.HIGH || task.priority === TaskPriority.URGENT;
+    }
     
     // Skip tasks already in other categories
     const dueDate = getValidDate(task.dueDate);
     if (dueDate) {
-      if (isPast(dueDate) || isToday(dueDate) || isTomorrow(dueDate) || isThisWeek(dueDate)) {
+      if (isPast(dueDate) || isToday(dueDate) || isTomorrow(dueDate) || 
+          (isThisWeek(dueDate) && !isToday(dueDate) && !isTomorrow(dueDate))) {
         return false;
       }
     }
@@ -137,10 +143,16 @@ export function MyFocusView() {
     const createdDate = new Date(task.createdAt);
     if (createdDate < threeDaysAgo) return false;
     
+    // Include tasks with no due date if they're not high priority
+    if (!task.dueDate) {
+      return !(task.priority === TaskPriority.HIGH || task.priority === TaskPriority.URGENT);
+    }
+    
     // Skip tasks already in other categories
     const dueDate = getValidDate(task.dueDate);
     if (dueDate) {
-      if (isPast(dueDate) || isToday(dueDate) || isTomorrow(dueDate) || isThisWeek(dueDate)) {
+      if (isPast(dueDate) || isToday(dueDate) || isTomorrow(dueDate) || 
+          (isThisWeek(dueDate) && !isToday(dueDate) && !isTomorrow(dueDate))) {
         return false;
       }
     }
@@ -162,7 +174,7 @@ export function MyFocusView() {
     '\nRecently Added:', recentlyAddedTasks.length
   );
   
-  // If there are no tasks to display, show empty state
+  // Include tasks without due dates in appropriate categories
   const hasNoFocusTasks = 
     overdueTasks.length === 0 && 
     todayTasks.length === 0 && 
@@ -170,6 +182,45 @@ export function MyFocusView() {
     thisWeekTasks.length === 0 && 
     highPriorityTasks.length === 0 && 
     recentlyAddedTasks.length === 0;
+  
+  // Handle edge case: no tasks meet focus criteria, but we have tasks
+  if (hasNoFocusTasks && tasks.length > 0) {
+    console.log('MyFocusView - No tasks matching focus criteria but have', tasks.length, 'total tasks');
+    
+    // Check how many active tasks exist
+    const activeTasks = tasks.filter(t => 
+      t.status !== TaskStatus.DONE && t.status !== TaskStatus.ARCHIVED
+    );
+    
+    console.log('MyFocusView - Active tasks count:', activeTasks.length);
+    
+    // If we have active tasks but none are showing in focus view, something is wrong
+    if (activeTasks.length > 0) {
+      console.log('MyFocusView - Showing all active tasks as fallback');
+      
+      // As a fallback, show all active tasks in recently added
+      return (
+        <div className="space-y-8 animate-fade-in">
+          {/* Focus Overview */}
+          <FocusOverview />
+          
+          {/* Show all active tasks */}
+          <div className="space-y-6">
+            <TaskGroup
+              title="All Active Tasks"
+              count={activeTasks.length}
+              tasks={activeTasks}
+              accentColor="bg-emerald-500"
+              icon={<Plus className="h-4 w-4 text-emerald-500" />}
+              isExpanded={true}
+              onToggle={() => {}}
+              badgeColor="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
+            />
+          </div>
+        </div>
+      );
+    }
+  }
   
   if (hasNoFocusTasks) {
     return <EmptyFocusState />;

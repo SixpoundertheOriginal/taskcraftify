@@ -21,7 +21,8 @@ export function FocusOverview() {
     today: todayTasks.length,
     tomorrow: tomorrowTasks.length,
     thisWeek: thisWeekTasks.length,
-    highPriority: highPriorityTasks.length
+    highPriority: highPriorityTasks.length,
+    totalTasks: taskStore.tasks.length
   });
 
   // Prepare data for chart
@@ -43,7 +44,9 @@ export function FocusOverview() {
         <CardContent>
           <div className="flex flex-col items-center justify-center py-6 text-center">
             <p className="text-muted-foreground mb-2">
-              All caught up! You don't have any priority tasks right now.
+              {taskStore.tasks.length > 0 
+                ? "Your tasks don't currently match any focus categories."
+                : "All caught up! You don't have any priority tasks right now."}
             </p>
           </div>
         </CardContent>
