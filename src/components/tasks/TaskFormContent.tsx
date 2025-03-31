@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -216,7 +215,6 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
   
   const currentProject = projectId ? projects.find(p => p.id === projectId) : null;
 
-  // Fix for project selector dropdown
   const handleProjectClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setProjectSelectorOpen(!projectSelectorOpen);
