@@ -8,7 +8,7 @@ import { AlertCircle, Clock, CalendarDays, Flag } from 'lucide-react';
 export function FocusOverview() {
   const taskStore = useTaskStore();
 
-  // Use useMemo to prevent unnecessary recalculations
+  // Use the store's functions directly to get consistent behavior
   const overdueTasks = useMemo(() => taskStore.getOverdueTasks(), [taskStore.tasks]);
   const todayTasks = useMemo(() => taskStore.getTasksDueToday(), [taskStore.tasks]);
   const tomorrowTasks = useMemo(() => taskStore.getTasksDueTomorrow(), [taskStore.tasks]);
@@ -45,7 +45,7 @@ export function FocusOverview() {
           <div className="flex flex-col items-center justify-center py-6 text-center">
             <p className="text-muted-foreground mb-2">
               {taskStore.tasks.length > 0 
-                ? "Your tasks don't currently match any focus categories."
+                ? "You have tasks, but none currently match focus categories."
                 : "All caught up! You don't have any priority tasks right now."}
             </p>
           </div>

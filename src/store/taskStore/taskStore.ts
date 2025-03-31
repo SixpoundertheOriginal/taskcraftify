@@ -132,56 +132,86 @@ export const useTaskStore = create<TaskStore>()(
         
         getOverdueTasks: () => {
           console.log("[TaskStore] Getting overdue tasks, total tasks:", taskSlice.tasks.length);
-          const now = new Date();
+          
           return taskSlice.tasks.filter(task => {
-            if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) return false;
+            // Skip completed or archived tasks
+            if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) {
+              return false;
+            }
             
+            // We need a valid due date to check if it's overdue
             const dueDate = getValidDate(task.dueDate);
-            if (!dueDate) return false;
+            if (!dueDate) {
+              return false;
+            }
             
+            // A task is overdue if it's due date is in the past and not today
             return isPast(dueDate) && !isToday(dueDate);
           });
         },
         
         getTasksDueToday: () => {
           return taskSlice.tasks.filter(task => {
-            if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) return false;
+            // Skip completed or archived tasks
+            if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) {
+              return false;
+            }
             
+            // We need a valid due date to check if it's due today
             const dueDate = getValidDate(task.dueDate);
-            if (!dueDate) return false;
+            if (!dueDate) {
+              return false;
+            }
             
+            // A task is due today if its due date is today
             return isToday(dueDate);
           });
         },
         
         getTasksDueTomorrow: () => {
           return taskSlice.tasks.filter(task => {
-            if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) return false;
+            // Skip completed or archived tasks
+            if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) {
+              return false;
+            }
             
+            // We need a valid due date to check if it's due tomorrow
             const dueDate = getValidDate(task.dueDate);
-            if (!dueDate) return false;
+            if (!dueDate) {
+              return false;
+            }
             
+            // A task is due tomorrow if its due date is tomorrow
             return isTomorrow(dueDate);
           });
         },
         
         getTasksDueThisWeek: () => {
           return taskSlice.tasks.filter(task => {
-            if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) return false;
+            // Skip completed or archived tasks
+            if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) {
+              return false;
+            }
             
+            // We need a valid due date to check if it's due this week
             const dueDate = getValidDate(task.dueDate);
-            if (!dueDate) return false;
+            if (!dueDate) {
+              return false;
+            }
             
-            // Include tasks due this week except today and tomorrow
+            // A task is due this week if it's due date is this week, but not today or tomorrow
             return isThisWeek(dueDate) && !isToday(dueDate) && !isTomorrow(dueDate);
           });
         },
         
         getHighPriorityTasks: () => {
           return taskSlice.tasks.filter(task => {
-            if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) return false;
+            // Skip completed or archived tasks
+            if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) {
+              return false;
+            }
             
-            // For high priority tasks, we include those with undefined due dates
+            // High priority tasks with no due date
             if (!task.dueDate) {
               return task.priority === TaskPriority.HIGH || task.priority === TaskPriority.URGENT;
             }
@@ -189,12 +219,14 @@ export const useTaskStore = create<TaskStore>()(
             // Skip tasks that are already covered by date-based filters
             const dueDate = getValidDate(task.dueDate);
             if (dueDate) {
+              // If the task is already in one of the date-based categories, skip it
               if (isPast(dueDate) || isToday(dueDate) || isTomorrow(dueDate) || 
                   (isThisWeek(dueDate) && !isToday(dueDate) && !isTomorrow(dueDate))) {
                 return false;
               }
             }
             
+            // Include task if it's high priority
             return task.priority === TaskPriority.HIGH || task.priority === TaskPriority.URGENT;
           });
         },
