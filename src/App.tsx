@@ -1,6 +1,6 @@
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/auth/AuthContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -13,9 +13,19 @@ import { useTaskStore, useProjectStore, useIntegrationStore } from '@/store';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 
 function App() {
-  const { fetchTasks, setupTaskSubscription, refreshTaskCounts } = useTaskStore();
+  const { 
+    fetchTasks, 
+    setupTaskSubscription, 
+    refreshTaskCounts,
+    isInitialLoadComplete,
+  } = useTaskStore();
+  
   const { fetchProjects, setupProjectSubscription } = useProjectStore();
   const { fetchIntegrations, fetchCalendarEvents, fetchEmailSettings } = useIntegrationStore();
+  
+  // Use refs to track subscription cleanup functions
+  const taskSubscriptionRef = useRef<() => void | null>(null);
+  const projectSubscriptionRef = useRef<() => void | null>(null);
   
   useEffect(() => {
     console.log("App mounted - setting up data fetching and subscriptions");
@@ -56,13 +66,51 @@ function App() {
     
     // Setup real-time subscriptions after initial data load
     console.log("Setting up real-time subscriptions");
-    const unsubscribeTasks = setupTaskSubscription();
-    const unsubscribeProjects = setupProjectSubscription();
+    
+    // Store cleanup functions in refs
+    taskSubscriptionRef.current = setupTaskSubscription();
+    projectSubscriptionRef.current = setupProjectSubscription();
+    
+    // Set up network status event listeners
+    const handleOnline = () => {
+      console.log("Network connection restored - refreshing data and subscriptions");
+      
+      // Clean up existing subscriptions
+      if (taskSubscriptionRef.current) {
+        taskSubscriptionRef.current();
+      }
+      if (projectSubscriptionRef.current) {
+        projectSubscriptionRef.current();
+      }
+      
+      // Fetch fresh data
+      fetchTasks();
+      fetchProjects();
+      
+      // Set up new subscriptions
+      taskSubscriptionRef.current = setupTaskSubscription();
+      projectSubscriptionRef.current = setupProjectSubscription();
+    };
+    
+    // Add network status event listeners
+    window.addEventListener('online', handleOnline);
     
     return () => {
       console.log("App unmounting - cleaning up subscriptions");
-      unsubscribeTasks();
-      unsubscribeProjects();
+      
+      // Remove event listeners
+      window.removeEventListener('online', handleOnline);
+      
+      // Clean up subscriptions using refs
+      if (taskSubscriptionRef.current) {
+        taskSubscriptionRef.current();
+        taskSubscriptionRef.current = null;
+      }
+      
+      if (projectSubscriptionRef.current) {
+        projectSubscriptionRef.current();
+        projectSubscriptionRef.current = null;
+      }
     };
   }, [
     fetchTasks, 

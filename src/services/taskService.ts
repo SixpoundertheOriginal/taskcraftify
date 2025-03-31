@@ -222,12 +222,24 @@ export const TaskService = {
   subscribeToTasks(callback: (tasks: Task[]) => void): (() => void) {
     console.log("Setting up realtime subscription to tasks table");
     
+    // Create a unique channel name to avoid conflicts with multiple subscriptions
+    const channelName = `tasks-channel-${Math.random().toString(36).substring(2, 9)}`;
+    
+    // Create channel with reconnection capability
     const channel = supabase
-      .channel('tasks-channel')
+      .channel(channelName, {
+        config: {
+          broadcast: { self: true },
+          presence: { key: '' },
+          // Enable automatic retry with exponential backoff
+          retry_interval: 1000,
+          retry_interval_max: 30000,
+        }
+      })
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'tasks' }, 
         async (payload) => {
-          console.log("Realtime task update detected:", payload.eventType);
+          console.log(`Realtime task update detected: ${payload.eventType} on record ${payload.new?.id || payload.old?.id}`);
           // When any change happens, refresh the task list
           try {
             const result = await this.fetchTasks();
@@ -243,12 +255,28 @@ export const TaskService = {
       )
       .subscribe((status) => {
         console.log(`Tasks subscription status: ${status}`);
+        
+        // If the subscription fails, log detailed information
+        if (status === 'CHANNEL_ERROR') {
+          console.error('Subscription encountered an error, will automatically retry');
+        } else if (status === 'TIMED_OUT') {
+          console.error('Subscription timed out, will automatically retry');
+        } else if (status === 'CLOSED') {
+          console.log('Subscription was closed');
+        } else if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to task updates');
+        }
       });
 
-    // Return unsubscribe function
+    // Return improved unsubscribe function with logging
     return () => {
-      console.log("Removing tasks subscription");
-      supabase.removeChannel(channel);
+      console.log(`Removing tasks subscription for channel: ${channelName}`);
+      try {
+        supabase.removeChannel(channel);
+        console.log('Subscription successfully removed');
+      } catch (error) {
+        console.error('Error removing subscription:', error);
+      }
     };
   },
 
