@@ -1,4 +1,3 @@
-
 import { useTaskStore } from '@/store';
 import { Task, TaskStatus } from '@/types/task';
 import { Plus } from 'lucide-react';
@@ -86,7 +85,7 @@ function KanbanColumnComponent({ id, title, tasks, status, className }: KanbanCo
               <TaskCard 
                 key={task.id} 
                 task={task} 
-                isCompact={true} // More compact view for Kanban
+                compact={true}
               />
             ))}
           </div>

@@ -21,7 +21,7 @@ export interface TaskGroupSlice {
   deleteTaskGroup: (id: string) => Promise<void>;
   
   // Task position operations
-  updateTaskPositions: (tasks: { id: string; position: number }[]) => Promise<void>;
+  updateTaskPositions: (tasks: { id: string; position: number; taskGroupId?: string }[]) => Promise<void>;
 }
 
 export const createTaskGroupSlice: StateCreator<

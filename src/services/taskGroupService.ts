@@ -2,7 +2,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { TaskGroup, CreateTaskGroupDTO, UpdateTaskGroupDTO, APITaskGroup, mapApiTaskGroupToTaskGroup, mapTaskGroupToApiTaskGroup } from '@/types/taskGroup';
 import { Task, mapApiTaskToTask } from '@/types/task';
-import { useAuth } from '@/auth/AuthContext';
 
 interface ServiceResult<T> {
   data?: T;
@@ -10,7 +9,7 @@ interface ServiceResult<T> {
 }
 
 export const TaskGroupService = {
-  async fetchTaskGroups(): Promise<ServiceResult<TaskGroup[]>> {
+  async fetchTaskGroups(projectId?: string): Promise<ServiceResult<TaskGroup[]>> {
     try {
       // Get the user's ID
       const { data: { session } } = await supabase.auth.getSession();
@@ -22,11 +21,17 @@ export const TaskGroupService = {
         };
       }
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('task_groups')
         .select('*')
         .eq('user_id', userId)
         .order('position', { ascending: true });
+        
+      if (projectId) {
+        query = query.eq('project_id', projectId);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching task groups:', error);
@@ -87,7 +92,7 @@ export const TaskGroupService = {
 
       const { data, error } = await supabase
         .from('task_groups')
-        .insert(apiTaskGroup)
+        .insert([apiTaskGroup])
         .select('*')
         .single();
 
@@ -218,7 +223,12 @@ export const TaskGroupService = {
       }
 
       // Map the API tasks to our Task interface
-      const tasks = data.map(apiTask => mapApiTaskToTask(apiTask));
+      const tasks = data.map(apiTask => mapApiTaskToTask({
+        ...apiTask,
+        task_group_id: apiTask.task_group_id || null,
+        position: apiTask.position || 0
+      }));
+      
       return { data: tasks };
     } catch (error) {
       console.error('Error in getTasksInGroup:', error);

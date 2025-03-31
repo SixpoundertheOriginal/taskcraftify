@@ -1,4 +1,3 @@
-
 // Import necessary modules
 import { Task, APITask, TaskStatus, TaskPriority } from '@/types/task';
 import { parseISO, isValid, isPast, isToday, isTomorrow, isThisWeek } from 'date-fns';
@@ -147,3 +146,19 @@ export const categorizeTasks = (tasks: Task[]): CategorizedTasks => {
   
   return categorized;
 };
+
+export function createMockTask(): Task {
+  return {
+    id: 'mock-' + Math.random().toString(36).substring(2, 9),
+    title: 'Sample Task',
+    description: 'This is a sample task for testing purposes',
+    status: TaskStatus.TODO,
+    priority: TaskPriority.MEDIUM,
+    dueDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3), // 3 days from now
+    tags: ['sample', 'test'],
+    projectId: '',
+    position: 0, // Added position property
+    createdAt: new Date(),
+    updatedAt: new Date()
+  };
+}
