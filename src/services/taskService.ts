@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Task, 
@@ -230,16 +231,18 @@ export const TaskService = {
       .channel(channelName, {
         config: {
           broadcast: { self: true },
-          presence: { key: '' },
-          // Enable automatic retry with exponential backoff
-          retry_interval: 1000,
-          retry_interval_max: 30000,
+          presence: { key: '' }
+          // Removed invalid retry_interval property
         }
       })
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'tasks' }, 
         async (payload) => {
-          console.log(`Realtime task update detected: ${payload.eventType} on record ${payload.new?.id || payload.old?.id}`);
+          console.log(`Realtime task update detected: ${payload.eventType} on record ${
+            payload.new && typeof payload.new === 'object' && 'id' in payload.new ? payload.new.id : 
+            payload.old && typeof payload.old === 'object' && 'id' in payload.old ? payload.old.id : 'unknown'
+          }`);
+          
           // When any change happens, refresh the task list
           try {
             const result = await this.fetchTasks();
