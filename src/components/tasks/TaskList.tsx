@@ -40,12 +40,20 @@ export function TaskList() {
   // Get all unique tags from tasks
   const allTags = Array.from(new Set(tasks.flatMap(task => task.tags || []))).sort();
   
+  // Debug output
+  console.log("TaskList render - Total tasks:", tasks.length);
+  console.log("TaskList render - Active filters:", filters);
+  
+  // Get filtered tasks
+  const filteredTasks = getFilteredTasks();
+  console.log("TaskList render - Filtered tasks:", filteredTasks.length);
+  
   useEffect(() => {
     console.log("TaskList: Fetching tasks and setting up subscription");
     
     // First fetch tasks directly
-    fetchTasks().then(() => {
-      console.log("TaskList: Initial task fetch complete");
+    fetchTasks().then((fetchedTasks) => {
+      console.log("TaskList: Initial task fetch complete, tasks:", fetchedTasks.length);
       // Ensure task counts are refreshed after tasks are loaded
       refreshTaskCounts();
     }).catch(err => {
@@ -83,6 +91,7 @@ export function TaskList() {
     } else if (tab === 'archived') {
       setFilters({ ...filters, status: [TaskStatus.ARCHIVED] });
     } else if (tab === 'focus') {
+      // Clear all filters when switching to focus view
       setFilters({});
     }
   };
@@ -120,8 +129,6 @@ export function TaskList() {
     setActiveTab('focus');
   };
   
-  const filteredTasks = getFilteredTasks();
-  
   if (error && activeTab !== 'focus') {
     return (
       <Alert variant="destructive" className="mb-6">
@@ -141,6 +148,13 @@ export function TaskList() {
       </div>
     );
   }
+  
+  // Debug output for task rendering
+  console.log(`About to render tasks for tab "${activeTab}":`, 
+    activeTab === 'focus' 
+      ? 'Using FocusView component'
+      : `Using filtered tasks (${filteredTasks.length})`
+  );
   
   return (
     <div className="animate-fade-in">
@@ -248,6 +262,12 @@ export function TaskList() {
                       <p className="text-sm text-muted-foreground mt-1">
                         {Object.keys(filters).length > 0 ? 'Try different filters' : 'Create your first task to get started'}
                       </p>
+                      <div className="mt-4">
+                        <pre className="text-xs text-left bg-muted p-2 rounded">
+                          Tasks in store: {tasks.length}
+                          {'\n'}Active filters: {JSON.stringify(filters, null, 2)}
+                        </pre>
+                      </div>
                     </div>
                   )}
                 </TabsContent>
@@ -267,6 +287,12 @@ export function TaskList() {
                       <p className="text-sm text-muted-foreground mt-1">
                         {Object.keys(filters).length > 0 ? 'Try different filters' : 'All your tasks are completed or archived'}
                       </p>
+                      <div className="mt-4">
+                        <pre className="text-xs text-left bg-muted p-2 rounded">
+                          Tasks in store: {tasks.length}
+                          {'\n'}Active filters: {JSON.stringify(filters, null, 2)}
+                        </pre>
+                      </div>
                     </div>
                   )}
                 </TabsContent>
@@ -285,6 +311,12 @@ export function TaskList() {
                       <p className="text-sm text-muted-foreground mt-1">
                         {Object.keys(filters).length > 0 ? 'Try different filters' : 'Complete some tasks to see them here'}
                       </p>
+                      <div className="mt-4">
+                        <pre className="text-xs text-left bg-muted p-2 rounded">
+                          Tasks in store: {tasks.length}
+                          {'\n'}Active filters: {JSON.stringify(filters, null, 2)}
+                        </pre>
+                      </div>
                     </div>
                   )}
                 </TabsContent>
@@ -303,6 +335,12 @@ export function TaskList() {
                       <p className="text-sm text-muted-foreground mt-1">
                         {Object.keys(filters).length > 0 ? 'Try different filters' : 'Archive completed tasks to keep things organized'}
                       </p>
+                      <div className="mt-4">
+                        <pre className="text-xs text-left bg-muted p-2 rounded">
+                          Tasks in store: {tasks.length}
+                          {'\n'}Active filters: {JSON.stringify(filters, null, 2)}
+                        </pre>
+                      </div>
                     </div>
                   )}
                 </TabsContent>
