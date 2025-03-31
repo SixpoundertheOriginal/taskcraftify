@@ -89,7 +89,7 @@ export const ProjectService = {
 
   async updateProject(projectUpdate: UpdateProjectDTO): Promise<ServiceResult<Project>> {
     try {
-      const projectUpdateData: any = {
+      const projectUpdateData: Record<string, any> = {
         id: projectUpdate.id
       };
       

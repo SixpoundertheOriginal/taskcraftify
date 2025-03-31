@@ -1,4 +1,3 @@
-
 export type Json =
   | string
   | number
@@ -212,6 +211,56 @@ export interface Database {
           updated_at?: string
         }
       }
+      projects: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          color: string
+          created_at: string
+          updated_at: string
+          user_id: string
+          parent_project_id: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          color?: string
+          created_at?: string
+          updated_at?: string
+          user_id: string
+          parent_project_id?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          color?: string
+          created_at?: string
+          updated_at?: string
+          user_id?: string
+          parent_project_id?: string | null
+        }
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      increment_template_usage: {
+        Args: {
+          template_id: string
+        }
+        Returns: undefined
+      }
+    }
+    Enums: {
+      task_priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT"
+      task_status: "BACKLOG" | "TODO" | "IN_PROGRESS" | "DONE" | "ARCHIVED"
+    }
+    CompositeTypes: {
+      [_ in never]: never
     }
   }
 }
