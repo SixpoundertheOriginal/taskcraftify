@@ -1,6 +1,8 @@
+
 import { TaskStatus, TaskPriority } from '@/types/task';
 import { ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { format, isPast, isToday, parseISO } from 'date-fns';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -76,4 +78,33 @@ export function getPriorityLabel(priority: TaskPriority): string {
     default:
       return priority;
   }
+}
+
+// Add new functions for date handling
+
+/**
+ * Format a date string or Date object into a readable format
+ */
+export function formatDate(date: string | Date): string {
+  if (!date) return '';
+  
+  const dateObj = typeof date === 'string' ? parseISO(date) : date;
+  
+  if (isToday(dateObj)) {
+    return `Today, ${format(dateObj, 'h:mm a')}`;
+  }
+  
+  return format(dateObj, 'MMM d, yyyy');
+}
+
+/**
+ * Check if a date is overdue (in the past and not today)
+ */
+export function isOverdue(date: string | Date): boolean {
+  if (!date) return false;
+  
+  const dateObj = typeof date === 'string' ? parseISO(date) : date;
+  
+  // If the date is in the past but not today, it's overdue
+  return isPast(dateObj) && !isToday(dateObj);
 }
