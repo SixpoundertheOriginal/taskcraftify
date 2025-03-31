@@ -19,7 +19,8 @@ import {
   addDays,
   isToday,
   isTomorrow,
-  isThisWeek
+  isThisWeek,
+  isPast
 } from 'date-fns';
 
 export type TaskStore = TaskSlice & FilterSlice & SubscriptionSlice & StatsSlice & AttachmentSlice & {
