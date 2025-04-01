@@ -22,14 +22,15 @@ import { mapApiTaskToTask } from '@/utils/task';
 export interface TaskSlice {
   // State
   tasks: Task[];
-  currentTask: Task | null;
+  filters: TaskFilters;
   isLoading: boolean;
   error: string | null;
   
   // Task CRUD operations
   fetchTasks: () => Promise<Task[]>;
-  createTask: (taskData: CreateTaskDTO) => Promise<Task>;
-  updateTask: (taskUpdate: UpdateTaskDTO) => Promise<Task>;
+  fetchTasksByProject: (projectId: string) => Promise<Task[]>;
+  createTask: (taskData: CreateTaskDTO) => Promise<Task | null>;
+  updateTask: (taskUpdate: UpdateTaskDTO) => Promise<Task | null>;
   deleteTask: (id: string) => Promise<void>;
   setCurrentTask: (task: Task | null) => void;
   
@@ -60,7 +61,11 @@ export const createTaskSlice: StateCreator<
 > = (set, get) => ({
   // State
   tasks: [],
-  currentTask: null,
+  filters: {
+    status: TaskStatus.All,
+    project: null,
+    search: ''
+  },
   isLoading: false,
   error: null,
   
@@ -85,6 +90,34 @@ export const createTaskSlice: StateCreator<
       return tasks;
     } catch (error) {
       console.error('Error fetching tasks:', error);
+      set({ 
+        isLoading: false, 
+        error: error instanceof Error ? error.message : 'An unknown error occurred' 
+      });
+      return [];
+    }
+  },
+  
+  fetchTasksByProject: async (projectId: string) => {
+    set({ isLoading: true, error: null });
+    
+    try {
+      console.log("TaskSlice.fetchTasksByProject(): Starting fetch");
+      const result = await TaskService.fetchTasksByProject(projectId);
+      
+      if (result.error) {
+        console.error("Error in fetchTasksByProject:", result.error);
+        throw result.error;
+      }
+      
+      // Make sure we have an array of tasks even if data is null or undefined
+      const tasks = result.data || [];
+      console.log(`TaskSlice.fetchTasksByProject(): Received ${tasks.length} tasks`);
+      
+      set({ tasks, isLoading: false });
+      return tasks;
+    } catch (error) {
+      console.error('Error fetching tasks by project:', error);
       set({ 
         isLoading: false, 
         error: error instanceof Error ? error.message : 'An unknown error occurred' 

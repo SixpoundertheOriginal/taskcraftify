@@ -109,6 +109,76 @@ export const TaskService = {
     }
   },
 
+  async fetchTasksByProject(projectId: string): Promise<ServiceResult<Task[]>> {
+    try {
+      console.log(`TaskService.fetchTasksByProject(): Fetching tasks for project ${projectId}`);
+      
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('position', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching tasks by project:', error);
+        return { data: null, error: new Error(error.message) };
+      }
+
+      console.log(`Fetched ${data?.length || 0} tasks for project ${projectId}`);
+      
+      const mappedTasks = Array.isArray(data) ? (data as APITask[]).map(apiTask => {
+        const task = mapApiTaskToTask(apiTask);
+        return task;
+      }) : [];
+      
+      return { 
+        data: mappedTasks, 
+        error: null 
+      };
+    } catch (error) {
+      console.error('Unexpected error fetching tasks by project:', error);
+      return { 
+        data: null, 
+        error: error instanceof Error ? error : new Error('Unknown error occurred') 
+      };
+    }
+  },
+
+  async fetchTasksWithNoProject(): Promise<ServiceResult<Task[]>> {
+    try {
+      console.log("TaskService.fetchTasksWithNoProject(): Fetching tasks with no project");
+      
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .is('project_id', null)
+        .order('position', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching tasks with no project:', error);
+        return { data: null, error: new Error(error.message) };
+      }
+
+      console.log(`Fetched ${data?.length || 0} tasks with no project`);
+      
+      const mappedTasks = Array.isArray(data) ? (data as APITask[]).map(apiTask => {
+        const task = mapApiTaskToTask(apiTask);
+        return task;
+      }) : [];
+      
+      return { 
+        data: mappedTasks, 
+        error: null 
+      };
+    } catch (error) {
+      console.error('Unexpected error fetching tasks with no project:', error);
+      return { 
+        data: null, 
+        error: error instanceof Error ? error : new Error('Unknown error occurred') 
+      };
+    }
+  },
+
   async createTask(taskData: CreateTaskDTO): Promise<ServiceResult<Task>> {
     try {
       const { data: userData, error: userError } = await supabase.auth.getUser();
