@@ -1,3 +1,4 @@
+
 import { StateCreator } from 'zustand';
 import { 
   Task, 
@@ -25,6 +26,7 @@ export interface TaskSlice {
   filters: TaskFilters;
   isLoading: boolean;
   error: string | null;
+  currentTask: Task | null; // Add currentTask to the interface
   
   // Task CRUD operations
   fetchTasks: () => Promise<Task[]>;
@@ -62,12 +64,13 @@ export const createTaskSlice: StateCreator<
   // State
   tasks: [],
   filters: {
-    status: TaskStatus.All,
+    status: null, // Use null instead of TaskStatus.All
     project: null,
     search: ''
   },
   isLoading: false,
   error: null,
+  currentTask: null, // Initialize currentTask as null
   
   // Task CRUD operations
   fetchTasks: async () => {
@@ -641,6 +644,7 @@ export const createTaskSlice: StateCreator<
         
         return { 
           tasks: updatedTasks,
+          currentTask: task,
           isLoading: false 
         };
       });

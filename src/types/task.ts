@@ -1,3 +1,4 @@
+
 // Import necessary modules
 import { Database } from '@/integrations/supabase/types';
 import { parseISO } from 'date-fns';
@@ -9,6 +10,7 @@ export enum TaskStatus {
   DONE = 'DONE',
   ARCHIVED = 'ARCHIVED',
   BACKLOG = 'BACKLOG'
+  // Note: Removed 'All' from the enum as it was causing TS errors
 }
 
 export enum TaskPriority {
@@ -148,12 +150,14 @@ export interface APIActivity {
 // Task filters
 export interface TaskFilters {
   projectId?: string;
-  status?: TaskStatus[];
+  status?: TaskStatus[] | null;
   priority?: TaskPriority[];
   tags?: string[];
   searchQuery?: string;
   dueDateFrom?: Date;
   dueDateTo?: Date;
+  search?: string;
+  project?: string | null;
 }
 
 // Helper functions for tasks
