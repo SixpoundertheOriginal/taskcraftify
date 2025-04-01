@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -53,12 +54,20 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
     taskToEdit?.dueDate || initialDueDate
   );
   
-  const [projectId, setProjectId] = useState<string | undefined>(
-    taskToEdit?.projectId || 
-    initialProjectId || 
-    selectedProjectId || 
-    undefined
-  );
+  // For debugging
+  console.log("TaskFormContent - initialProjectId:", initialProjectId);
+  console.log("TaskFormContent - selectedProjectId:", selectedProjectId);
+  
+  // Initialize projectId with proper fallback order:
+  // 1. Use task's project ID if editing
+  // 2. Use initialProjectId from props
+  // 3. Use selectedProjectId from store
+  // 4. Default to undefined (no project)
+  const [projectId, setProjectId] = useState<string | undefined>(() => {
+    const id = taskToEdit?.projectId || initialProjectId || selectedProjectId || undefined;
+    console.log("TaskFormContent - Setting initial projectId:", id);
+    return id;
+  });
   
   const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(undefined);
@@ -92,11 +101,13 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
     });
   }, [fetchTemplates]);
   
+  // Log state for debugging
   useEffect(() => {
-    console.log("TaskFormContent - Project ID:", projectId);
-    console.log("initialProjectId:", initialProjectId);
-    console.log("selectedProjectId:", selectedProjectId);
-  }, [projectId, initialProjectId, selectedProjectId]);
+    console.log("TaskFormContent - Current project ID state:", projectId);
+    console.log("TaskFormContent - initialProjectId prop:", initialProjectId);
+    console.log("TaskFormContent - selectedProjectId from store:", selectedProjectId);
+    console.log("TaskFormContent - Available projects:", projects);
+  }, [projectId, initialProjectId, selectedProjectId, projects]);
   
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
@@ -191,12 +202,17 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
   
   const onSubmit = async (data: CreateTaskDTO) => {
     try {
+      console.log("Submitting task with projectId:", projectId);
+      console.log("Form data before submission:", data);
+      
       const taskData: CreateTaskDTO = {
         ...data,
         dueDate,
         tags,
         projectId: projectId === 'none' ? undefined : projectId
       };
+      
+      console.log("Final task data being submitted:", taskData);
       
       let taskId: string;
       
@@ -235,6 +251,7 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
       setSelectedTemplateId(undefined);
       onSuccess();
     } catch (err) {
+      console.error("Error in task submission:", err);
       toast({
         title: taskToEdit ? "Failed to update task" : "Failed to create task",
         description: error ? (typeof error === 'string' ? error : "An unexpected error occurred.") : "An unexpected error occurred.",

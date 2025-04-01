@@ -32,6 +32,8 @@ export const QuickAddButton = () => {
   const [isHovered, setIsHovered] = useState(false);
   const { selectedProjectId } = useProjectStore();
   
+  console.log("QuickAddButton - selectedProjectId:", selectedProjectId);
+  
   const handleOpenTaskForm = (type: 'task' | 'event') => {
     setTaskFormType(type);
     setIsTaskFormOpen(true);
@@ -68,9 +70,6 @@ export const QuickAddButton = () => {
   const handleTaskFormOpenChange = (open: boolean) => {
     setIsTaskFormOpen(open);
   };
-  
-  // Get the current project ID from the store to pass to the task form
-  const currentProjectId = selectedProjectId;
   
   return (
     <>
@@ -135,7 +134,7 @@ export const QuickAddButton = () => {
         open={isTaskFormOpen}
         onOpenChange={handleTaskFormOpenChange}
         initialDueDate={taskFormType === 'event' ? new Date() : undefined}
-        initialProjectId={currentProjectId} 
+        initialProjectId={selectedProjectId} 
       />
     </>
   );
