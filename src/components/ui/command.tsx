@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import { type DialogProps } from "@radix-ui/react-dialog"
 import { Command as CommandPrimitive } from "cmdk"
@@ -47,6 +48,7 @@ const CommandInput = React.forwardRef<
         "flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
         className
       )}
+      onClick={(e) => e.stopPropagation()}
       {...props}
     />
   </div>
@@ -118,6 +120,15 @@ const CommandItem = React.forwardRef<
       "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected='true']:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50",
       className
     )}
+    onClick={(e) => {
+      // Stop propagation to ensure the click isn't captured by parent elements
+      e.stopPropagation();
+      
+      // Allow the event to be handled normally by the CommandItem component
+      if (props.onSelect && typeof props.onSelect === 'function') {
+        props.onSelect();
+      }
+    }}
     {...props}
   />
 ))

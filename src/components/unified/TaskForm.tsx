@@ -370,7 +370,7 @@ export function UnifiedTaskForm({
                         <ChevronDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[280px] p-0" align="start">
+                    <PopoverContent className="w-[280px] p-0 z-50" align="start">
                       {showProjectForm ? (
                         <ProjectQuickCreateForm 
                           onSuccess={handleProjectCreated}
@@ -378,8 +378,12 @@ export function UnifiedTaskForm({
                         />
                       ) : (
                         <Command>
-                          <CommandInput placeholder="Search projects..." />
-                          <CommandList>
+                          <CommandInput 
+                            placeholder="Search projects..." 
+                            className="z-50"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <CommandList className="z-50">
                             <CommandEmpty>No projects found.</CommandEmpty>
                             
                             <CommandGroup>
@@ -594,7 +598,7 @@ export function UnifiedTaskForm({
                       <ChevronDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[280px] p-0" align="start">
+                  <PopoverContent className="w-[280px] p-0 z-50" align="start">
                     {showProjectForm ? (
                       <ProjectQuickCreateForm 
                         onSuccess={handleProjectCreated}
@@ -602,8 +606,12 @@ export function UnifiedTaskForm({
                       />
                     ) : (
                       <Command>
-                        <CommandInput placeholder="Search projects..." />
-                        <CommandList>
+                        <CommandInput 
+                          placeholder="Search projects..." 
+                          className="z-50"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <CommandList className="z-50">
                           <CommandEmpty>No projects found.</CommandEmpty>
                           
                           <CommandGroup>

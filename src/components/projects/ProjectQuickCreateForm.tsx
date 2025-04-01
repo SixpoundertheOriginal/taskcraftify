@@ -19,6 +19,7 @@ export function ProjectQuickCreateForm({ onSuccess, onCancel }: ProjectQuickCrea
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation(); // Prevent event from bubbling up
     
     if (!name.trim()) {
       toast({
@@ -51,15 +52,21 @@ export function ProjectQuickCreateForm({ onSuccess, onCancel }: ProjectQuickCrea
     }
   };
   
+  const handleCancelClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation(); // Prevent event from bubbling up
+    onCancel();
+  };
+  
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 p-2">
+    <form onSubmit={handleSubmit} className="space-y-4 p-2" onClick={(e) => e.stopPropagation()}>
       <div className="flex items-center justify-between">
         <h3 className="font-medium">Create New Project</h3>
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          onClick={onCancel}
+          onClick={handleCancelClick}
           className="h-6 w-6"
         >
           <X className="h-4 w-4" />
@@ -72,6 +79,7 @@ export function ProjectQuickCreateForm({ onSuccess, onCancel }: ProjectQuickCrea
           value={name}
           onChange={(e) => setName(e.target.value)}
           autoFocus
+          onClick={(e) => e.stopPropagation()}
         />
       </div>
       
@@ -85,10 +93,20 @@ export function ProjectQuickCreateForm({ onSuccess, onCancel }: ProjectQuickCrea
       </div>
       
       <div className="flex justify-end space-x-2">
-        <Button type="button" variant="outline" onClick={onCancel} size="sm">
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={handleCancelClick} 
+          size="sm"
+        >
           Cancel
         </Button>
-        <Button type="submit" size="sm" disabled={isSubmitting}>
+        <Button 
+          type="submit" 
+          size="sm" 
+          disabled={isSubmitting}
+          onClick={(e) => e.stopPropagation()}
+        >
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

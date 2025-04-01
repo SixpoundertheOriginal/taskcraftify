@@ -20,7 +20,10 @@ export function ColorSelector({ value, onChange, colors }: ColorSelectorProps) {
             value === color ? "ring-2 ring-offset-2 ring-offset-background ring-primary scale-110" : ""
           )}
           style={{ backgroundColor: color }}
-          onClick={() => onChange(color)}
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent event from bubbling up
+            onChange(color);
+          }}
         >
           {value === color && <Check className="h-4 w-4 text-white" />}
         </button>
