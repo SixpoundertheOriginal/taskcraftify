@@ -31,6 +31,8 @@ import { RichTextInput } from '@/components/ui/rich-text-input';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from '@/components/ui/command';
 import { Check, ChevronDown } from 'lucide-react';
 import { useProjectStore } from '@/store';
+import { FolderPlus } from 'lucide-react';
+import { ProjectQuickCreateForm } from '@/components/projects/ProjectQuickCreateForm';
 
 interface TaskFormProps {
   open: boolean;
@@ -62,6 +64,7 @@ export function UnifiedTaskForm({
   const [descriptionFiles, setDescriptionFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentTask, setCurrentTask] = useState<Task | undefined>(initialTask);
+  const [showProjectForm, setShowProjectForm] = useState(false);
   
   const { register, handleSubmit, reset, formState: { errors }, watch, setValue } = useForm<CreateTaskDTO>({
     defaultValues: initialTask ? {
@@ -108,8 +111,23 @@ export function UnifiedTaskForm({
   };
   
   const handleProjectSelect = (id: string | undefined) => {
+    if (id === 'create-new') {
+      setShowProjectForm(true);
+      return;
+    }
+    
     setProjectId(id === 'none' ? undefined : id);
     setProjectSelectorOpen(false);
+  };
+  
+  const handleProjectCreated = (newProjectId: string) => {
+    setProjectId(newProjectId);
+    setShowProjectForm(false);
+    setProjectSelectorOpen(false);
+  };
+  
+  const handleCancelProjectCreation = () => {
+    setShowProjectForm(false);
   };
   
   const handleDescriptionFilesChange = (files: File[]) => {
@@ -353,52 +371,67 @@ export function UnifiedTaskForm({
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-[280px] p-0" align="start">
-                      <Command>
-                        <CommandInput placeholder="Search projects..." />
-                        <CommandList>
-                          <CommandEmpty>No projects found.</CommandEmpty>
-                          
-                          <CommandGroup>
-                            <CommandItem 
-                              className="flex items-center gap-2 cursor-pointer"
-                              onSelect={() => handleProjectSelect(undefined)}
-                            >
-                              <span>All Projects</span>
-                              {!projectId && <Check className="ml-auto h-4 w-4" />}
-                            </CommandItem>
+                      {showProjectForm ? (
+                        <ProjectQuickCreateForm 
+                          onSuccess={handleProjectCreated}
+                          onCancel={handleCancelProjectCreation}
+                        />
+                      ) : (
+                        <Command>
+                          <CommandInput placeholder="Search projects..." />
+                          <CommandList>
+                            <CommandEmpty>No projects found.</CommandEmpty>
                             
-                            <CommandItem 
-                              className="flex items-center gap-2 cursor-pointer"
-                              onSelect={() => handleProjectSelect('none')}
-                            >
-                              <span>No Project</span>
-                              {projectId === 'none' && <Check className="ml-auto h-4 w-4" />}
-                            </CommandItem>
-                          </CommandGroup>
-                          
-                          {projects.length > 0 && (
-                            <>
-                              <CommandSeparator />
-                              <CommandGroup heading="Your Projects">
-                                {projects.map((project) => (
-                                  <CommandItem
-                                    key={project.id}
-                                    className="flex items-center gap-2 cursor-pointer"
-                                    onSelect={() => handleProjectSelect(project.id)}
-                                  >
-                                    <div 
-                                      className="w-3 h-3 rounded-full" 
-                                      style={{ backgroundColor: project.color }}
-                                    />
-                                    <span>{project.name}</span>
-                                    {projectId === project.id && <Check className="ml-auto h-4 w-4" />}
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </>
-                          )}
-                        </CommandList>
-                      </Command>
+                            <CommandGroup>
+                              <CommandItem 
+                                className="flex items-center gap-2 cursor-pointer"
+                                onSelect={() => handleProjectSelect(undefined)}
+                              >
+                                <span>All Projects</span>
+                                {!projectId && <Check className="ml-auto h-4 w-4" />}
+                              </CommandItem>
+                              
+                              <CommandItem 
+                                className="flex items-center gap-2 cursor-pointer"
+                                onSelect={() => handleProjectSelect('none')}
+                              >
+                                <span>No Project</span>
+                                {projectId === 'none' && <Check className="ml-auto h-4 w-4" />}
+                              </CommandItem>
+                              
+                              <CommandItem 
+                                className="flex items-center gap-2 cursor-pointer text-primary"
+                                onSelect={() => handleProjectSelect('create-new')}
+                              >
+                                <FolderPlus className="h-4 w-4" />
+                                <span>Create New Project</span>
+                              </CommandItem>
+                            </CommandGroup>
+                            
+                            {projects.length > 0 && (
+                              <>
+                                <CommandSeparator />
+                                <CommandGroup heading="Your Projects">
+                                  {projects.map((project) => (
+                                    <CommandItem
+                                      key={project.id}
+                                      className="flex items-center gap-2 cursor-pointer"
+                                      onSelect={() => handleProjectSelect(project.id)}
+                                    >
+                                      <div 
+                                        className="w-3 h-3 rounded-full" 
+                                        style={{ backgroundColor: project.color }}
+                                      />
+                                      <span>{project.name}</span>
+                                      {projectId === project.id && <Check className="ml-auto h-4 w-4" />}
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </>
+                            )}
+                          </CommandList>
+                        </Command>
+                      )}
                     </PopoverContent>
                   </Popover>
                 </div>
@@ -562,52 +595,67 @@ export function UnifiedTaskForm({
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-[280px] p-0" align="start">
-                    <Command>
-                      <CommandInput placeholder="Search projects..." />
-                      <CommandList>
-                        <CommandEmpty>No projects found.</CommandEmpty>
-                        
-                        <CommandGroup>
-                          <CommandItem 
-                            className="flex items-center gap-2 cursor-pointer"
-                            onSelect={() => handleProjectSelect(undefined)}
-                          >
-                            <span>All Projects</span>
-                            {!projectId && <Check className="ml-auto h-4 w-4" />}
-                          </CommandItem>
+                    {showProjectForm ? (
+                      <ProjectQuickCreateForm 
+                        onSuccess={handleProjectCreated}
+                        onCancel={handleCancelProjectCreation}
+                      />
+                    ) : (
+                      <Command>
+                        <CommandInput placeholder="Search projects..." />
+                        <CommandList>
+                          <CommandEmpty>No projects found.</CommandEmpty>
                           
-                          <CommandItem 
-                            className="flex items-center gap-2 cursor-pointer"
-                            onSelect={() => handleProjectSelect('none')}
-                          >
-                            <span>No Project</span>
-                            {projectId === 'none' && <Check className="ml-auto h-4 w-4" />}
-                          </CommandItem>
-                        </CommandGroup>
-                        
-                        {projects.length > 0 && (
-                          <>
-                            <CommandSeparator />
-                            <CommandGroup heading="Your Projects">
-                              {projects.map((project) => (
-                                <CommandItem
-                                  key={project.id}
-                                  className="flex items-center gap-2 cursor-pointer"
-                                  onSelect={() => handleProjectSelect(project.id)}
-                                >
-                                  <div 
-                                    className="w-3 h-3 rounded-full" 
-                                    style={{ backgroundColor: project.color }}
-                                  />
-                                  <span>{project.name}</span>
-                                  {projectId === project.id && <Check className="ml-auto h-4 w-4" />}
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </>
-                        )}
-                      </CommandList>
-                    </Command>
+                          <CommandGroup>
+                            <CommandItem 
+                              className="flex items-center gap-2 cursor-pointer"
+                              onSelect={() => handleProjectSelect(undefined)}
+                            >
+                              <span>All Projects</span>
+                              {!projectId && <Check className="ml-auto h-4 w-4" />}
+                            </CommandItem>
+                            
+                            <CommandItem 
+                              className="flex items-center gap-2 cursor-pointer"
+                              onSelect={() => handleProjectSelect('none')}
+                            >
+                              <span>No Project</span>
+                              {projectId === 'none' && <Check className="ml-auto h-4 w-4" />}
+                            </CommandItem>
+                            
+                            <CommandItem 
+                              className="flex items-center gap-2 cursor-pointer text-primary"
+                              onSelect={() => handleProjectSelect('create-new')}
+                            >
+                              <FolderPlus className="h-4 w-4" />
+                              <span>Create New Project</span>
+                            </CommandItem>
+                          </CommandGroup>
+                          
+                          {projects.length > 0 && (
+                            <>
+                              <CommandSeparator />
+                              <CommandGroup heading="Your Projects">
+                                {projects.map((project) => (
+                                  <CommandItem
+                                    key={project.id}
+                                    className="flex items-center gap-2 cursor-pointer"
+                                    onSelect={() => handleProjectSelect(project.id)}
+                                  >
+                                    <div 
+                                      className="w-3 h-3 rounded-full" 
+                                      style={{ backgroundColor: project.color }}
+                                    />
+                                    <span>{project.name}</span>
+                                    {projectId === project.id && <Check className="ml-auto h-4 w-4" />}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </>
+                          )}
+                        </CommandList>
+                      </Command>
+                    )}
                   </PopoverContent>
                 </Popover>
               </div>

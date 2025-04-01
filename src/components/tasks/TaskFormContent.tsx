@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Calendar as CalendarIcon, Loader2, Plus, Tag, X } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, Plus, Tag, X, FolderPlus } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +33,7 @@ import { SaveTemplateDialog } from './SaveTemplateDialog';
 import { TaskTemplate } from '@/types/template';
 import { templateService } from '@/services/templateService';
 import { SmartTemplateSelector } from './SmartTemplateSelector';
+import { ProjectQuickCreateForm } from '@/components/projects/ProjectQuickCreateForm';
 
 interface TaskFormContentProps {
   onSuccess: () => void;
@@ -57,6 +57,7 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
   const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(undefined);
   const [projectSelectorOpen, setProjectSelectorOpen] = useState(false);
+  const [showProjectForm, setShowProjectForm] = useState(false);
   
   const { register, handleSubmit, reset, setValue, watch, control, formState: { errors } } = useForm<CreateTaskDTO>({
     defaultValues: taskToEdit ? {
@@ -104,9 +105,24 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
   };
   
   const handleProjectSelect = (id: string | null) => {
+    if (id === 'create-new') {
+      setShowProjectForm(true);
+      return;
+    }
+    
     console.log("Project selected:", id);
     setProjectId(id === 'none' ? undefined : id === null ? undefined : id);
     setProjectSelectorOpen(false);
+  };
+  
+  const handleProjectCreated = (newProjectId: string) => {
+    setProjectId(newProjectId);
+    setShowProjectForm(false);
+    setProjectSelectorOpen(false);
+  };
+  
+  const handleCancelProjectCreation = () => {
+    setShowProjectForm(false);
   };
   
   const handleSelectTemplate = async (template: TaskTemplate) => {
@@ -215,7 +231,6 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
     }
   };
   
-  // Current project for display
   const currentProject = projectId ? projects.find(p => p.id === projectId) : null;
   
   return (
@@ -342,52 +357,67 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-[280px] p-0" align="start">
-            <Command>
-              <CommandInput placeholder="Search projects..." />
-              <CommandList>
-                <CommandEmpty>No projects found.</CommandEmpty>
-                
-                <CommandGroup>
-                  <CommandItem 
-                    className="flex items-center gap-2 cursor-pointer"
-                    onSelect={() => handleProjectSelect(null)}
-                  >
-                    <span>All Projects</span>
-                    {projectId === null && <Check className="ml-auto h-4 w-4" />}
-                  </CommandItem>
+            {showProjectForm ? (
+              <ProjectQuickCreateForm 
+                onSuccess={handleProjectCreated}
+                onCancel={handleCancelProjectCreation}
+              />
+            ) : (
+              <Command>
+                <CommandInput placeholder="Search projects..." />
+                <CommandList>
+                  <CommandEmpty>No projects found.</CommandEmpty>
                   
-                  <CommandItem 
-                    className="flex items-center gap-2 cursor-pointer"
-                    onSelect={() => handleProjectSelect('none')}
-                  >
-                    <span>No Project</span>
-                    {projectId === 'none' && <Check className="ml-auto h-4 w-4" />}
-                  </CommandItem>
-                </CommandGroup>
-                
-                {projects.length > 0 && (
-                  <>
-                    <CommandSeparator />
-                    <CommandGroup heading="Your Projects">
-                      {projects.map((project) => (
-                        <CommandItem
-                          key={project.id}
-                          className="flex items-center gap-2 cursor-pointer"
-                          onSelect={() => handleProjectSelect(project.id)}
-                        >
-                          <div 
-                            className="w-3 h-3 rounded-full" 
-                            style={{ backgroundColor: project.color }}
-                          />
-                          <span>{project.name}</span>
-                          {projectId === project.id && <Check className="ml-auto h-4 w-4" />}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </>
-                )}
-              </CommandList>
-            </Command>
+                  <CommandGroup>
+                    <CommandItem 
+                      className="flex items-center gap-2 cursor-pointer"
+                      onSelect={() => handleProjectSelect(null)}
+                    >
+                      <span>All Projects</span>
+                      {projectId === null && <Check className="ml-auto h-4 w-4" />}
+                    </CommandItem>
+                    
+                    <CommandItem 
+                      className="flex items-center gap-2 cursor-pointer"
+                      onSelect={() => handleProjectSelect('none')}
+                    >
+                      <span>No Project</span>
+                      {projectId === 'none' && <Check className="ml-auto h-4 w-4" />}
+                    </CommandItem>
+                    
+                    <CommandItem 
+                      className="flex items-center gap-2 cursor-pointer text-primary"
+                      onSelect={() => handleProjectSelect('create-new')}
+                    >
+                      <FolderPlus className="h-4 w-4" />
+                      <span>Create New Project</span>
+                    </CommandItem>
+                  </CommandGroup>
+                  
+                  {projects.length > 0 && (
+                    <>
+                      <CommandSeparator />
+                      <CommandGroup heading="Your Projects">
+                        {projects.map((project) => (
+                          <CommandItem
+                            key={project.id}
+                            className="flex items-center gap-2 cursor-pointer"
+                            onSelect={() => handleProjectSelect(project.id)}
+                          >
+                            <div 
+                              className="w-3 h-3 rounded-full" 
+                              style={{ backgroundColor: project.color }}
+                            />
+                            <span>{project.name}</span>
+                            {projectId === project.id && <Check className="ml-auto h-4 w-4" />}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </>
+                  )}
+                </CommandList>
+              </Command>
+            )}
           </PopoverContent>
         </Popover>
       </div>
@@ -400,7 +430,7 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
               variant="outline"
               className="w-full justify-start text-left font-normal"
               id="dueDate"
-              type="button" // Explicitly set type to prevent form submission
+              type="button"
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
               {dueDate ? format(dueDate, 'PPP') : <span className="text-muted-foreground">Select due date</span>}
@@ -445,7 +475,7 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
                   size="icon"
                   className="h-4 w-4 p-0 hover:bg-transparent"
                   onClick={() => handleRemoveTag(tag)}
-                  type="button" // Explicitly set type to prevent form submission
+                  type="button"
                 >
                   <X className="h-3 w-3" />
                   <span className="sr-only">Remove tag</span>
