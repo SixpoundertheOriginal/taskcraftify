@@ -63,8 +63,8 @@ export function mapTaskGroupToApiTaskGroup(
   userId?: string
 ): {
   id?: string;
-  user_id?: string;
-  name: string;  // This is now required
+  user_id: string;  // Changed from optional to required
+  name: string;
   description: string | null;
   project_id: string | null;
   color: string | null;
@@ -75,22 +75,20 @@ export function mapTaskGroupToApiTaskGroup(
     throw new Error('Task group name is required');
   }
 
-  // Create the object with required name property
+  // We need to ensure 'userId' is always present
+  if (!userId) {
+    throw new Error('User ID is required');
+  }
+
+  // Create the object with required name property and user_id
   const apiTaskGroup = {
-    name: taskGroup.name,  // Now always present
+    name: taskGroup.name,
     description: taskGroup.description || null,
     project_id: taskGroup.projectId || null,
     color: taskGroup.color || null,
     position: taskGroup.position || 0,
+    user_id: userId  // Always include user_id
   };
-
-  // Add user_id if provided
-  if (userId) {
-    return {
-      ...apiTaskGroup,
-      user_id: userId
-    };
-  }
 
   // Add id if it's an update operation
   if ('id' in taskGroup) {

@@ -93,13 +93,13 @@ export const TaskGroupService = {
       const newPosition = taskGroupData.position !== undefined ? taskGroupData.position : highestPosition + 1;
 
       try {
-        // This will throw an error if name is missing
+        // Create the API task group with required user_id
         const apiTaskGroup = mapTaskGroupToApiTaskGroup({
           ...taskGroupData,
           position: newPosition
         }, userId);
         
-        // Insert the task group
+        // Insert the task group with the required user_id
         const { data, error } = await supabase
           .from('task_groups')
           .insert(apiTaskGroup)
