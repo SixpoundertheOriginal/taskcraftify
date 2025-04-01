@@ -12,7 +12,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function CreateTaskWithProject() {
-  const { projects } = useProjectStore();
+  const { projects = [] } = useProjectStore();
   const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(
     projects.length > 0 ? projects[0].id : undefined
   );
@@ -35,7 +35,7 @@ export function CreateTaskWithProject() {
               <SelectValue placeholder="Select a project" />
             </SelectTrigger>
             <SelectContent>
-              {projects.map((project) => (
+              {projects && projects.map((project) => (
                 <SelectItem key={project.id} value={project.id}>
                   <div className="flex items-center gap-2">
                     <div 

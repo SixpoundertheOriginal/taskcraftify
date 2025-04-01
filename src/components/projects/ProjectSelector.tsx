@@ -25,7 +25,7 @@ export function ProjectSelector({
   buttonClassName, 
   triggerClassName 
 }: ProjectSelectorProps) {
-  const { projects, selectedProjectId, selectProject } = useProjectStore();
+  const { projects = [], selectedProjectId, selectProject } = useProjectStore();
   const { fetchTasksByProject } = useTaskStore();
   
   const [open, setOpen] = useState(false);
@@ -87,7 +87,7 @@ export function ProjectSelector({
           No Project
         </DropdownMenuItem>
         
-        {projects.map(project => (
+        {projects && projects.length > 0 && projects.map(project => (
           <DropdownMenuItem
             key={project.id}
             onClick={() => handleSelectProject(project.id)}

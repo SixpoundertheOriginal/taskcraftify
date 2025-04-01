@@ -30,7 +30,7 @@ export function ProjectSelectorItem({
     <CommandItem
       className="flex items-center gap-2 cursor-pointer"
       onSelect={handleSelect}
-      value={id}
+      value={id || ''}
     >
       {color ? (
         <div 
