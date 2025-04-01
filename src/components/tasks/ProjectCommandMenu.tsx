@@ -63,21 +63,21 @@ export function ProjectCommandMenu({
                 id={undefined}
                 name="All Projects"
                 isSelected={projectId === undefined || projectId === null}
-                onSelect={() => handleProjectSelect(undefined)}
+                onSelect={handleProjectSelect}
               />
               
               <ProjectSelectorItem
                 id="none"
                 name="No Project"
                 isSelected={projectId === 'none'}
-                onSelect={() => handleProjectSelect('none')}
+                onSelect={handleProjectSelect}
               />
               
               <ProjectSelectorItem
                 id="create-new"
                 name="Create New Project"
                 isSelected={false}
-                onSelect={() => handleProjectSelect('create-new')}
+                onSelect={handleProjectSelect}
                 icon={<FolderPlus className="h-4 w-4 text-primary" />}
               />
             </CommandGroup>
@@ -93,7 +93,7 @@ export function ProjectCommandMenu({
                       name={project.name}
                       color={project.color}
                       isSelected={projectId === project.id}
-                      onSelect={() => handleProjectSelect(project.id)}
+                      onSelect={handleProjectSelect}
                     />
                   ))}
                 </CommandGroup>

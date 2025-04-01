@@ -21,13 +21,16 @@ export function ProjectSelectorItem({
   onSelect,
   icon
 }: ProjectSelectorItemProps) {
+  const handleSelect = () => {
+    console.log(`ProjectSelectorItem - Selected: ${id}, ${name}`);
+    onSelect(id);
+  };
+  
   return (
     <CommandItem
       className="flex items-center gap-2 cursor-pointer"
-      onSelect={() => {
-        console.log(`ProjectSelectorItem - Selected: ${id}, ${name}`);
-        onSelect(id);
-      }}
+      onSelect={handleSelect}
+      value={id}
     >
       {color ? (
         <div 
