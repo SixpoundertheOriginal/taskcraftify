@@ -34,7 +34,7 @@ export function ProjectSelector({ projectId, onProjectSelect, className }: Proje
   };
   
   // Ensure projectId is a string when checking for existence
-  const projectExists = projectId && projects && projects.some(project => project.id === projectId);
+  const projectExists = projectId && projects.some(project => project.id === projectId);
   const projectName = projectExists 
     ? projects.find(project => project.id === projectId)?.name || "Select project"
     : "No Project";
@@ -69,7 +69,7 @@ export function ProjectSelector({ projectId, onProjectSelect, className }: Proje
               {!projectId && <CheckIcon className="ml-auto h-4 w-4" />}
             </CommandItem>
             
-            {projects && projects.length > 0 ? projects.map((project) => (
+            {projects.map((project) => (
               <CommandItem
                 key={project.id || `project-${Math.random()}`}
                 value={project.id || `fallback-${Math.random()}`}
@@ -85,7 +85,7 @@ export function ProjectSelector({ projectId, onProjectSelect, className }: Proje
                 {project.name || 'Unnamed Project'}
                 {projectId === project.id && <CheckIcon className="ml-auto h-4 w-4" />}
               </CommandItem>
-            )) : null}
+            ))}
           </CommandGroup>
         </Command>
       </PopoverContent>

@@ -41,15 +41,18 @@ export function CreateTaskWithProject() {
             Select Project
           </label>
           <Select
-            value={selectedProjectId}
+            value={selectedProjectId || ""}
             onValueChange={setSelectedProjectId}
           >
             <SelectTrigger id="project-select">
               <SelectValue placeholder="Select a project" />
             </SelectTrigger>
             <SelectContent>
-              {projects && projects.length > 0 ? projects.map((project) => (
-                <SelectItem key={project.id || `project-${Math.random()}`} value={project.id || ''}>
+              {projects.length > 0 ? projects.map((project) => (
+                <SelectItem 
+                  key={project.id || `project-${Math.random()}`} 
+                  value={project.id || ''}
+                >
                   <div className="flex items-center gap-2">
                     {project.color && (
                       <div 

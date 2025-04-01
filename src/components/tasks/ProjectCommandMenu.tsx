@@ -43,67 +43,68 @@ export function ProjectCommandMenu({
     onProjectSelect(id);
   };
 
+  // Don't render the Command component if showProjectForm is true
+  if (showProjectForm) {
+    return (
+      <ProjectQuickCreateForm 
+        onSuccess={onProjectCreated}
+        onCancel={onCancel}
+      />
+    );
+  }
+
   return (
-    <>
-      {showProjectForm ? (
-        <ProjectQuickCreateForm 
-          onSuccess={onProjectCreated}
-          onCancel={onCancel}
-        />
-      ) : (
-        <Command className="rounded-lg border shadow-md">
-          <CommandInput 
-            placeholder="Search projects..." 
-            className="h-9"
+    <Command className="rounded-lg border shadow-md">
+      <CommandInput 
+        placeholder="Search projects..." 
+        className="h-9"
+      />
+      <CommandList>
+        <CommandEmpty>No projects found.</CommandEmpty>
+        
+        <CommandGroup>
+          <ProjectSelectorItem
+            id="all"
+            name="All Projects"
+            isSelected={projectId === undefined || projectId === null}
+            onSelect={() => handleProjectSelect(undefined)}
           />
-          <CommandList>
-            <CommandEmpty>No projects found.</CommandEmpty>
-            
-            <CommandGroup>
-              <ProjectSelectorItem
-                id={undefined}
-                name="All Projects"
-                isSelected={projectId === undefined || projectId === null}
-                onSelect={handleProjectSelect}
-              />
-              
-              <ProjectSelectorItem
-                id="none"
-                name="No Project"
-                isSelected={projectId === 'none'}
-                onSelect={handleProjectSelect}
-              />
-              
-              <ProjectSelectorItem
-                id="create-new"
-                name="Create New Project"
-                isSelected={false}
-                onSelect={handleProjectSelect}
-                icon={<FolderPlus className="h-4 w-4 text-primary" />}
-              />
+          
+          <ProjectSelectorItem
+            id="none"
+            name="No Project"
+            isSelected={projectId === 'none'}
+            onSelect={handleProjectSelect}
+          />
+          
+          <ProjectSelectorItem
+            id="create-new"
+            name="Create New Project"
+            isSelected={false}
+            onSelect={handleProjectSelect}
+            icon={<FolderPlus className="h-4 w-4 text-primary" />}
+          />
+        </CommandGroup>
+        
+        {/* Only render projects section if there are actually projects */}
+        {projects && projects.length > 0 && (
+          <Fragment>
+            <CommandSeparator />
+            <CommandGroup heading="Your Projects">
+              {projects.map((project) => (
+                <ProjectSelectorItem
+                  key={project.id || `fallback-${Math.random()}`}
+                  id={project.id || ''}
+                  name={project.name || 'Unnamed Project'}
+                  color={project.color}
+                  isSelected={projectId === project.id}
+                  onSelect={handleProjectSelect}
+                />
+              ))}
             </CommandGroup>
-            
-            {/* Only render projects section if there are actually projects */}
-            {projects && projects.length > 0 && (
-              <Fragment>
-                <CommandSeparator />
-                <CommandGroup heading="Your Projects">
-                  {projects.map((project) => (
-                    <ProjectSelectorItem
-                      key={project.id || `fallback-${Math.random()}`}
-                      id={project.id || ''}
-                      name={project.name || 'Unnamed Project'}
-                      color={project.color}
-                      isSelected={projectId === project.id}
-                      onSelect={handleProjectSelect}
-                    />
-                  ))}
-                </CommandGroup>
-              </Fragment>
-            )}
-          </CommandList>
-        </Command>
-      )}
-    </>
+          </Fragment>
+        )}
+      </CommandList>
+    </Command>
   );
 }

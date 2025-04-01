@@ -28,7 +28,7 @@ export function ProjectSelectorItem({
   
   // This is the critical fix - ensure we have a valid non-empty string value
   // Empty string values or undefined can cause iteration issues with the Command component
-  const itemValue = id !== undefined && id !== '' ? id : 'no-project-id';
+  const itemValue = id !== undefined && id !== '' ? id : `no-project-id-${name.replace(/\s+/g, '-').toLowerCase()}`;
   
   return (
     <CommandItem

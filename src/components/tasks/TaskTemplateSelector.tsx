@@ -24,13 +24,13 @@ export function TaskTemplateSelector({
   currentTask, 
   onSaveAsTemplate 
 }: TaskTemplateSelectorProps) {
-  const { templates, isLoading } = useTemplateStore();
+  const { templates = [], isLoading } = useTemplateStore();
   const [open, setOpen] = useState(false);
   
   const hasContent = Boolean(
     currentTask.title || 
     currentTask.description || 
-    currentTask.tags?.length
+    (currentTask.tags && currentTask.tags.length)
   );
 
   return (
@@ -55,7 +55,8 @@ export function TaskTemplateSelector({
               <CommandGroup heading="Your Templates">
                 {templates.map((template) => (
                   <CommandItem
-                    key={template.id}
+                    key={template.id || `template-${Math.random()}`}
+                    value={template.id || `template-value-${Math.random()}`}
                     onSelect={() => {
                       onSelectTemplate(template);
                       setOpen(false);
