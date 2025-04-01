@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -35,6 +34,7 @@ import { TaskTemplate } from '@/types/template';
 import { templateService } from '@/services/templateService';
 import { SmartTemplateSelector } from './SmartTemplateSelector';
 import { ProjectQuickCreateForm } from '@/components/projects/ProjectQuickCreateForm';
+import { ProjectSelectPopover } from './ProjectSelectPopover';
 
 interface TaskFormContentProps {
   onSuccess: () => void;
@@ -54,25 +54,19 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
     taskToEdit?.dueDate || initialDueDate
   );
   
-  // For debugging
   console.log("TaskFormContent - initialProjectId:", initialProjectId);
   console.log("TaskFormContent - selectedProjectId:", selectedProjectId);
-  
-  // Initialize projectId with proper fallback order:
-  // 1. Use task's project ID if editing
-  // 2. Use initialProjectId from props
-  // 3. Use selectedProjectId from store
-  // 4. Default to undefined (no project)
-  const [projectId, setProjectId] = useState<string | undefined>(() => {
-    const id = taskToEdit?.projectId || initialProjectId || selectedProjectId || undefined;
-    console.log("TaskFormContent - Setting initial projectId:", id);
-    return id;
-  });
   
   const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(undefined);
   const [projectSelectorOpen, setProjectSelectorOpen] = useState(false);
   const [showProjectForm, setShowProjectForm] = useState(false);
+  
+  const [projectId, setProjectId] = useState<string | undefined>(() => {
+    const id = taskToEdit?.projectId || initialProjectId || selectedProjectId || undefined;
+    console.log("TaskFormContent - Setting initial projectId:", id);
+    return id;
+  });
   
   const { register, handleSubmit, reset, setValue, watch, control, formState: { errors } } = useForm<CreateTaskDTO>({
     defaultValues: taskToEdit ? {
@@ -101,7 +95,6 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
     });
   }, [fetchTemplates]);
   
-  // Log state for debugging
   useEffect(() => {
     console.log("TaskFormContent - Current project ID state:", projectId);
     console.log("TaskFormContent - initialProjectId prop:", initialProjectId);
@@ -127,15 +120,9 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
     }
   };
   
-  const handleProjectSelect = (id: string | null) => {
-    if (id === 'create-new') {
-      setShowProjectForm(true);
-      return;
-    }
-    
-    console.log("Project selected:", id);
-    setProjectId(id === 'none' ? undefined : id === null ? undefined : id);
-    setProjectSelectorOpen(false);
+  const handleProjectSelect = (id: string | undefined) => {
+    console.log("TaskFormContent - Project selected:", id);
+    setProjectId(id);
   };
   
   const handleProjectCreated = (newProjectId: string) => {
@@ -196,7 +183,7 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
       ...formValues,
       tags,
       dueDate,
-      projectId: projectId === 'none' ? undefined : projectId
+      projectId
     };
   };
   
@@ -209,7 +196,7 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
         ...data,
         dueDate,
         tags,
-        projectId: projectId === 'none' ? undefined : projectId
+        projectId
       };
       
       console.log("Final task data being submitted:", taskData);
@@ -361,94 +348,10 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
       
       <div className="space-y-2">
         <label htmlFor="project" className="text-sm font-medium">Project</label>
-        <Popover open={projectSelectorOpen} onOpenChange={setProjectSelectorOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className="w-full justify-between"
-              id="project"
-              type="button"
-            >
-              {projectId && currentProject ? (
-                <div className="flex items-center gap-2">
-                  <div 
-                    className="w-3 h-3 rounded-full" 
-                    style={{ backgroundColor: currentProject.color }}
-                  />
-                  <span>{currentProject.name}</span>
-                </div>
-              ) : projectId === 'none' ? (
-                <span>No Project</span>
-              ) : (
-                <span className="text-muted-foreground">Select project</span>
-              )}
-              <ChevronDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[280px] p-0 z-50" align="start">
-            {showProjectForm ? (
-              <ProjectQuickCreateForm 
-                onSuccess={handleProjectCreated}
-                onCancel={handleCancelProjectCreation}
-              />
-            ) : (
-              <Command>
-                <CommandInput placeholder="Search projects..." />
-                <CommandList>
-                  <CommandEmpty>No projects found.</CommandEmpty>
-                  
-                  <CommandGroup>
-                    <CommandItem 
-                      className="flex items-center gap-2 cursor-pointer"
-                      onSelect={() => handleProjectSelect(null)}
-                    >
-                      <span>All Projects</span>
-                      {projectId === null && <Check className="ml-auto h-4 w-4" />}
-                    </CommandItem>
-                    
-                    <CommandItem 
-                      className="flex items-center gap-2 cursor-pointer"
-                      onSelect={() => handleProjectSelect('none')}
-                    >
-                      <span>No Project</span>
-                      {projectId === 'none' && <Check className="ml-auto h-4 w-4" />}
-                    </CommandItem>
-                    
-                    <CommandItem 
-                      className="flex items-center gap-2 cursor-pointer text-primary"
-                      onSelect={() => handleProjectSelect('create-new')}
-                    >
-                      <FolderPlus className="h-4 w-4" />
-                      <span>Create New Project</span>
-                    </CommandItem>
-                  </CommandGroup>
-                  
-                  {projects.length > 0 && (
-                    <>
-                      <CommandSeparator />
-                      <CommandGroup heading="Your Projects">
-                        {projects.map((project) => (
-                          <CommandItem
-                            key={project.id}
-                            className="flex items-center gap-2 cursor-pointer"
-                            onSelect={() => handleProjectSelect(project.id)}
-                          >
-                            <div 
-                              className="w-3 h-3 rounded-full" 
-                              style={{ backgroundColor: project.color }}
-                            />
-                            <span>{project.name}</span>
-                            {projectId === project.id && <Check className="ml-auto h-4 w-4" />}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </>
-                  )}
-                </CommandList>
-              </Command>
-            )}
-          </PopoverContent>
-        </Popover>
+        <ProjectSelectPopover 
+          projectId={projectId} 
+          onProjectSelect={handleProjectSelect} 
+        />
       </div>
       
       <div className="space-y-2">

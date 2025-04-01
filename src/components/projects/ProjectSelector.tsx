@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { 
   Database, 
@@ -34,6 +35,7 @@ export function ProjectSelector({
   };
   
   const handleSelectProject = async (id: string | null) => {
+    console.log("ProjectSelector - Project selected:", id);
     selectProject(id);
     
     // If a project is selected, fetch its tasks
@@ -45,6 +47,8 @@ export function ProjectSelector({
     if (id === 'none') {
       await fetchTasksByProject('none');
     }
+    
+    setOpen(false);
   };
   
   return (

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { 
@@ -34,6 +33,7 @@ import { Check, ChevronDown } from 'lucide-react';
 import { useProjectStore } from '@/store';
 import { FolderPlus } from 'lucide-react';
 import { ProjectQuickCreateForm } from '@/components/projects/ProjectQuickCreateForm';
+import { ProjectSelectPopover } from '@/components/tasks/ProjectSelectPopover';
 
 interface TaskFormProps {
   open: boolean;
@@ -114,13 +114,8 @@ export function UnifiedTaskForm({
   };
   
   const handleProjectSelect = (id: string | undefined) => {
-    if (id === 'create-new') {
-      setShowProjectForm(true);
-      return;
-    }
-    
-    setProjectId(id === 'none' ? undefined : id);
-    setProjectSelectorOpen(false);
+    console.log("UnifiedTaskForm - Project selected:", id);
+    setProjectId(id);
   };
   
   const handleProjectCreated = (newProjectId: string) => {
@@ -349,98 +344,10 @@ export function UnifiedTaskForm({
                 
                 <div className="space-y-2">
                   <label htmlFor="project" className="text-sm font-medium">Project</label>
-                  <Popover open={projectSelectorOpen} onOpenChange={setProjectSelectorOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-between"
-                        id="project"
-                        type="button"
-                      >
-                        {projectId && currentProject ? (
-                          <div className="flex items-center gap-2">
-                            <div 
-                              className="w-3 h-3 rounded-full" 
-                              style={{ backgroundColor: currentProject.color }}
-                            />
-                            <span>{currentProject.name}</span>
-                          </div>
-                        ) : projectId === 'none' ? (
-                          <span>No Project</span>
-                        ) : (
-                          <span className="text-muted-foreground">Select project</span>
-                        )}
-                        <ChevronDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[280px] p-0 z-50" align="start">
-                      {showProjectForm ? (
-                        <ProjectQuickCreateForm 
-                          onSuccess={handleProjectCreated}
-                          onCancel={handleCancelProjectCreation}
-                        />
-                      ) : (
-                        <Command>
-                          <CommandInput 
-                            placeholder="Search projects..." 
-                            className="z-50"
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                          <CommandList className="z-50">
-                            <CommandEmpty>No projects found.</CommandEmpty>
-                            
-                            <CommandGroup>
-                              <CommandItem 
-                                className="flex items-center gap-2 cursor-pointer"
-                                onSelect={() => handleProjectSelect(undefined)}
-                              >
-                                <span>All Projects</span>
-                                {!projectId && <Check className="ml-auto h-4 w-4" />}
-                              </CommandItem>
-                              
-                              <CommandItem 
-                                className="flex items-center gap-2 cursor-pointer"
-                                onSelect={() => handleProjectSelect('none')}
-                              >
-                                <span>No Project</span>
-                                {projectId === 'none' && <Check className="ml-auto h-4 w-4" />}
-                              </CommandItem>
-                              
-                              <CommandItem 
-                                className="flex items-center gap-2 cursor-pointer text-primary"
-                                onSelect={() => handleProjectSelect('create-new')}
-                              >
-                                <FolderPlus className="h-4 w-4" />
-                                <span>Create New Project</span>
-                              </CommandItem>
-                            </CommandGroup>
-                            
-                            {projects.length > 0 && (
-                              <>
-                                <CommandSeparator />
-                                <CommandGroup heading="Your Projects">
-                                  {projects.map((project) => (
-                                    <CommandItem
-                                      key={project.id}
-                                      className="flex items-center gap-2 cursor-pointer"
-                                      onSelect={() => handleProjectSelect(project.id)}
-                                    >
-                                      <div 
-                                        className="w-3 h-3 rounded-full" 
-                                        style={{ backgroundColor: project.color }}
-                                      />
-                                      <span>{project.name}</span>
-                                      {projectId === project.id && <Check className="ml-auto h-4 w-4" />}
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              </>
-                            )}
-                          </CommandList>
-                        </Command>
-                      )}
-                    </PopoverContent>
-                  </Popover>
+                  <ProjectSelectPopover 
+                    projectId={projectId} 
+                    onProjectSelect={handleProjectSelect} 
+                  />
                 </div>
                 
                 <div className="space-y-2">
@@ -577,98 +484,10 @@ export function UnifiedTaskForm({
               
               <div className="space-y-2">
                 <label htmlFor="project" className="text-sm font-medium">Project</label>
-                <Popover open={projectSelectorOpen} onOpenChange={setProjectSelectorOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-between"
-                      id="project"
-                      type="button"
-                    >
-                      {projectId && currentProject ? (
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-3 h-3 rounded-full" 
-                            style={{ backgroundColor: currentProject.color }}
-                          />
-                          <span>{currentProject.name}</span>
-                        </div>
-                      ) : projectId === 'none' ? (
-                        <span>No Project</span>
-                      ) : (
-                        <span className="text-muted-foreground">Select project</span>
-                      )}
-                      <ChevronDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[280px] p-0 z-50" align="start">
-                    {showProjectForm ? (
-                      <ProjectQuickCreateForm 
-                        onSuccess={handleProjectCreated}
-                        onCancel={handleCancelProjectCreation}
-                      />
-                    ) : (
-                      <Command>
-                        <CommandInput 
-                          placeholder="Search projects..." 
-                          className="z-50"
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                        <CommandList className="z-50">
-                          <CommandEmpty>No projects found.</CommandEmpty>
-                          
-                          <CommandGroup>
-                            <CommandItem 
-                              className="flex items-center gap-2 cursor-pointer"
-                              onSelect={() => handleProjectSelect(undefined)}
-                            >
-                              <span>All Projects</span>
-                              {!projectId && <Check className="ml-auto h-4 w-4" />}
-                            </CommandItem>
-                            
-                            <CommandItem 
-                              className="flex items-center gap-2 cursor-pointer"
-                              onSelect={() => handleProjectSelect('none')}
-                            >
-                              <span>No Project</span>
-                              {projectId === 'none' && <Check className="ml-auto h-4 w-4" />}
-                            </CommandItem>
-                            
-                            <CommandItem 
-                              className="flex items-center gap-2 cursor-pointer text-primary"
-                              onSelect={() => handleProjectSelect('create-new')}
-                            >
-                              <FolderPlus className="h-4 w-4" />
-                              <span>Create New Project</span>
-                            </CommandItem>
-                          </CommandGroup>
-                          
-                          {projects.length > 0 && (
-                            <>
-                              <CommandSeparator />
-                              <CommandGroup heading="Your Projects">
-                                {projects.map((project) => (
-                                  <CommandItem
-                                    key={project.id}
-                                    className="flex items-center gap-2 cursor-pointer"
-                                    onSelect={() => handleProjectSelect(project.id)}
-                                  >
-                                    <div 
-                                      className="w-3 h-3 rounded-full" 
-                                      style={{ backgroundColor: project.color }}
-                                    />
-                                    <span>{project.name}</span>
-                                    {projectId === project.id && <Check className="ml-auto h-4 w-4" />}
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </>
-                          )}
-                        </CommandList>
-                      </Command>
-                    )}
-                  </PopoverContent>
-                </Popover>
+                <ProjectSelectPopover 
+                  projectId={projectId} 
+                  onProjectSelect={handleProjectSelect} 
+                />
               </div>
               
               <div className="space-y-2">
