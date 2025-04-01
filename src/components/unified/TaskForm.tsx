@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { 
@@ -120,12 +121,6 @@ export function UnifiedTaskForm({
   
   const handleProjectCreated = (newProjectId: string) => {
     setProjectId(newProjectId);
-    setShowProjectForm(false);
-    setProjectSelectorOpen(false);
-  };
-  
-  const handleCancelProjectCreation = () => {
-    setShowProjectForm(false);
   };
   
   const handleDescriptionFilesChange = (files: File[]) => {
@@ -239,11 +234,6 @@ export function UnifiedTaskForm({
   }, [initialTask, open]);
   
   const currentProject = projectId ? projects.find(p => p.id === projectId) : null;
-  
-  const handleProjectClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setProjectSelectorOpen(!projectSelectorOpen);
-  };
   
   return (
     <Dialog open={open} onOpenChange={handleClose}>
