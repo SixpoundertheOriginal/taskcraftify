@@ -30,6 +30,7 @@ export function ProjectCommandMenu({
   onProjectCreated,
   onCancel
 }: ProjectCommandMenuProps) {
+  // Always initialize with an empty array if projects is undefined
   const { projects = [] } = useProjectStore();
 
   const handleProjectSelect = (id: string | undefined) => {
@@ -82,13 +83,14 @@ export function ProjectCommandMenu({
               />
             </CommandGroup>
             
+            {/* Only render projects section if there are actually projects */}
             {projects && projects.length > 0 && (
               <Fragment>
                 <CommandSeparator />
                 <CommandGroup heading="Your Projects">
                   {projects.map((project) => (
                     <ProjectSelectorItem
-                      key={project.id || 'fallback-key'}
+                      key={project.id || `fallback-${Math.random()}`}
                       id={project.id || ''}
                       name={project.name || 'Unnamed Project'}
                       color={project.color}

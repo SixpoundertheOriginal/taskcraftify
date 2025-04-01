@@ -25,6 +25,7 @@ export function ProjectSelector({
   buttonClassName, 
   triggerClassName 
 }: ProjectSelectorProps) {
+  // Ensure projects is never undefined
   const { projects = [], selectedProjectId, selectProject } = useProjectStore();
   const { fetchTasksByProject } = useTaskStore();
   
@@ -60,7 +61,7 @@ export function ProjectSelector({
   } else if (selectedProjectId && projects) {
     const project = projects.find(p => p.id === selectedProjectId);
     if (project) {
-      currentProjectText = project.name;
+      currentProjectText = project.name || "Unnamed Project";
     }
   }
   
@@ -98,7 +99,7 @@ export function ProjectSelector({
         
         {projects && projects.length > 0 && projects.map(project => (
           <DropdownMenuItem
-            key={project.id}
+            key={project.id || `project-${Math.random()}`}
             onClick={() => handleSelectProject(project.id)}
             className={cn(
               "flex items-center gap-2",
@@ -106,7 +107,7 @@ export function ProjectSelector({
             )}
           >
             <FolderInput className="h-4 w-4 text-muted-foreground" />
-            {project.name}
+            {project.name || "Unnamed Project"}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

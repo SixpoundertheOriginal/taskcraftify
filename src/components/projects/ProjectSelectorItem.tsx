@@ -26,9 +26,9 @@ export function ProjectSelectorItem({
     onSelect(id);
   };
   
-  // Ensure we have a valid value for the CommandItem
-  // It must be a non-empty string to avoid the iteration error
-  const itemValue = id !== undefined ? id : 'undefined-id';
+  // This is the critical part - ensure we have a valid non-empty string value
+  // Empty string values can cause iteration issues with the Command component
+  const itemValue = id !== undefined && id !== '' ? id : 'no-project-id';
   
   return (
     <CommandItem

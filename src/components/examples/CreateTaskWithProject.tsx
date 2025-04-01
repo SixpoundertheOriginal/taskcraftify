@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CreateProjectTaskButton } from '@/components/projects/CreateProjectTaskButton';
 import { useProjectStore } from '@/store';
 import { 
@@ -12,10 +12,23 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function CreateTaskWithProject() {
+  // Ensure projects is never undefined
   const { projects = [] } = useProjectStore();
   const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(
-    projects.length > 0 ? projects[0].id : undefined
+    projects.length > 0 ? projects[0]?.id : undefined
   );
+  
+  // Update selectedProjectId if projects change and current selection becomes invalid
+  useEffect(() => {
+    if (selectedProjectId && projects.length > 0) {
+      const projectExists = projects.some(p => p.id === selectedProjectId);
+      if (!projectExists) {
+        setSelectedProjectId(projects[0]?.id);
+      }
+    } else if (projects.length > 0 && !selectedProjectId) {
+      setSelectedProjectId(projects[0]?.id);
+    }
+  }, [projects, selectedProjectId]);
   
   return (
     <Card className="w-full max-w-lg mx-auto">
@@ -36,13 +49,15 @@ export function CreateTaskWithProject() {
             </SelectTrigger>
             <SelectContent>
               {projects && projects.length > 0 ? projects.map((project) => (
-                <SelectItem key={project.id} value={project.id}>
+                <SelectItem key={project.id || `project-${Math.random()}`} value={project.id || ''}>
                   <div className="flex items-center gap-2">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: project.color }}
-                    />
-                    <span>{project.name}</span>
+                    {project.color && (
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: project.color }}
+                      />
+                    )}
+                    <span>{project.name || 'Unnamed Project'}</span>
                   </div>
                 </SelectItem>
               )) : (

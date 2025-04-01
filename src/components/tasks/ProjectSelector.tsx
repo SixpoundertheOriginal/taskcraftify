@@ -14,6 +14,7 @@ interface ProjectSelectorProps {
 }
 
 export function ProjectSelector({ projectId, onProjectSelect, className }: ProjectSelectorProps) {
+  // Ensure projects is never undefined
   const { projects = [] } = useProjectStore();
   const [open, setOpen] = useState(false);
   
@@ -70,9 +71,9 @@ export function ProjectSelector({ projectId, onProjectSelect, className }: Proje
             
             {projects && projects.length > 0 ? projects.map((project) => (
               <CommandItem
-                key={project.id || 'fallback-key'}
-                value={project.id || 'fallback-value'}
-                onSelect={() => handleSelect(project.id || 'fallback-value')}
+                key={project.id || `project-${Math.random()}`}
+                value={project.id || `fallback-${Math.random()}`}
+                onSelect={() => handleSelect(project.id || '')}
                 className="flex items-center gap-2"
               >
                 {project.color && (
