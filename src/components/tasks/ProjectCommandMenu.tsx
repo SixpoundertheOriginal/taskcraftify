@@ -30,7 +30,7 @@ export function ProjectCommandMenu({
   onProjectCreated,
   onCancel
 }: ProjectCommandMenuProps) {
-  const { projects } = useProjectStore();
+  const { projects = [] } = useProjectStore();
 
   const handleProjectSelect = (id: string | undefined) => {
     console.log("ProjectCommandMenu - Project selected:", id);
@@ -82,7 +82,7 @@ export function ProjectCommandMenu({
               />
             </CommandGroup>
             
-            {projects.length > 0 && (
+            {projects && projects.length > 0 && (
               <Fragment>
                 <CommandSeparator />
                 <CommandGroup heading="Your Projects">

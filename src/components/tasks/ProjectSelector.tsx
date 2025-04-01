@@ -14,7 +14,7 @@ interface ProjectSelectorProps {
 }
 
 export function ProjectSelector({ projectId, onProjectSelect, className }: ProjectSelectorProps) {
-  const { projects } = useProjectStore();
+  const { projects = [] } = useProjectStore();
   const [open, setOpen] = useState(false);
   
   const handleSelect = (value: string) => {
@@ -66,7 +66,7 @@ export function ProjectSelector({ projectId, onProjectSelect, className }: Proje
               {!projectId && <CheckIcon className="ml-auto h-4 w-4" />}
             </CommandItem>
             
-            {projects.map((project) => (
+            {projects && projects.length > 0 && projects.map((project) => (
               <CommandItem
                 key={project.id}
                 value={project.id}

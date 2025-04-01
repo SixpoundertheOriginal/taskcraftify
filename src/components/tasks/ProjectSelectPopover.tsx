@@ -12,7 +12,7 @@ interface ProjectSelectPopoverProps {
 }
 
 export function ProjectSelectPopover({ projectId, onProjectSelect }: ProjectSelectPopoverProps) {
-  const { projects } = useProjectStore();
+  const { projects = [] } = useProjectStore();
   const [open, setOpen] = useState(false);
   const [showProjectForm, setShowProjectForm] = useState(false);
   
