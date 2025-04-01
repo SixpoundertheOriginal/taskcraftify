@@ -1,5 +1,5 @@
 
-import { Fragment } from 'react';
+import { Fragment, useMemo } from 'react';
 import { FolderPlus } from 'lucide-react';
 import { 
   Command, 
@@ -33,6 +33,13 @@ export function ProjectCommandMenu({
   // Always initialize with an empty array if projects is undefined
   const { projects = [] } = useProjectStore();
 
+  // Create a memoized, safe projects array to avoid repeated processing
+  const safeProjects = useMemo(() => {
+    // Ensure we have a valid array to work with
+    if (!Array.isArray(projects)) return [];
+    return projects;
+  }, [projects]);
+
   const handleProjectSelect = (id: string | undefined) => {
     console.log("ProjectCommandMenu - Project selected:", id);
     if (id === 'create-new') {
@@ -54,7 +61,7 @@ export function ProjectCommandMenu({
   }
 
   // Ensure we have valid projects to render
-  const hasProjects = Array.isArray(projects) && projects.length > 0;
+  const hasProjects = safeProjects.length > 0;
 
   return (
     <Command className="rounded-lg border shadow-md">
@@ -94,7 +101,7 @@ export function ProjectCommandMenu({
           <Fragment>
             <CommandSeparator />
             <CommandGroup heading="Your Projects">
-              {projects.map((project) => (
+              {safeProjects.map((project) => (
                 <ProjectSelectorItem
                   key={project.id || `fallback-${Math.random()}`}
                   id={project.id || ''}

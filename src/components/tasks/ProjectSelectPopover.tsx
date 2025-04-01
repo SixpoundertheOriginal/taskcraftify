@@ -18,7 +18,10 @@ export function ProjectSelectPopover({ projectId, onProjectSelect }: ProjectSele
   const [showProjectForm, setShowProjectForm] = useState(false);
   
   // Safely ensure projects is an array and find the current project
-  const safeProjects = Array.isArray(projects) ? projects : [];
+  const safeProjects = useMemo(() => {
+    return Array.isArray(projects) ? projects : [];
+  }, [projects]);
+  
   const currentProject = useMemo(() => {
     if (!projectId) return null;
     return safeProjects.find(p => p.id === projectId) || null;
