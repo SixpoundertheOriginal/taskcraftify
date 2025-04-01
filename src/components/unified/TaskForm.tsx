@@ -28,12 +28,8 @@ import { useTaskStore } from '@/store';
 import { toast } from '@/hooks/use-toast';
 import { TaskLog } from '@/components/tasks/TaskLog';
 import { RichTextInput } from '@/components/ui/rich-text-input';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from '@/components/ui/command';
-import { Check, ChevronDown } from 'lucide-react';
 import { useProjectStore } from '@/store';
-import { FolderPlus } from 'lucide-react';
-import { ProjectQuickCreateForm } from '@/components/projects/ProjectQuickCreateForm';
-import { ProjectSelectPopover } from '@/components/tasks/ProjectSelectPopover';
+import { ProjectSelector } from '@/components/tasks/ProjectSelector';
 
 interface TaskFormProps {
   open: boolean;
@@ -64,12 +60,10 @@ export function UnifiedTaskForm({
     console.log("UnifiedTaskForm - Initial projectId:", id);
     return id;
   });
-  const [projectSelectorOpen, setProjectSelectorOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("details");
   const [descriptionFiles, setDescriptionFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentTask, setCurrentTask] = useState<Task | undefined>(initialTask);
-  const [showProjectForm, setShowProjectForm] = useState(false);
   
   const { register, handleSubmit, reset, formState: { errors }, watch, setValue } = useForm<CreateTaskDTO>({
     defaultValues: initialTask ? {
@@ -121,16 +115,7 @@ export function UnifiedTaskForm({
   
   const handleProjectSelect = (id: string | undefined) => {
     console.log("UnifiedTaskForm - Project selected:", id);
-    if (id === 'none' || id === null) {
-      console.log("UnifiedTaskForm - Setting projectId to undefined");
-      setProjectId(undefined);
-    } else if (typeof id === 'string') {
-      console.log("UnifiedTaskForm - Setting projectId to:", id);
-      setProjectId(id);
-    } else {
-      console.log("UnifiedTaskForm - Invalid project ID, setting to undefined");
-      setProjectId(undefined);
-    }
+    setProjectId(id);
   };
   
   const handleProjectCreated = (newProjectId: string) => {
@@ -368,7 +353,7 @@ export function UnifiedTaskForm({
                 
                 <div className="space-y-2">
                   <label htmlFor="project" className="text-sm font-medium">Project</label>
-                  <ProjectSelectPopover 
+                  <ProjectSelector 
                     projectId={projectId} 
                     onProjectSelect={handleProjectSelect} 
                   />
@@ -508,7 +493,7 @@ export function UnifiedTaskForm({
               
               <div className="space-y-2">
                 <label htmlFor="project" className="text-sm font-medium">Project</label>
-                <ProjectSelectPopover 
+                <ProjectSelector 
                   projectId={projectId} 
                   onProjectSelect={handleProjectSelect} 
                 />

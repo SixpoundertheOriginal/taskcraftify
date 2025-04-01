@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Calendar as CalendarIcon, Loader2, Plus, Tag, X, FolderPlus } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, Plus, Tag, X } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
@@ -20,22 +19,11 @@ import { CreateTaskDTO, TaskPriority, TaskStatus, Task } from '@/types/task';
 import { getPriorityLabel, getStatusLabel } from '@/lib/utils';
 import { useTaskStore, useProjectStore, useTemplateStore } from '@/store';
 import { toast } from '@/hooks/use-toast';
-import { 
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator
-} from '@/components/ui/command';
-import { Check, ChevronDown } from 'lucide-react';
 import { SaveTemplateDialog } from './SaveTemplateDialog';
 import { TaskTemplate } from '@/types/template';
 import { templateService } from '@/services/templateService';
 import { SmartTemplateSelector } from './SmartTemplateSelector';
-import { ProjectQuickCreateForm } from '@/components/projects/ProjectQuickCreateForm';
-import { ProjectSelectPopover } from './ProjectSelectPopover';
+import { ProjectSelector } from './ProjectSelector';
 
 interface TaskFormContentProps {
   onSuccess: () => void;
@@ -60,8 +48,6 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
   
   const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(undefined);
-  const [projectSelectorOpen, setProjectSelectorOpen] = useState(false);
-  const [showProjectForm, setShowProjectForm] = useState(false);
   
   const [projectId, setProjectId] = useState<string | undefined>(() => {
     const id = taskToEdit?.projectId || initialProjectId || selectedProjectId || undefined;
@@ -69,10 +55,16 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
     return id;
   });
   
-  // Monitor projectId changes
   useEffect(() => {
-    console.log("TaskFormContent - projectId changed to:", projectId);
-  }, [projectId]);
+    fetchTemplates().catch(err => {
+      console.error("Failed to load templates:", err);
+      toast({
+        title: "Template loading failed",
+        description: "Could not load your saved templates. Please try again later.",
+        variant: "destructive"
+      });
+    });
+  }, [fetchTemplates]);
   
   const { register, handleSubmit, reset, setValue, watch, control, formState: { errors } } = useForm<CreateTaskDTO>({
     defaultValues: taskToEdit ? {
@@ -89,24 +81,6 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
   });
   
   const formValues = watch();
-  
-  useEffect(() => {
-    fetchTemplates().catch(err => {
-      console.error("Failed to load templates:", err);
-      toast({
-        title: "Template loading failed",
-        description: "Could not load your saved templates. Please try again later.",
-        variant: "destructive"
-      });
-    });
-  }, [fetchTemplates]);
-  
-  useEffect(() => {
-    console.log("TaskFormContent - Current project ID state:", projectId);
-    console.log("TaskFormContent - initialProjectId prop:", initialProjectId);
-    console.log("TaskFormContent - selectedProjectId from store:", selectedProjectId);
-    console.log("TaskFormContent - Available projects:", projects);
-  }, [projectId, initialProjectId, selectedProjectId, projects]);
   
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
@@ -128,27 +102,7 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
   
   const handleProjectSelect = (id: string | undefined) => {
     console.log("TaskFormContent - Project selected:", id);
-    // Explicitly validate the input to handle any edge cases
-    if (id === 'none' || id === null) {
-      console.log("TaskFormContent - Setting projectId to undefined");
-      setProjectId(undefined);
-    } else if (typeof id === 'string') {
-      console.log("TaskFormContent - Setting projectId to:", id);
-      setProjectId(id);
-    } else {
-      console.log("TaskFormContent - Invalid project ID, setting to undefined");
-      setProjectId(undefined);
-    }
-  };
-  
-  const handleProjectCreated = (newProjectId: string) => {
-    setProjectId(newProjectId);
-    setShowProjectForm(false);
-    setProjectSelectorOpen(false);
-  };
-  
-  const handleCancelProjectCreation = () => {
-    setShowProjectForm(false);
+    setProjectId(id);
   };
   
   const handleSelectTemplate = async (template: TaskTemplate) => {
@@ -214,7 +168,7 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
         ...data,
         dueDate,
         tags,
-        projectId: projectId === 'none' ? undefined : projectId
+        projectId
       };
       
       console.log("Final task data being submitted:", taskData);
@@ -269,17 +223,13 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
     }
   };
   
-  const currentProject = projectId ? projects.find(p => p.id === projectId) : null;
-  
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
-      {!taskToEdit && (
-        <SmartTemplateSelector 
-          onSelectTemplate={handleSelectTemplate}
-          currentTask={getCurrentFormData()}
-          onSaveAsTemplate={handleSaveAsTemplate}
-        />
-      )}
+      <SmartTemplateSelector 
+        onSelectTemplate={handleSelectTemplate}
+        currentTask={getCurrentFormData()}
+        onSaveAsTemplate={handleSaveAsTemplate}
+      />
       
       <SaveTemplateDialog
         open={saveTemplateOpen}
@@ -370,7 +320,7 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
       
       <div className="space-y-2">
         <label htmlFor="project" className="text-sm font-medium">Project</label>
-        <ProjectSelectPopover 
+        <ProjectSelector 
           projectId={projectId} 
           onProjectSelect={handleProjectSelect} 
         />
