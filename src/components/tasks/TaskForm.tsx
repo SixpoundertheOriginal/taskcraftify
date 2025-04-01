@@ -1,31 +1,23 @@
 
-import React, { useState } from 'react';
-import { Dialog } from '@/components/ui/dialog';
+import { UnifiedTaskForm } from '@/components/unified/TaskForm';
 import { Task, TaskStatus } from '@/types/task';
 
 interface TaskFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  initialTask?: Partial<Task>;
+  initialTask?: Task;
   initialDueDate?: Date;
-  taskToEdit?: Task;
   initialStatus?: TaskStatus;
 }
 
-export function TaskForm({ open, onOpenChange, initialTask, initialDueDate, taskToEdit, initialStatus }: TaskFormProps) {
-  // This component now simply forwards to the UnifiedTaskForm component
-  // This maintains backward compatibility with existing code
-  
+export function TaskForm({ open, onOpenChange, initialTask, initialDueDate, initialStatus }: TaskFormProps) {
   return (
-    <UnifiedTaskForm 
-      open={open} 
-      onOpenChange={onOpenChange} 
-      initialTask={taskToEdit} 
+    <UnifiedTaskForm
+      open={open}
+      onOpenChange={onOpenChange}
+      initialTask={initialTask}
       initialDueDate={initialDueDate}
       initialStatus={initialStatus}
     />
   );
 }
-
-// Import at the top to avoid circular dependencies
-import { UnifiedTaskForm } from '@/components/unified/TaskForm';
