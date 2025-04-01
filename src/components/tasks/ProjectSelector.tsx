@@ -42,7 +42,7 @@ export function ProjectSelector({ projectId, onProjectSelect, className }: Proje
           className={cn("w-full justify-between", className)}
           onClick={() => setOpen(!open)}
         >
-          {projectId ? (
+          {projectId && projects ? (
             projects.find((project) => project.id === projectId)?.name || "Select project"
           ) : (
             "No Project"
