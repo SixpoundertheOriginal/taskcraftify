@@ -16,7 +16,9 @@ export function ProjectSelectPopover({ projectId, onProjectSelect }: ProjectSele
   const [open, setOpen] = useState(false);
   const [showProjectForm, setShowProjectForm] = useState(false);
   
-  const currentProject = projectId && projects ? projects.find(p => p.id === projectId) : null;
+  const currentProject = projectId && projects && projects.length > 0 
+    ? projects.find(p => p.id === projectId) 
+    : null;
 
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
@@ -57,11 +59,13 @@ export function ProjectSelectPopover({ projectId, onProjectSelect }: ProjectSele
         >
           {projectId && currentProject ? (
             <div className="flex items-center gap-2">
-              <div 
-                className="w-3 h-3 rounded-full" 
-                style={{ backgroundColor: currentProject.color }}
-              />
-              <span>{currentProject.name}</span>
+              {currentProject.color && (
+                <div 
+                  className="w-3 h-3 rounded-full" 
+                  style={{ backgroundColor: currentProject.color }}
+                />
+              )}
+              <span>{currentProject.name || 'Unnamed Project'}</span>
             </div>
           ) : (
             <span className="text-muted-foreground">No Project</span>

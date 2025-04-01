@@ -88,9 +88,9 @@ export function ProjectCommandMenu({
                 <CommandGroup heading="Your Projects">
                   {projects.map((project) => (
                     <ProjectSelectorItem
-                      key={project.id}
-                      id={project.id}
-                      name={project.name}
+                      key={project.id || 'fallback-key'}
+                      id={project.id || ''}
+                      name={project.name || 'Unnamed Project'}
                       color={project.color}
                       isSelected={projectId === project.id}
                       onSelect={handleProjectSelect}

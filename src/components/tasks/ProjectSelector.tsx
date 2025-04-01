@@ -68,21 +68,23 @@ export function ProjectSelector({ projectId, onProjectSelect, className }: Proje
               {!projectId && <CheckIcon className="ml-auto h-4 w-4" />}
             </CommandItem>
             
-            {projects && projects.length > 0 && projects.map((project) => (
+            {projects && projects.length > 0 ? projects.map((project) => (
               <CommandItem
-                key={project.id}
-                value={project.id}
-                onSelect={() => handleSelect(project.id)}
+                key={project.id || 'fallback-key'}
+                value={project.id || 'fallback-value'}
+                onSelect={() => handleSelect(project.id || 'fallback-value')}
                 className="flex items-center gap-2"
               >
-                <div 
-                  className="w-3 h-3 rounded-full" 
-                  style={{ backgroundColor: project.color }}
-                />
-                {project.name}
+                {project.color && (
+                  <div 
+                    className="w-3 h-3 rounded-full" 
+                    style={{ backgroundColor: project.color }}
+                  />
+                )}
+                {project.name || 'Unnamed Project'}
                 {projectId === project.id && <CheckIcon className="ml-auto h-4 w-4" />}
               </CommandItem>
-            ))}
+            )) : null}
           </CommandGroup>
         </Command>
       </PopoverContent>
