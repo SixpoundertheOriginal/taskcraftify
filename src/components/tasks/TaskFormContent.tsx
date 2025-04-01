@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -53,9 +52,14 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
   const [dueDate, setDueDate] = useState<Date | undefined>(
     taskToEdit?.dueDate || initialDueDate
   );
+  
   const [projectId, setProjectId] = useState<string | undefined>(
-    taskToEdit?.projectId || initialProjectId || selectedProjectId || undefined
+    taskToEdit?.projectId || 
+    initialProjectId || 
+    selectedProjectId || 
+    undefined
   );
+  
   const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(undefined);
   const [projectSelectorOpen, setProjectSelectorOpen] = useState(false);
@@ -87,6 +91,12 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
       });
     });
   }, [fetchTemplates]);
+  
+  useEffect(() => {
+    console.log("TaskFormContent - Project ID:", projectId);
+    console.log("initialProjectId:", initialProjectId);
+    console.log("selectedProjectId:", selectedProjectId);
+  }, [projectId, initialProjectId, selectedProjectId]);
   
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {

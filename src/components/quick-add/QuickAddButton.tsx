@@ -69,6 +69,9 @@ export const QuickAddButton = () => {
     setIsTaskFormOpen(open);
   };
   
+  // Get the current project ID from the store to pass to the task form
+  const currentProjectId = selectedProjectId;
+  
   return (
     <>
       <TooltipProvider>
@@ -132,7 +135,7 @@ export const QuickAddButton = () => {
         open={isTaskFormOpen}
         onOpenChange={handleTaskFormOpenChange}
         initialDueDate={taskFormType === 'event' ? new Date() : undefined}
-        initialProjectId={selectedProjectId} 
+        initialProjectId={currentProjectId} 
       />
     </>
   );
