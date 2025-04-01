@@ -136,6 +136,8 @@ export function UnifiedTaskForm({
     try {
       setIsSubmitting(true);
       
+      console.log("UnifiedTaskForm - Submitting with projectId:", projectId);
+      
       const taskData: CreateTaskDTO = {
         ...data,
         dueDate,
