@@ -30,8 +30,8 @@ export function ProjectCommandMenu({
   onProjectCreated,
   onCancel
 }: ProjectCommandMenuProps) {
-  // Always initialize with an empty array if projects is undefined
-  const { projects = [] } = useProjectStore();
+  // Get projects and provide empty array as fallback
+  const { projects } = useProjectStore();
 
   // Create a memoized, safe projects array to avoid repeated processing
   const safeProjects = useMemo(() => {

@@ -12,16 +12,17 @@ interface ProjectSelectPopoverProps {
 }
 
 export function ProjectSelectPopover({ projectId, onProjectSelect }: ProjectSelectPopoverProps) {
-  // Ensure we have a valid projects array, not undefined
-  const { projects = [] } = useProjectStore();
+  // Get projects and provide empty array as fallback
+  const { projects } = useProjectStore();
   const [open, setOpen] = useState(false);
   const [showProjectForm, setShowProjectForm] = useState(false);
   
-  // Safely ensure projects is an array and find the current project
+  // Safely ensure projects is an array with useMemo to optimize
   const safeProjects = useMemo(() => {
     return Array.isArray(projects) ? projects : [];
   }, [projects]);
   
+  // Find current project safely with useMemo
   const currentProject = useMemo(() => {
     if (!projectId) return null;
     return safeProjects.find(p => p.id === projectId) || null;
