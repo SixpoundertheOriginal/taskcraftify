@@ -59,9 +59,11 @@ export function UnifiedTaskForm({
   const [dueDate, setDueDate] = useState<Date | undefined>(
     initialTask?.dueDate || initialDueDate
   );
-  const [projectId, setProjectId] = useState<string | undefined>(
-    initialTask?.projectId || initialProjectId || selectedProjectId || undefined
-  );
+  const [projectId, setProjectId] = useState<string | undefined>(() => {
+    const id = initialTask?.projectId || initialProjectId || selectedProjectId || undefined;
+    console.log("UnifiedTaskForm - Initial projectId:", id);
+    return id;
+  });
   const [projectSelectorOpen, setProjectSelectorOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("details");
   const [descriptionFiles, setDescriptionFiles] = useState<File[]>([]);
@@ -95,6 +97,10 @@ export function UnifiedTaskForm({
     }
   }, [initialTask, fetchTask]);
   
+  useEffect(() => {
+    console.log("UnifiedTaskForm - projectId changed to:", projectId);
+  }, [projectId]);
+  
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
       setTags([...tags, tagInput.trim()]);
@@ -115,7 +121,16 @@ export function UnifiedTaskForm({
   
   const handleProjectSelect = (id: string | undefined) => {
     console.log("UnifiedTaskForm - Project selected:", id);
-    setProjectId(id);
+    if (id === 'none' || id === null) {
+      console.log("UnifiedTaskForm - Setting projectId to undefined");
+      setProjectId(undefined);
+    } else if (typeof id === 'string') {
+      console.log("UnifiedTaskForm - Setting projectId to:", id);
+      setProjectId(id);
+    } else {
+      console.log("UnifiedTaskForm - Invalid project ID, setting to undefined");
+      setProjectId(undefined);
+    }
   };
   
   const handleProjectCreated = (newProjectId: string) => {
@@ -136,14 +151,21 @@ export function UnifiedTaskForm({
     try {
       setIsSubmitting(true);
       
+      console.log("[START SUBMISSION] --------------------------------");
       console.log("UnifiedTaskForm - Submitting with projectId:", projectId);
+      console.log("Project ID type:", typeof projectId);
+      console.log("Project ID is undefined?", projectId === undefined);
+      console.log("Project ID is null?", projectId === null);
       
       const taskData: CreateTaskDTO = {
         ...data,
         dueDate,
         tags,
-        projectId
+        projectId: projectId === 'none' ? undefined : projectId
       };
+      
+      console.log("Final task data being submitted:", taskData);
+      console.log("[END SUBMISSION] ----------------------------------");
       
       let taskId: string;
       let updatedTask: Task;

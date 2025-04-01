@@ -40,7 +40,9 @@ export function ProjectSelectPopover({ projectId, onProjectSelect }: ProjectSele
   const handleProjectSelect = (id: string | undefined) => {
     console.log("ProjectSelectPopover - Project selected:", id);
     // Handle 'none' as a special case, converting it to undefined for the task
-    onProjectSelect(id === 'none' ? undefined : id);
+    const finalProjectId = id === 'none' ? undefined : id;
+    console.log("ProjectSelectPopover - Final project ID to store:", finalProjectId);
+    onProjectSelect(finalProjectId);
     setOpen(false);
   };
 

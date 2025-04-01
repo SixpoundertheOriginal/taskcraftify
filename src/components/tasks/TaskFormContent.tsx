@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -68,6 +69,11 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
     return id;
   });
   
+  // Monitor projectId changes
+  useEffect(() => {
+    console.log("TaskFormContent - projectId changed to:", projectId);
+  }, [projectId]);
+  
   const { register, handleSubmit, reset, setValue, watch, control, formState: { errors } } = useForm<CreateTaskDTO>({
     defaultValues: taskToEdit ? {
       title: taskToEdit.title,
@@ -122,7 +128,17 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
   
   const handleProjectSelect = (id: string | undefined) => {
     console.log("TaskFormContent - Project selected:", id);
-    setProjectId(id);
+    // Explicitly validate the input to handle any edge cases
+    if (id === 'none' || id === null) {
+      console.log("TaskFormContent - Setting projectId to undefined");
+      setProjectId(undefined);
+    } else if (typeof id === 'string') {
+      console.log("TaskFormContent - Setting projectId to:", id);
+      setProjectId(id);
+    } else {
+      console.log("TaskFormContent - Invalid project ID, setting to undefined");
+      setProjectId(undefined);
+    }
   };
   
   const handleProjectCreated = (newProjectId: string) => {
@@ -189,17 +205,23 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
   
   const onSubmit = async (data: CreateTaskDTO) => {
     try {
+      console.log("[START SUBMISSION] --------------------------------");
       console.log("Submitting task with projectId:", projectId);
       console.log("Form data before submission:", data);
       
+      // Create a clean copy of task data with explicitly defined projectId
       const taskData: CreateTaskDTO = {
         ...data,
         dueDate,
         tags,
-        projectId
+        projectId: projectId === 'none' ? undefined : projectId
       };
       
       console.log("Final task data being submitted:", taskData);
+      console.log("Project ID type:", typeof projectId);
+      console.log("Project ID is undefined?", projectId === undefined);
+      console.log("Project ID is null?", projectId === null);
+      console.log("[END SUBMISSION] ----------------------------------");
       
       let taskId: string;
       

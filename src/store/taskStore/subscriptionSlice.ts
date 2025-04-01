@@ -3,6 +3,7 @@ import { StateCreator } from 'zustand';
 import { Task } from '@/types/task';
 import { TaskService } from '@/services/taskService';
 import { ensureStorageBucket } from '@/utils/setupStorage';
+import { toast } from '@/hooks/use-toast';
 
 export interface SubscriptionSlice {
   isInitialLoadComplete: boolean;
@@ -31,10 +32,23 @@ export const createSubscriptionSlice: StateCreator<
         console.log("Task attachments storage bucket is ready");
       } else {
         console.warn("Failed to ensure task attachments storage bucket exists");
+        // Notify user about potential storage issues
+        toast({
+          title: "Storage Setup",
+          description: "There might be issues with file attachments. Please try again later.",
+          variant: "destructive"
+        });
+        
         // Try one more time with a delay
         setTimeout(() => {
           ensureStorageBucket('task-attachments', true).then(retrySuccess => {
             console.log("Retry bucket creation result:", retrySuccess ? "success" : "failed");
+            if (retrySuccess) {
+              toast({
+                title: "Storage Setup",
+                description: "File attachment storage is now ready.",
+              });
+            }
           });
         }, 2000);
       }

@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 export async function ensureStorageBucket(bucketName: string, isPublic: boolean = true): Promise<boolean> {
   try {
@@ -16,6 +17,7 @@ export async function ensureStorageBucket(bucketName: string, isPublic: boolean 
           listError.message.includes('permission') || 
           listError.message.includes('authorization')) {
         console.warn('Storage API may not be initialized or permissions not set up correctly');
+        return false;
       }
       
       return false;

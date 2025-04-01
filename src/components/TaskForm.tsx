@@ -11,6 +11,8 @@ interface TaskFormProps {
 }
 
 export function TaskForm({ open, onOpenChange, initialDueDate, initialStatus, initialProjectId }: TaskFormProps) {
+  console.log("TaskForm wrapper - initialProjectId:", initialProjectId);
+  
   return (
     <UnifiedTaskForm
       open={open}
