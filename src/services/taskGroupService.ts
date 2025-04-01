@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { 
   TaskGroup, 
@@ -92,16 +91,21 @@ export const TaskGroupService = {
       const highestPosition = positionData && positionData.length > 0 ? positionData[0].position : -1;
       const newPosition = taskGroupData.position !== undefined ? taskGroupData.position : highestPosition + 1;
 
-      // Map to API format - this now returns a single object, not an array
+      // Map to API format - ensuring required fields are present
       const apiTaskGroup = mapTaskGroupToApiTaskGroup({
         ...taskGroupData,
         position: newPosition
       }, userId);
 
-      // Important: Insert a single object, not an array
+      // Ensure name is present as it's required
+      if (!apiTaskGroup.name) {
+        return { error: new Error('Task group name is required') };
+      }
+
+      // Insert a single object
       const { data, error } = await supabase
         .from('task_groups')
-        .insert(apiTaskGroup) // No need for array brackets here
+        .insert(apiTaskGroup)
         .select('*')
         .single();
 

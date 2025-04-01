@@ -1,3 +1,4 @@
+
 import { Project } from './project';
 import { Task } from './task';
 
@@ -57,19 +58,29 @@ export function mapApiTaskGroupToTaskGroup(apiTaskGroup: APITaskGroup): TaskGrou
 }
 
 // Convert app task group to API task group format
-export function mapTaskGroupToApiTaskGroup(taskGroup: CreateTaskGroupDTO | UpdateTaskGroupDTO, userId?: string): Partial<APITaskGroup> {
+export function mapTaskGroupToApiTaskGroup(
+  taskGroup: CreateTaskGroupDTO | UpdateTaskGroupDTO, 
+  userId?: string
+): Partial<APITaskGroup> {
+  // Create a base object
   const apiTaskGroup: Partial<APITaskGroup> = {
-    name: taskGroup.name,
     description: taskGroup.description || null,
     project_id: taskGroup.projectId || null,
     color: taskGroup.color || null,
     position: taskGroup.position || 0,
   };
 
+  // Add name if it exists
+  if ('name' in taskGroup && taskGroup.name) {
+    apiTaskGroup.name = taskGroup.name;
+  }
+
+  // Add user_id if provided
   if (userId) {
     apiTaskGroup.user_id = userId;
   }
 
+  // Add id if it's an update operation
   if ('id' in taskGroup) {
     apiTaskGroup.id = taskGroup.id;
   }
