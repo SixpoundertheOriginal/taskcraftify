@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { 
   Paperclip, 
@@ -370,7 +369,9 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
   // Convert attachmentUploads object to format expected by FileUpload component
   const uploadProgressForFileUpload: Record<string, number> = {};
   Object.entries(attachmentUploads).forEach(([fileName, data]) => {
-    uploadProgressForFileUpload[fileName] = data.progress;
+    if (data && typeof data === 'object' && 'progress' in data) {
+      uploadProgressForFileUpload[fileName] = data.progress;
+    }
   });
   
   // Count active filters

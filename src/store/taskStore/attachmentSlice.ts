@@ -9,9 +9,15 @@ export interface AttachmentSlice {
   isLoadingAttachments: boolean;
   attachmentError: string | null;
   
+  // Add missing properties
+  taskAttachments: Record<string, Attachment[]>;
+  attachmentUploads: Record<string, { progress: number }>;
+  isAttachmentLoading: boolean;
+  
   fetchTaskAttachments: (taskId: string) => Promise<Attachment[]>;
   uploadAttachment: (options: AttachmentUploadOptions) => Promise<Attachment>;
   deleteAttachment: (attachmentId: string) => Promise<void>;
+  getAttachmentUrl: (storagePath: string) => string;
 }
 
 export const createAttachmentSlice: StateCreator<
@@ -24,9 +30,15 @@ export const createAttachmentSlice: StateCreator<
   isLoadingAttachments: false,
   attachmentError: null,
   
+  // Initialize the new properties
+  taskAttachments: {},
+  attachmentUploads: {},
+  isAttachmentLoading: false,
+  
   fetchTaskAttachments: async (taskId: string) => {
     set(state => ({ 
       isLoadingAttachments: true,
+      isAttachmentLoading: true,
       attachmentError: null
     }));
     
@@ -46,7 +58,13 @@ export const createAttachmentSlice: StateCreator<
           ...state.attachments,
           [taskId]: attachmentsList
         },
-        isLoadingAttachments: false
+        // Update the new taskAttachments property as well
+        taskAttachments: {
+          ...state.taskAttachments,
+          [taskId]: attachmentsList
+        },
+        isLoadingAttachments: false,
+        isAttachmentLoading: false
       }));
       
       return attachmentsList;
@@ -56,6 +74,7 @@ export const createAttachmentSlice: StateCreator<
       
       set(state => ({
         isLoadingAttachments: false,
+        isAttachmentLoading: false,
         attachmentError: errorMessage
       }));
       
@@ -72,7 +91,36 @@ export const createAttachmentSlice: StateCreator<
   
   uploadAttachment: async (options: AttachmentUploadOptions) => {
     try {
-      const result = await AttachmentService.uploadAttachment(options);
+      // Update attachment uploads with initial progress
+      set(state => ({
+        attachmentUploads: {
+          ...state.attachmentUploads,
+          [options.file.name]: { progress: 0 }
+        }
+      }));
+      
+      // Create a progress handler
+      const onProgressUpdate = (progress: number) => {
+        if (options.onProgress) {
+          options.onProgress(progress);
+        }
+        
+        // Update the progress in the store
+        set(state => ({
+          attachmentUploads: {
+            ...state.attachmentUploads,
+            [options.file.name]: { progress }
+          }
+        }));
+      };
+      
+      // Call the upload with progress tracking
+      const modifiedOptions = {
+        ...options,
+        onProgress: onProgressUpdate
+      };
+      
+      const result = await AttachmentService.uploadAttachment(modifiedOptions);
       
       if (result.error) {
         throw result.error;
@@ -86,17 +134,35 @@ export const createAttachmentSlice: StateCreator<
       set(state => {
         const taskAttachments = state.attachments[options.taskId] || [];
         
+        // Remove the file from uploads on completion
+        const { [options.file.name]: removed, ...remainingUploads } = state.attachmentUploads;
+        
         return {
           attachments: {
             ...state.attachments,
             [options.taskId]: [result.data!, ...taskAttachments]
-          }
+          },
+          // Update taskAttachments as well
+          taskAttachments: {
+            ...state.taskAttachments,
+            [options.taskId]: [result.data!, ...taskAttachments]
+          },
+          // Remove from uploads on completion
+          attachmentUploads: remainingUploads
         };
       });
       
       return result.data;
     } catch (error) {
       console.error('Error uploading attachment:', error);
+      
+      // Clean up the upload state on error
+      set(state => {
+        const { [options.file.name]: removed, ...remainingUploads } = state.attachmentUploads;
+        return {
+          attachmentUploads: remainingUploads
+        };
+      });
       
       const errorMessage = error instanceof Error ? error.message : 'Failed to upload attachment';
       
@@ -121,6 +187,7 @@ export const createAttachmentSlice: StateCreator<
       // Update the attachments cache by removing the deleted attachment
       set(state => {
         const newAttachments = { ...state.attachments };
+        const newTaskAttachments = { ...state.taskAttachments };
         
         // Find which task this attachment belonged to
         for (const [taskId, attachments] of Object.entries(newAttachments)) {
@@ -132,11 +199,20 @@ export const createAttachmentSlice: StateCreator<
               ...attachments.slice(0, index),
               ...attachments.slice(index + 1)
             ];
+            
+            // Also update taskAttachments
+            newTaskAttachments[taskId] = [
+              ...attachments.slice(0, index),
+              ...attachments.slice(index + 1)
+            ];
             break;
           }
         }
         
-        return { attachments: newAttachments };
+        return { 
+          attachments: newAttachments,
+          taskAttachments: newTaskAttachments 
+        };
       });
     } catch (error) {
       console.error('Error deleting attachment:', error);
@@ -151,5 +227,10 @@ export const createAttachmentSlice: StateCreator<
       
       throw error;
     }
+  },
+  
+  // Add the getAttachmentUrl implementation
+  getAttachmentUrl: (storagePath: string) => {
+    return AttachmentService.getAttachmentUrl(storagePath);
   }
 });

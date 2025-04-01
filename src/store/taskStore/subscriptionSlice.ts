@@ -31,6 +31,12 @@ export const createSubscriptionSlice: StateCreator<
         console.log("Task attachments storage bucket is ready");
       } else {
         console.warn("Failed to ensure task attachments storage bucket exists");
+        // Try one more time with a delay
+        setTimeout(() => {
+          ensureStorageBucket('task-attachments', true).then(retrySuccess => {
+            console.log("Retry bucket creation result:", retrySuccess ? "success" : "failed");
+          });
+        }, 2000);
       }
     });
     
