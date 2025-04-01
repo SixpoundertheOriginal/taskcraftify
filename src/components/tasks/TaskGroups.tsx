@@ -27,9 +27,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 export function TaskGroups() {
   const { selectedProjectId, projects } = useProjectStore();
-  const { tasks, updateTask } = useTaskStore();
+  const { tasks = [], updateTask } = useTaskStore();
   const { 
-    taskGroups, 
+    taskGroups = [], 
     fetchTaskGroups, 
     createTaskGroup, 
     updateTaskGroup,
@@ -64,13 +64,16 @@ export function TaskGroups() {
     };
   }, [selectedProjectId, fetchTaskGroups, setupTaskGroupSubscription]);
   
-  const projectTasks = tasks.filter(task => 
+  const safeTasks = Array.isArray(tasks) ? tasks : [];
+  const safeTaskGroups = Array.isArray(taskGroups) ? taskGroups : [];
+  
+  const projectTasks = safeTasks.filter(task => 
     task.projectId === selectedProjectId
   );
   
   const tasksByGroup: Record<string, Task[]> = {};
   
-  taskGroups.forEach(group => {
+  safeTaskGroups.forEach(group => {
     tasksByGroup[group.id] = [];
   });
   
@@ -104,7 +107,7 @@ export function TaskGroups() {
     
     if (active.data?.current?.type !== 'task') return;
     
-    const activeTask = tasks.find(t => t.id === active.id);
+    const activeTask = safeTasks.find(t => t.id === active.id);
     if (!activeTask) return;
     
     if (over.data?.current?.type === 'group') {
@@ -134,8 +137,8 @@ export function TaskGroups() {
     if (!over) return;
     
     if (active.data?.current?.type === 'task' && over.data?.current?.type === 'task') {
-      const activeTask = tasks.find(t => t.id === active.id);
-      const overTask = tasks.find(t => t.id === over.id);
+      const activeTask = safeTasks.find(t => t.id === active.id);
+      const overTask = safeTasks.find(t => t.id === over.id);
       
       if (!activeTask || !overTask) return;
       
@@ -242,7 +245,7 @@ export function TaskGroups() {
         onDragEnd={handleDragEnd}
       >
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {taskGroups.map(group => (
+          {safeTaskGroups.map(group => (
             <TaskGroupColumn 
               key={group.id} 
               group={group} 

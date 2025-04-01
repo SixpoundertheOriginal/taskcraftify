@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Subtask, CreateSubtaskDTO, UpdateSubtaskDTO, TaskStatus, TaskPriority } from '@/types/task';
 import { useTaskStore } from '@/store';
@@ -36,9 +37,9 @@ export function SubtaskList({ taskId, subtasks: initialSubtasks, onSubtasksChang
   const loadSubtasks = async () => {
     try {
       const loadedSubtasks = await fetchSubtasks(taskId);
-      setSubtasks(loadedSubtasks);
+      setSubtasks(loadedSubtasks || []);  // Ensure we always have an array
       if (onSubtasksChange) {
-        onSubtasksChange(loadedSubtasks);
+        onSubtasksChange(loadedSubtasks || []);
       }
     } catch (error) {
       console.error('Error loading subtasks:', error);
@@ -58,17 +59,6 @@ export function SubtaskList({ taskId, subtasks: initialSubtasks, onSubtasksChang
     setIsSubmitting(true);
     
     try {
-      const tempTask = {
-        id: "temp-id",
-        title: "Temporary Task",
-        status: TaskStatus.TODO,
-        priority: TaskPriority.MEDIUM,
-        position: 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        subtasks: []
-      };
-      
       const subtaskData: CreateSubtaskDTO = {
         taskId,
         title: newSubtaskTitle.trim()
@@ -76,11 +66,13 @@ export function SubtaskList({ taskId, subtasks: initialSubtasks, onSubtasksChang
       
       const newSubtask = await createSubtask(subtaskData);
       
-      const updatedSubtasks = [...subtasks, newSubtask];
-      setSubtasks(updatedSubtasks);
-      
-      if (onSubtasksChange) {
-        onSubtasksChange(updatedSubtasks);
+      if (newSubtask) {
+        const updatedSubtasks = [...subtasks, newSubtask];
+        setSubtasks(updatedSubtasks);
+        
+        if (onSubtasksChange) {
+          onSubtasksChange(updatedSubtasks);
+        }
       }
       
       setNewSubtaskTitle('');
@@ -105,14 +97,16 @@ export function SubtaskList({ taskId, subtasks: initialSubtasks, onSubtasksChang
       
       const updatedSubtask = await updateSubtask(subtaskUpdate);
       
-      const updatedSubtasks = subtasks.map(s => 
-        s.id === subtask.id ? updatedSubtask : s
-      );
-      
-      setSubtasks(updatedSubtasks);
-      
-      if (onSubtasksChange) {
-        onSubtasksChange(updatedSubtasks);
+      if (updatedSubtask) {
+        const updatedSubtasks = subtasks.map(s => 
+          s.id === subtask.id ? updatedSubtask : s
+        );
+        
+        setSubtasks(updatedSubtasks);
+        
+        if (onSubtasksChange) {
+          onSubtasksChange(updatedSubtasks);
+        }
       }
     } catch (error) {
       console.error('Error toggling subtask completion:', error);
@@ -168,14 +162,16 @@ export function SubtaskList({ taskId, subtasks: initialSubtasks, onSubtasksChang
       
       const updatedSubtask = await updateSubtask(subtaskUpdate);
       
-      const updatedSubtasks = subtasks.map(s => 
-        s.id === editingId ? updatedSubtask : s
-      );
-      
-      setSubtasks(updatedSubtasks);
-      
-      if (onSubtasksChange) {
-        onSubtasksChange(updatedSubtasks);
+      if (updatedSubtask) {
+        const updatedSubtasks = subtasks.map(s => 
+          s.id === editingId ? updatedSubtask : s
+        );
+        
+        setSubtasks(updatedSubtasks);
+        
+        if (onSubtasksChange) {
+          onSubtasksChange(updatedSubtasks);
+        }
       }
       
       cancelEditing();
@@ -203,7 +199,7 @@ export function SubtaskList({ taskId, subtasks: initialSubtasks, onSubtasksChang
       <h3 className="text-sm font-medium">Subtasks</h3>
       
       <div className="space-y-2">
-        {subtasks.length > 0 ? (
+        {subtasks && subtasks.length > 0 ? (
           subtasks.map(subtask => (
             <div 
               key={subtask.id} 
@@ -250,18 +246,22 @@ export function SubtaskList({ taskId, subtasks: initialSubtasks, onSubtasksChang
             </div>
           ))
         ) : (
-          <div className="text-sm text-muted-foreground">No subtasks yet</div>
+          <p className="text-sm text-muted-foreground">No subtasks yet.</p>
         )}
       </div>
       
       <form onSubmit={handleAddSubtask} className="flex space-x-2">
         <Input
-          placeholder="Add a subtask..."
           value={newSubtaskTitle}
           onChange={(e) => setNewSubtaskTitle(e.target.value)}
+          placeholder="Add a subtask..."
           className="flex-1"
         />
-        <Button type="submit" size="icon" disabled={isSubmitting || !newSubtaskTitle.trim()}>
+        <Button 
+          type="submit" 
+          size="sm" 
+          disabled={!newSubtaskTitle.trim() || isSubmitting}
+        >
           {isSubmitting ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (

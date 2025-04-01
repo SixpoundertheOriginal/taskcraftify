@@ -1,4 +1,3 @@
-
 import { useMemo } from 'react';
 import { format, parseISO, isValid } from 'date-fns';
 import { Task, TaskStatus } from '@/types/task';
@@ -23,7 +22,10 @@ interface GroupedTasks {
   unspecified: Task[];
 }
 
-export function TimeGroupedTasks({ tasks, onEdit, onDelete, onComplete }: TimeGroupedTasksProps) {
+export function TimeGroupedTasks({ tasks = [], onEdit, onDelete, onComplete }: TimeGroupedTasksProps) {
+  // Ensure tasks is always an array
+  const safeTasks = Array.isArray(tasks) ? tasks : [];
+  
   const groupedTasks = useMemo(() => {
     // Initialize groups with empty arrays
     const groups: GroupedTasks = {
@@ -33,7 +35,7 @@ export function TimeGroupedTasks({ tasks, onEdit, onDelete, onComplete }: TimeGr
       unspecified: []
     };
     
-    tasks.forEach(task => {
+    safeTasks.forEach(task => {
       if (!task.dueDate) {
         groups.unspecified.push(task);
         return;
@@ -59,7 +61,7 @@ export function TimeGroupedTasks({ tasks, onEdit, onDelete, onComplete }: TimeGr
     });
     
     return groups;
-  }, [tasks]);
+  }, [safeTasks]);
   
   const hasTimeSpecificTasks = useMemo(() => {
     return (
@@ -197,6 +199,12 @@ export function TimeGroupedTasks({ tasks, onEdit, onDelete, onComplete }: TimeGr
           <div className="mt-2">
             {groupedTasks.unspecified.map(task => renderTaskCard(task))}
           </div>
+        </div>
+      )}
+      
+      {(!hasTimeSpecificTasks && groupedTasks.unspecified.length === 0) && (
+        <div className="text-center py-8 text-muted-foreground">
+          <p>No tasks scheduled for this time period.</p>
         </div>
       )}
     </div>
