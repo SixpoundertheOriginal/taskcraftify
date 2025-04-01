@@ -140,7 +140,7 @@ export function UnifiedTaskForm({
         ...data,
         dueDate,
         tags,
-        projectId: projectId === 'none' ? undefined : projectId
+        projectId
       };
       
       let taskId: string;

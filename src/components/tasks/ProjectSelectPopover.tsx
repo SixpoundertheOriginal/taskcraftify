@@ -27,6 +27,7 @@ export function ProjectSelectPopover({ projectId, onProjectSelect }: ProjectSele
   };
 
   const handleProjectCreated = (newProjectId: string) => {
+    console.log("ProjectSelectPopover - New project created:", newProjectId);
     onProjectSelect(newProjectId);
     setShowProjectForm(false);
     setOpen(false);
@@ -38,6 +39,7 @@ export function ProjectSelectPopover({ projectId, onProjectSelect }: ProjectSele
 
   const handleProjectSelect = (id: string | undefined) => {
     console.log("ProjectSelectPopover - Project selected:", id);
+    // Handle 'none' as a special case, converting it to undefined for the task
     onProjectSelect(id === 'none' ? undefined : id);
     setOpen(false);
   };
@@ -59,10 +61,8 @@ export function ProjectSelectPopover({ projectId, onProjectSelect }: ProjectSele
               />
               <span>{currentProject.name}</span>
             </div>
-          ) : projectId === 'none' ? (
-            <span>No Project</span>
           ) : (
-            <span className="text-muted-foreground">Select project</span>
+            <span className="text-muted-foreground">No Project</span>
           )}
           <ChevronDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
         </Button>
