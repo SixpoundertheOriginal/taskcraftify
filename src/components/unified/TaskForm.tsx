@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { 
@@ -40,6 +41,7 @@ interface TaskFormProps {
   initialTask?: Task;
   initialDueDate?: Date;
   initialStatus?: TaskStatus;
+  initialProjectId?: string;
 }
 
 export function UnifiedTaskForm({ 
@@ -47,7 +49,8 @@ export function UnifiedTaskForm({
   onOpenChange, 
   initialTask, 
   initialDueDate, 
-  initialStatus 
+  initialStatus,
+  initialProjectId
 }: TaskFormProps) {
   const { createTask, updateTask, isLoading, uploadAttachment, fetchTask } = useTaskStore();
   const { projects, selectedProjectId } = useProjectStore();
@@ -57,7 +60,7 @@ export function UnifiedTaskForm({
     initialTask?.dueDate || initialDueDate
   );
   const [projectId, setProjectId] = useState<string | undefined>(
-    initialTask?.projectId || selectedProjectId || undefined
+    initialTask?.projectId || initialProjectId || selectedProjectId || undefined
   );
   const [projectSelectorOpen, setProjectSelectorOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("details");
