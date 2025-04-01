@@ -92,14 +92,16 @@ export const TaskGroupService = {
       const highestPosition = positionData && positionData.length > 0 ? positionData[0].position : -1;
       const newPosition = taskGroupData.position !== undefined ? taskGroupData.position : highestPosition + 1;
 
+      // Map to API format - this now returns a single object, not an array
       const apiTaskGroup = mapTaskGroupToApiTaskGroup({
         ...taskGroupData,
         position: newPosition
       }, userId);
 
+      // Important: Insert a single object, not an array
       const { data, error } = await supabase
         .from('task_groups')
-        .insert([apiTaskGroup])
+        .insert(apiTaskGroup) // No need for array brackets here
         .select('*')
         .single();
 
