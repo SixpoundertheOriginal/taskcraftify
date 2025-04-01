@@ -19,7 +19,7 @@ import {
   SidebarMenuButton,
   SidebarSeparator
 } from '@/components/ui/sidebar';
-import { ProjectSelector, EnhancedProjectList } from '@/components/projects';
+import { ProjectSelector, EnhancedProjectList, DemoDataButton } from '@/components/projects';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CalendarDays, List, KanbanSquare, Settings, User } from 'lucide-react';
 import { QuickAddButton } from '@/components/quick-add';
@@ -144,6 +144,8 @@ export default function Index() {
                   {activeTab === 'integrations' && 'Integrations'}
                 </h1>
                 <div className="flex items-center gap-2">
+                  {/* Add Demo Data Button here */}
+                  <DemoDataButton />
                   <TabsList>
                     <TabsTrigger value="tasks" className="flex items-center gap-1">
                       <List className="h-4 w-4" />
