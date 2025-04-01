@@ -24,9 +24,7 @@ export function ProjectSelectorItem({
   return (
     <CommandItem
       className="flex items-center gap-2 cursor-pointer"
-      onSelect={(e) => {
-        // Stop the default onSelect which uses preventDefault() that might interfere
-        e.preventDefault();
+      onSelect={() => {
         console.log(`ProjectSelectorItem - Selected: ${id}, ${name}`);
         onSelect(id);
       }}

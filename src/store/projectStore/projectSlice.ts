@@ -1,4 +1,3 @@
-
 import { Project, CreateProjectDTO, UpdateProjectDTO } from '@/types/project';
 import { ProjectService } from '@/services/projectService';
 import { StateCreator } from 'zustand';
@@ -17,6 +16,7 @@ export interface ProjectSlice {
   updateProject: (projectUpdate: UpdateProjectDTO) => Promise<boolean>;
   deleteProject: (id: string) => Promise<boolean>;
   selectProject: (id: string | null) => void;
+  setupProjectSubscription: () => () => void;
   
   // Selectors
   getProjectById: (id: string) => Project | undefined;
@@ -243,6 +243,18 @@ export const createProjectSlice: StateCreator<ProjectStore, [], [], ProjectSlice
   
   selectProject: (id: string | null) => {
     set({ selectedProjectId: id });
+  },
+  
+  setupProjectSubscription: () => {
+    const { subscribe, unsubscribe } = get();
+    
+    // Subscribe to project changes
+    subscribe();
+    
+    // Return cleanup function
+    return () => {
+      unsubscribe();
+    };
   },
   
   getProjectById: (id: string) => {
