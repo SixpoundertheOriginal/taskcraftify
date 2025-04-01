@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { 
   TaskGroup, 
@@ -91,35 +92,41 @@ export const TaskGroupService = {
       const highestPosition = positionData && positionData.length > 0 ? positionData[0].position : -1;
       const newPosition = taskGroupData.position !== undefined ? taskGroupData.position : highestPosition + 1;
 
-      // Map to API format - ensuring required fields are present
-      const apiTaskGroup = mapTaskGroupToApiTaskGroup({
-        ...taskGroupData,
-        position: newPosition
-      }, userId);
+      try {
+        // This will throw an error if name is missing
+        const apiTaskGroup = mapTaskGroupToApiTaskGroup({
+          ...taskGroupData,
+          position: newPosition
+        }, userId);
+        
+        // Insert the task group
+        const { data, error } = await supabase
+          .from('task_groups')
+          .insert(apiTaskGroup)
+          .select('*')
+          .single();
 
-      // Ensure name is present as it's required
-      if (!apiTaskGroup.name) {
-        return { error: new Error('Task group name is required') };
+        if (error) {
+          console.error('Error creating task group:', error);
+          return { error: new Error(error.message) };
+        }
+
+        if (!data) {
+          return { error: new Error('No data returned from create operation') };
+        }
+
+        const taskGroup = mapApiTaskGroupToTaskGroup(data as unknown as APITaskGroup);
+        return { data: taskGroup };
+        
+      } catch (error) {
+        // Catch the error from mapTaskGroupToApiTaskGroup
+        console.error('Error mapping task group:', error);
+        return { 
+          error: error instanceof Error 
+            ? error 
+            : new Error('Error mapping task group data') 
+        };
       }
-
-      // Insert a single object
-      const { data, error } = await supabase
-        .from('task_groups')
-        .insert(apiTaskGroup)
-        .select('*')
-        .single();
-
-      if (error) {
-        console.error('Error creating task group:', error);
-        return { error: new Error(error.message) };
-      }
-
-      if (!data) {
-        return { error: new Error('No data returned from create operation') };
-      }
-
-      const taskGroup = mapApiTaskGroupToTaskGroup(data as unknown as APITaskGroup);
-      return { data: taskGroup };
     } catch (error) {
       console.error('Error in createTaskGroup:', error);
       return {
