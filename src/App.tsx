@@ -1,6 +1,6 @@
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/auth/AuthContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -11,6 +11,8 @@ import NotFound from '@/pages/NotFound';
 import Settings from '@/pages/Settings';
 import { useTaskStore, useProjectStore, useIntegrationStore } from '@/store';
 import { ThemeProvider } from '@/providers/ThemeProvider';
+import { toast } from '@/hooks/use-toast';
+import { AlertCircle } from 'lucide-react';
 
 function App() {
   const { 
@@ -18,14 +20,68 @@ function App() {
     setupTaskSubscription, 
     refreshTaskCounts,
     isInitialLoadComplete,
+    error: taskError,
   } = useTaskStore();
   
   const { fetchProjects, setupProjectSubscription } = useProjectStore();
   const { fetchIntegrations, fetchCalendarEvents, fetchEmailSettings } = useIntegrationStore();
   
   // Use refs to track subscription cleanup functions
-  const taskSubscriptionRef = useRef<() => void | null>(null);
-  const projectSubscriptionRef = useRef<() => void | null>(null);
+  const taskSubscriptionRef = useRef<(() => void) | null>(null);
+  const projectSubscriptionRef = useRef<(() => void) | null>(null);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  
+  // Function to handle connection recovery
+  const handleConnectionRecovery = async () => {
+    setConnectionError(null);
+    
+    try {
+      console.log("Attempting to recover connection...");
+      // Clean up existing subscriptions
+      if (taskSubscriptionRef.current) {
+        taskSubscriptionRef.current();
+        taskSubscriptionRef.current = null;
+      }
+      if (projectSubscriptionRef.current) {
+        projectSubscriptionRef.current();
+        projectSubscriptionRef.current = null;
+      }
+      
+      // Fetch fresh data
+      await fetchTasks();
+      await fetchProjects();
+      
+      // Set up new subscriptions
+      taskSubscriptionRef.current = setupTaskSubscription();
+      projectSubscriptionRef.current = setupProjectSubscription();
+      
+      toast({
+        title: "Connection restored",
+        description: "Successfully reconnected to the database",
+      });
+    } catch (error) {
+      console.error("Error recovering connection:", error);
+      setConnectionError("Connection issues persisted. Please refresh the page or try again later.");
+      
+      // Implement exponential backoff for retries
+      if (retryCount < 5) {
+        const backoffTime = Math.pow(2, retryCount) * 1000;
+        console.log(`Will retry connection in ${backoffTime}ms`);
+        
+        setTimeout(() => {
+          setRetryCount(count => count + 1);
+          handleConnectionRecovery();
+        }, backoffTime);
+      } else {
+        toast({
+          title: "Connection failed",
+          description: "Unable to reconnect to the database after multiple attempts",
+          variant: "destructive",
+        });
+      }
+    }
+  };
   
   useEffect(() => {
     console.log("App mounted - setting up data fetching and subscriptions");
@@ -59,6 +115,7 @@ function App() {
         await fetchEmailSettings();
       } catch (error) {
         console.error("Error fetching initial data:", error);
+        setConnectionError("Failed to load initial data. Check your internet connection.");
       }
     };
     
@@ -74,22 +131,7 @@ function App() {
     // Set up network status event listeners
     const handleOnline = () => {
       console.log("Network connection restored - refreshing data and subscriptions");
-      
-      // Clean up existing subscriptions
-      if (taskSubscriptionRef.current) {
-        taskSubscriptionRef.current();
-      }
-      if (projectSubscriptionRef.current) {
-        projectSubscriptionRef.current();
-      }
-      
-      // Fetch fresh data
-      fetchTasks();
-      fetchProjects();
-      
-      // Set up new subscriptions
-      taskSubscriptionRef.current = setupTaskSubscription();
-      projectSubscriptionRef.current = setupProjectSubscription();
+      handleConnectionRecovery();
     };
     
     // Add network status event listeners
@@ -122,6 +164,24 @@ function App() {
     fetchCalendarEvents, 
     fetchEmailSettings
   ]);
+  
+  // Show error notification when task error occurs
+  useEffect(() => {
+    if (taskError) {
+      toast({
+        title: "Error loading tasks",
+        description: taskError,
+        variant: "destructive",
+      });
+    }
+  }, [taskError]);
+  
+  // Retry connection when network comes back online
+  useEffect(() => {
+    if (connectionError && navigator.onLine) {
+      handleConnectionRecovery();
+    }
+  }, [navigator.onLine, connectionError]);
   
   return (
     <ThemeProvider defaultTheme="system" storageKey="taskcraft-theme">

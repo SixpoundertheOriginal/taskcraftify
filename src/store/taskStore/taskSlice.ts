@@ -31,8 +31,8 @@ export interface TaskSlice {
   // Task CRUD operations
   fetchTasks: () => Promise<Task[]>;
   fetchTasksByProject: (projectId: string) => Promise<Task[]>;
-  createTask: (taskData: CreateTaskDTO) => Promise<Task | null>;
-  updateTask: (taskUpdate: UpdateTaskDTO) => Promise<Task | null>;
+  createTask: (taskData: CreateTaskDTO) => Promise<Task>;
+  updateTask: (taskUpdate: UpdateTaskDTO) => Promise<Task>;
   deleteTask: (id: string) => Promise<void>;
   setCurrentTask: (task: Task | null) => void;
   
@@ -64,13 +64,13 @@ export const createTaskSlice: StateCreator<
   // State
   tasks: [],
   filters: {
-    status: null, // Use null instead of TaskStatus.All
+    status: null,
     project: null,
     search: ''
   },
   isLoading: false,
   error: null,
-  currentTask: null, // Initialize currentTask as null
+  currentTask: null,
   
   // Task CRUD operations
   fetchTasks: async () => {
@@ -97,6 +97,8 @@ export const createTaskSlice: StateCreator<
         isLoading: false, 
         error: error instanceof Error ? error.message : 'An unknown error occurred' 
       });
+      
+      // Return an empty array instead of throwing to prevent cascading errors
       return [];
     }
   },
@@ -125,6 +127,8 @@ export const createTaskSlice: StateCreator<
         isLoading: false, 
         error: error instanceof Error ? error.message : 'An unknown error occurred' 
       });
+      
+      // Return an empty array instead of throwing to prevent cascading errors
       return [];
     }
   },
@@ -612,7 +616,10 @@ export const createTaskSlice: StateCreator<
   // Single task fetching
   fetchTask: async (taskId: string): Promise<Task | undefined> => {
     try {
-      set({ isLoading: true, error: null });
+      set(state => ({ 
+        isLoading: true,
+        error: null
+      }));
       
       const { data, error } = await supabase
         .from('tasks')
@@ -621,10 +628,16 @@ export const createTaskSlice: StateCreator<
         .single();
         
       if (error) {
-        throw error;
+        console.error(`Error fetching task ${taskId}:`, error);
+        set({ 
+          isLoading: false, 
+          error: `Failed to fetch task: ${error.message}` 
+        });
+        return undefined;
       }
       
       if (!data) {
+        console.warn(`No task found with ID ${taskId}`);
         set({ isLoading: false });
         return undefined;
       }

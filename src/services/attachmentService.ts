@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Attachment, 
@@ -36,7 +35,6 @@ export const AttachmentService = {
       // The path where the file will be stored: user_id/task_id/filename
       const storagePath = `${userId}/${taskId}/${fileName}`;
 
-      // Since onUploadProgress is not supported in FileOptions, we'll use a simpler approach
       // Call the progress callback with a starting value
       if (onProgress) {
         onProgress(10); // Start with 10% progress indication
@@ -68,7 +66,6 @@ export const AttachmentService = {
         file_size: file.size,
         file_type: file.type,
         storage_path: storagePath,
-        // For simplicity, not generating thumbnails in this implementation
         thumbnail_path: null
       };
       
@@ -102,6 +99,25 @@ export const AttachmentService = {
   
   async getTaskAttachments(taskId: string): Promise<ServiceResult<Attachment[]>> {
     try {
+      console.log(`AttachmentService.getTaskAttachments: Fetching attachments for task ${taskId}`);
+      
+      // Check if storage bucket exists
+      const { data: buckets, error: bucketsError } = await supabase
+        .storage
+        .listBuckets();
+        
+      if (bucketsError) {
+        console.error("Error checking storage buckets:", bucketsError);
+        throw new Error(`Storage error: ${bucketsError.message}`);
+      }
+      
+      const taskAttachmentsBucketExists = buckets.some(bucket => bucket.name === 'task-attachments');
+      
+      if (!taskAttachmentsBucketExists) {
+        console.warn("Storage bucket 'task-attachments' does not exist");
+        return { data: [], error: null };
+      }
+      
       // Fetch attachments for the given task
       const { data, error } = await supabase
         .from('task_attachments')
@@ -113,12 +129,14 @@ export const AttachmentService = {
         throw new Error(`Database error: ${error.message}`);
       }
       
+      console.log(`AttachmentService.getTaskAttachments: Found ${data?.length || 0} attachments for task ${taskId}`);
+      
       return {
         data: (data as APIAttachment[]).map(mapAPIAttachmentToAttachment),
         error: null
       };
     } catch (error) {
-      console.error('Error fetching attachments:', error);
+      console.error(`Error fetching attachments for task ${taskId}:`, error);
       return {
         data: null,
         error: error instanceof Error ? error : new Error('Unknown error occurred')

@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { Task, TaskStatus, TaskPriority } from '@/types/task';
@@ -34,7 +33,6 @@ export type TaskStore = TaskSlice & FilterSlice & SubscriptionSlice & StatsSlice
   getTasksCountByStatus: () => Record<string, number>;
   getAverageDailyCompletionRate: () => number;
   
-  // Add missing task filter methods
   getTasksDueToday: () => Task[];
   getOverdueTasks: () => Task[];
   
@@ -98,22 +96,45 @@ export const useTaskStore = create<TaskStore>()(
         
         fetchTask: async (taskId: string): Promise<Task | undefined> => {
           try {
+            console.log(`[TaskStore] Fetching task with ID: ${taskId}`);
+            
             const existingTask = get().tasks.find(t => t.id === taskId);
             
             const updatedTask = await taskSlice.fetchTask(taskId);
             
             if (updatedTask) {
-              await attachmentSlice.fetchTaskAttachments(taskId);
-              await taskSlice.fetchComments(taskId);
-              await taskSlice.fetchActivities(taskId);
+              console.log(`[TaskStore] Task ${taskId} fetched successfully, loading attachments and details`);
+              
+              const results = await Promise.allSettled([
+                attachmentSlice.fetchTaskAttachments(taskId).catch(err => {
+                  console.error(`Error fetching attachments for task ${taskId}:`, err);
+                  return null;
+                }),
+                taskSlice.fetchComments(taskId).catch(err => {
+                  console.error(`Error fetching comments for task ${taskId}:`, err);
+                  return null;
+                }),
+                taskSlice.fetchActivities(taskId).catch(err => {
+                  console.error(`Error fetching activities for task ${taskId}:`, err);
+                  return null;
+                })
+              ]);
+              
+              results.forEach((result, index) => {
+                if (result.status === 'rejected') {
+                  const operations = ['attachments', 'comments', 'activities'];
+                  console.error(`Failed to load ${operations[index]} for task ${taskId}:`, result.reason);
+                }
+              });
               
               return updatedTask;
             }
             
+            console.log(`[TaskStore] Failed to fetch updated task ${taskId}, returning existing data if available`);
             return existingTask;
           } catch (error) {
-            console.error("Error fetching single task:", error);
-            return undefined;
+            console.error("Error in TaskStore.fetchTask:", error);
+            return get().tasks.find(t => t.id === taskId);
           }
         },
         
@@ -147,7 +168,6 @@ export const useTaskStore = create<TaskStore>()(
           return completedTasks.length / daysDifference;
         },
         
-        // Implement the missing task filter methods
         getTasksDueToday: () => {
           return taskSlice.tasks.filter(task => 
             task.status !== TaskStatus.DONE && 

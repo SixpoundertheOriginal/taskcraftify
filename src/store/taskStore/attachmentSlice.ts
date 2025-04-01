@@ -1,68 +1,78 @@
 
 import { StateCreator } from 'zustand';
-import { AttachmentService } from '@/services/attachmentService';
 import { Attachment, AttachmentUploadOptions } from '@/types/attachment';
+import { AttachmentService } from '@/services/attachmentService';
 import { toast } from '@/hooks/use-toast';
 
 export interface AttachmentSlice {
-  // State
-  taskAttachments: Record<string, Attachment[]>;
-  attachmentUploads: Record<string, { progress: number; fileName: string }>;
-  isAttachmentLoading: boolean;
+  attachments: Record<string, Attachment[]>;
+  isLoadingAttachments: boolean;
+  attachmentError: string | null;
   
-  // Operations
-  uploadAttachment: (options: AttachmentUploadOptions) => Promise<Attachment | null>;
   fetchTaskAttachments: (taskId: string) => Promise<Attachment[]>;
-  deleteAttachment: (attachmentId: string) => Promise<boolean>;
-  getAttachmentUrl: (storagePath: string) => string;
+  uploadAttachment: (options: AttachmentUploadOptions) => Promise<Attachment>;
+  deleteAttachment: (attachmentId: string) => Promise<void>;
 }
 
 export const createAttachmentSlice: StateCreator<
-  AttachmentSlice & { tasks: any[] },
+  AttachmentSlice,
   [],
   [],
   AttachmentSlice
 > = (set, get) => ({
-  // State
-  taskAttachments: {},
-  attachmentUploads: {},
-  isAttachmentLoading: false,
+  attachments: {},
+  isLoadingAttachments: false,
+  attachmentError: null,
   
-  // Operations
-  uploadAttachment: async (options) => {
-    const { taskId, file, onProgress } = options;
-    
-    // Add to uploads with 0% progress
-    set(state => ({
-      attachmentUploads: {
-        ...state.attachmentUploads,
-        [file.name]: { progress: 0, fileName: file.name }
-      }
+  fetchTaskAttachments: async (taskId: string) => {
+    set(state => ({ 
+      isLoadingAttachments: true,
+      attachmentError: null
     }));
     
-    // Custom progress handler that updates the state
-    const handleProgress = (progress: number) => {
+    try {
+      console.log(`AttachmentSlice: Fetching attachments for task ${taskId}`);
+      const result = await AttachmentService.getTaskAttachments(taskId);
+      
+      if (result.error) {
+        console.error(`Error fetching attachments for task ${taskId}:`, result.error);
+        throw result.error;
+      }
+      
+      const attachmentsList = result.data || [];
+      
       set(state => ({
-        attachmentUploads: {
-          ...state.attachmentUploads,
-          [file.name]: { progress, fileName: file.name }
-        }
+        attachments: {
+          ...state.attachments,
+          [taskId]: attachmentsList
+        },
+        isLoadingAttachments: false
       }));
       
-      // Call the original progress handler if provided
-      if (onProgress) {
-        onProgress(progress);
-      }
-    };
-    
-    try {
-      set({ isAttachmentLoading: true });
+      return attachmentsList;
+    } catch (error) {
+      console.error('Error in fetchTaskAttachments:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load attachments';
       
-      const result = await AttachmentService.uploadAttachment({
-        taskId,
-        file,
-        onProgress: handleProgress
+      set(state => ({
+        isLoadingAttachments: false,
+        attachmentError: errorMessage
+      }));
+      
+      toast({
+        title: "Failed to load attachments",
+        description: errorMessage,
+        variant: "destructive",
       });
+      
+      // Return empty array to prevent cascading errors
+      return [];
+    }
+  },
+  
+  uploadAttachment: async (options: AttachmentUploadOptions) => {
+    try {
+      const result = await AttachmentService.uploadAttachment(options);
       
       if (result.error) {
         throw result.error;
@@ -72,133 +82,74 @@ export const createAttachmentSlice: StateCreator<
         throw new Error('No attachment data returned');
       }
       
-      // Add attachment to state
+      // Update the attachments cache
       set(state => {
-        const existingAttachments = state.taskAttachments[taskId] || [];
+        const taskAttachments = state.attachments[options.taskId] || [];
+        
         return {
-          taskAttachments: {
-            ...state.taskAttachments,
-            [taskId]: [result.data!, ...existingAttachments]
-          },
-          // Remove from uploads
-          attachmentUploads: Object.fromEntries(
-            Object.entries(state.attachmentUploads).filter(([key]) => key !== file.name)
-          ),
-          isAttachmentLoading: false
+          attachments: {
+            ...state.attachments,
+            [options.taskId]: [result.data!, ...taskAttachments]
+          }
         };
-      });
-      
-      toast({
-        title: "File uploaded",
-        description: `${file.name} was successfully attached to the task.`
       });
       
       return result.data;
     } catch (error) {
       console.error('Error uploading attachment:', error);
       
-      // Remove from uploads
-      set(state => ({
-        attachmentUploads: Object.fromEntries(
-          Object.entries(state.attachmentUploads).filter(([key]) => key !== file.name)
-        ),
-        isAttachmentLoading: false
-      }));
+      const errorMessage = error instanceof Error ? error.message : 'Failed to upload attachment';
       
       toast({
         title: "Upload failed",
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
-        variant: "destructive"
+        description: errorMessage,
+        variant: "destructive",
       });
       
-      return null;
+      throw error;
     }
   },
   
-  fetchTaskAttachments: async (taskId) => {
+  deleteAttachment: async (attachmentId: string) => {
     try {
-      set({ isAttachmentLoading: true });
-      
-      const result = await AttachmentService.getTaskAttachments(taskId);
-      
-      if (result.error) {
-        throw result.error;
-      }
-      
-      // Update state with fetched attachments
-      set(state => ({
-        taskAttachments: {
-          ...state.taskAttachments,
-          [taskId]: result.data || []
-        },
-        isAttachmentLoading: false
-      }));
-      
-      return result.data || [];
-    } catch (error) {
-      console.error('Error fetching task attachments:', error);
-      
-      set({ isAttachmentLoading: false });
-      
-      toast({
-        title: "Failed to load attachments",
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
-        variant: "destructive"
-      });
-      
-      return [];
-    }
-  },
-  
-  deleteAttachment: async (attachmentId) => {
-    try {
-      set({ isAttachmentLoading: true });
-      
       const result = await AttachmentService.deleteAttachment(attachmentId);
       
       if (result.error) {
         throw result.error;
       }
       
-      // Remove attachment from state
+      // Update the attachments cache by removing the deleted attachment
       set(state => {
-        const updatedAttachments = { ...state.taskAttachments };
+        const newAttachments = { ...state.attachments };
         
-        // Find which taskId this attachment belongs to
-        Object.keys(updatedAttachments).forEach(taskId => {
-          updatedAttachments[taskId] = updatedAttachments[taskId].filter(
-            attachment => attachment.id !== attachmentId
-          );
-        });
+        // Find which task this attachment belonged to
+        for (const [taskId, attachments] of Object.entries(newAttachments)) {
+          const index = attachments.findIndex(a => a.id === attachmentId);
+          
+          if (index !== -1) {
+            // Create a new array without the deleted attachment
+            newAttachments[taskId] = [
+              ...attachments.slice(0, index),
+              ...attachments.slice(index + 1)
+            ];
+            break;
+          }
+        }
         
-        return {
-          taskAttachments: updatedAttachments,
-          isAttachmentLoading: false
-        };
+        return { attachments: newAttachments };
       });
-      
-      toast({
-        title: "Attachment deleted",
-        description: "The file has been successfully removed."
-      });
-      
-      return true;
     } catch (error) {
       console.error('Error deleting attachment:', error);
       
-      set({ isAttachmentLoading: false });
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete attachment';
       
       toast({
-        title: "Failed to delete attachment",
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
-        variant: "destructive"
+        title: "Delete failed",
+        description: errorMessage,
+        variant: "destructive",
       });
       
-      return false;
+      throw error;
     }
-  },
-  
-  getAttachmentUrl: (storagePath) => {
-    return AttachmentService.getAttachmentUrl(storagePath);
   }
 });
