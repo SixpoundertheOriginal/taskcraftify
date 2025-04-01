@@ -126,7 +126,7 @@ const CommandItem = React.forwardRef<
       
       // Allow the event to be handled normally by the CommandItem component
       if (props.onSelect && typeof props.onSelect === 'function') {
-        props.onSelect();
+        props.onSelect(props.value || '');
       }
     }}
     {...props}
