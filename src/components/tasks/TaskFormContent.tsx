@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -40,9 +41,10 @@ interface TaskFormContentProps {
   taskToEdit?: Task;
   initialStatus?: TaskStatus;
   initialDueDate?: Date;
+  initialProjectId?: string;
 }
 
-export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialDueDate }: TaskFormContentProps) {
+export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialDueDate, initialProjectId }: TaskFormContentProps) {
   const { createTask, updateTask, isLoading, error } = useTaskStore();
   const { projects, selectedProjectId } = useProjectStore();
   const { fetchTemplates, useTemplate } = useTemplateStore();
@@ -52,7 +54,7 @@ export function TaskFormContent({ onSuccess, taskToEdit, initialStatus, initialD
     taskToEdit?.dueDate || initialDueDate
   );
   const [projectId, setProjectId] = useState<string | undefined>(
-    taskToEdit?.projectId || selectedProjectId || undefined
+    taskToEdit?.projectId || initialProjectId || selectedProjectId || undefined
   );
   const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(undefined);

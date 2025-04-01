@@ -23,12 +23,14 @@ import { Button } from '@/components/ui/button';
 import { UnifiedTaskForm } from '@/components/unified/TaskForm';
 import { useKeyboardShortcut } from '@/hooks/use-keyboard-shortcuts';
 import { cn } from '@/lib/utils';
+import { useProjectStore } from '@/store';
 
 export const QuickAddButton = () => {
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [taskFormType, setTaskFormType] = useState<'task' | 'event'>('task');
   const [isHovered, setIsHovered] = useState(false);
+  const { selectedProjectId } = useProjectStore();
   
   const handleOpenTaskForm = (type: 'task' | 'event') => {
     setTaskFormType(type);
@@ -130,6 +132,7 @@ export const QuickAddButton = () => {
         open={isTaskFormOpen}
         onOpenChange={handleTaskFormOpenChange}
         initialDueDate={taskFormType === 'event' ? new Date() : undefined}
+        initialProjectId={selectedProjectId} 
       />
     </>
   );

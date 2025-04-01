@@ -7,15 +7,17 @@ interface TaskFormProps {
   onOpenChange: (open: boolean) => void;
   initialDueDate?: Date;
   initialStatus?: TaskStatus;
+  initialProjectId?: string;
 }
 
-export function TaskForm({ open, onOpenChange, initialDueDate, initialStatus }: TaskFormProps) {
+export function TaskForm({ open, onOpenChange, initialDueDate, initialStatus, initialProjectId }: TaskFormProps) {
   return (
     <UnifiedTaskForm
       open={open}
       onOpenChange={onOpenChange}
       initialDueDate={initialDueDate}
       initialStatus={initialStatus}
+      initialProjectId={initialProjectId}
     />
   );
 }

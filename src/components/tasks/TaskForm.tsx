@@ -8,9 +8,10 @@ interface TaskFormProps {
   initialTask?: Task;
   initialDueDate?: Date;
   initialStatus?: TaskStatus;
+  initialProjectId?: string;
 }
 
-export function TaskForm({ open, onOpenChange, initialTask, initialDueDate, initialStatus }: TaskFormProps) {
+export function TaskForm({ open, onOpenChange, initialTask, initialDueDate, initialStatus, initialProjectId }: TaskFormProps) {
   return (
     <UnifiedTaskForm
       open={open}
@@ -18,6 +19,7 @@ export function TaskForm({ open, onOpenChange, initialTask, initialDueDate, init
       initialTask={initialTask}
       initialDueDate={initialDueDate}
       initialStatus={initialStatus}
+      initialProjectId={initialProjectId}
     />
   );
 }
