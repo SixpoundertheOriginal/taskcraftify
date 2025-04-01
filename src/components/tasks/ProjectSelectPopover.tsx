@@ -16,7 +16,7 @@ export function ProjectSelectPopover({ projectId, onProjectSelect }: ProjectSele
   const [open, setOpen] = useState(false);
   const [showProjectForm, setShowProjectForm] = useState(false);
   
-  const currentProject = projectId ? projects.find(p => p.id === projectId) : null;
+  const currentProject = projectId && projects ? projects.find(p => p.id === projectId) : null;
 
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {

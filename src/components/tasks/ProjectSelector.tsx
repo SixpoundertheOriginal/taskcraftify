@@ -32,6 +32,12 @@ export function ProjectSelector({ projectId, onProjectSelect, className }: Proje
     setOpen(false);
   };
   
+  // Ensure projectId is a string when checking for existence
+  const projectExists = projectId && projects && projects.some(project => project.id === projectId);
+  const projectName = projectExists 
+    ? projects.find(project => project.id === projectId)?.name || "Select project"
+    : "No Project";
+  
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -42,11 +48,7 @@ export function ProjectSelector({ projectId, onProjectSelect, className }: Proje
           className={cn("w-full justify-between", className)}
           onClick={() => setOpen(!open)}
         >
-          {projectId && projects ? (
-            projects.find((project) => project.id === projectId)?.name || "Select project"
-          ) : (
-            "No Project"
-          )}
+          {projectName}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>

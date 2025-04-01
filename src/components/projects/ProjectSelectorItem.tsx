@@ -26,11 +26,14 @@ export function ProjectSelectorItem({
     onSelect(id);
   };
   
+  // Ensure we have a valid value for the CommandItem, defaults to empty string if undefined
+  const itemValue = id !== undefined ? id : '';
+  
   return (
     <CommandItem
       className="flex items-center gap-2 cursor-pointer"
       onSelect={handleSelect}
-      value={id || ''}
+      value={itemValue}
     >
       {color ? (
         <div 

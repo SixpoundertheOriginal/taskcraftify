@@ -50,16 +50,25 @@ export function ProjectSelector({
     
     setOpen(false);
   };
+
+  // Determine the current project name to display
+  let currentProjectText = "Select Project";
+  if (selectedProjectId === null) {
+    currentProjectText = "All Projects";
+  } else if (selectedProjectId === 'none') {
+    currentProjectText = "No Project";
+  } else if (selectedProjectId && projects) {
+    const project = projects.find(p => p.id === selectedProjectId);
+    if (project) {
+      currentProjectText = project.name;
+    }
+  }
   
   return (
     <DropdownMenu open={open} onOpenChange={handleOpenChange}>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" className={cn("gap-2", buttonClassName)} aria-label="Select project">
-          {selectedProjectId === null
-            ? "All Projects"
-            : selectedProjectId === 'none'
-              ? "No Project"
-              : projects.find(p => p.id === selectedProjectId)?.name || "Select Project"}
+          {currentProjectText}
           <MoreHorizontal className="h-4 w-4 opacity-50 shrink-0" />
         </Button>
       </DropdownMenuTrigger>

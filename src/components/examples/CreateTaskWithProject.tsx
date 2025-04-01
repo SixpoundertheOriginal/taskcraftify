@@ -35,7 +35,7 @@ export function CreateTaskWithProject() {
               <SelectValue placeholder="Select a project" />
             </SelectTrigger>
             <SelectContent>
-              {projects && projects.map((project) => (
+              {projects && projects.length > 0 ? projects.map((project) => (
                 <SelectItem key={project.id} value={project.id}>
                   <div className="flex items-center gap-2">
                     <div 
@@ -45,7 +45,11 @@ export function CreateTaskWithProject() {
                     <span>{project.name}</span>
                   </div>
                 </SelectItem>
-              ))}
+              )) : (
+                <SelectItem value="no-projects" disabled>
+                  No projects available
+                </SelectItem>
+              )}
             </SelectContent>
           </Select>
         </div>
