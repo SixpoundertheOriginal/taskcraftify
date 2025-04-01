@@ -78,14 +78,17 @@ export function ProjectSelectPopover({ projectId, onProjectSelect }: ProjectSele
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[280px] p-0 z-50" align="start">
-        <ProjectCommandMenu
-          projectId={projectId}
-          onProjectSelect={handleProjectSelect}
-          showProjectForm={showProjectForm}
-          setShowProjectForm={setShowProjectForm}
-          onProjectCreated={handleProjectCreated}
-          onCancel={handleCancelProjectCreation}
-        />
+        {/* Only render the ProjectCommandMenu if open is true */}
+        {open && (
+          <ProjectCommandMenu
+            projectId={projectId}
+            onProjectSelect={handleProjectSelect}
+            showProjectForm={showProjectForm}
+            setShowProjectForm={setShowProjectForm}
+            onProjectCreated={handleProjectCreated}
+            onCancel={handleCancelProjectCreation}
+          />
+        )}
       </PopoverContent>
     </Popover>
   );

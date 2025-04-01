@@ -12,10 +12,10 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function CreateTaskWithProject() {
-  // Ensure projects is never undefined
+  // Ensure projects is never undefined by providing an empty array as fallback
   const { projects = [] } = useProjectStore();
   const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(
-    projects.length > 0 ? projects[0]?.id : undefined
+    projects && projects.length > 0 ? projects[0]?.id : undefined
   );
   
   // Ensure projects is an array

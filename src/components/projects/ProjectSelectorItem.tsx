@@ -21,14 +21,17 @@ export function ProjectSelectorItem({
   onSelect,
   icon
 }: ProjectSelectorItemProps) {
+  // Ensure name is always a string
+  const safeName = name || 'Unnamed Project';
+  
   const handleSelect = () => {
-    console.log(`ProjectSelectorItem - Selected: ${id}, ${name}`);
+    console.log(`ProjectSelectorItem - Selected: ${id}, ${safeName}`);
     onSelect(id);
   };
   
   // Generate a reliable value string even if id is undefined
   // This is critical for the Command component which needs a string value
-  const safeValue = id || `project-${name.replace(/\s+/g, '-').toLowerCase()}-${Math.random().toString(36).substring(2, 9)}`;
+  const safeValue = id || `project-${safeName.replace(/\s+/g, '-').toLowerCase()}-${Math.random().toString(36).substring(2, 9)}`;
   
   return (
     <CommandItem
@@ -45,7 +48,7 @@ export function ProjectSelectorItem({
         icon
       ) : null}
       
-      <span>{name}</span>
+      <span>{safeName}</span>
       {isSelected && <Check className="ml-auto h-4 w-4" />}
     </CommandItem>
   );
