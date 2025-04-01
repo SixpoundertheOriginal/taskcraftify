@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { ChevronDown } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -17,10 +17,12 @@ export function ProjectSelectPopover({ projectId, onProjectSelect }: ProjectSele
   const [open, setOpen] = useState(false);
   const [showProjectForm, setShowProjectForm] = useState(false);
   
-  // Safely find the current project
-  const currentProject = projectId && projects.length > 0 
-    ? projects.find(p => p.id === projectId) 
-    : null;
+  // Safely ensure projects is an array and find the current project
+  const safeProjects = Array.isArray(projects) ? projects : [];
+  const currentProject = useMemo(() => {
+    if (!projectId) return null;
+    return safeProjects.find(p => p.id === projectId) || null;
+  }, [projectId, safeProjects]);
 
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {

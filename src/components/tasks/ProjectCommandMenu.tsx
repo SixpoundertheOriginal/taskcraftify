@@ -53,6 +53,9 @@ export function ProjectCommandMenu({
     );
   }
 
+  // Ensure we have valid projects to render
+  const hasProjects = Array.isArray(projects) && projects.length > 0;
+
   return (
     <Command className="rounded-lg border shadow-md">
       <CommandInput 
@@ -87,7 +90,7 @@ export function ProjectCommandMenu({
         </CommandGroup>
         
         {/* Only render projects section if there are actually projects */}
-        {projects && projects.length > 0 && (
+        {hasProjects && (
           <Fragment>
             <CommandSeparator />
             <CommandGroup heading="Your Projects">

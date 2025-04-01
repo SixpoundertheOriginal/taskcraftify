@@ -18,6 +18,10 @@ export function ProjectSelector({ projectId, onProjectSelect, className }: Proje
   const { projects = [] } = useProjectStore();
   const [open, setOpen] = useState(false);
   
+  // Ensure that projects is an array
+  const safeProjects = Array.isArray(projects) ? projects : [];
+  const hasProjects = safeProjects.length > 0;
+  
   const handleSelect = (value: string) => {
     console.log("ProjectSelector - Selected value:", value);
     
@@ -34,9 +38,9 @@ export function ProjectSelector({ projectId, onProjectSelect, className }: Proje
   };
   
   // Ensure projectId is a string when checking for existence
-  const projectExists = projectId && projects.some(project => project.id === projectId);
+  const projectExists = projectId && safeProjects.some(project => project.id === projectId);
   const projectName = projectExists 
-    ? projects.find(project => project.id === projectId)?.name || "Select project"
+    ? safeProjects.find(project => project.id === projectId)?.name || "Select project"
     : "No Project";
   
   return (
@@ -69,7 +73,7 @@ export function ProjectSelector({ projectId, onProjectSelect, className }: Proje
               {!projectId && <CheckIcon className="ml-auto h-4 w-4" />}
             </CommandItem>
             
-            {projects.map((project) => (
+            {hasProjects && safeProjects.map((project) => (
               <CommandItem
                 key={project.id || `project-${Math.random()}`}
                 value={project.id || `fallback-${Math.random()}`}

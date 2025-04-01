@@ -18,17 +18,21 @@ export function CreateTaskWithProject() {
     projects.length > 0 ? projects[0]?.id : undefined
   );
   
+  // Ensure projects is an array
+  const safeProjects = Array.isArray(projects) ? projects : [];
+  const hasProjects = safeProjects.length > 0;
+  
   // Update selectedProjectId if projects change and current selection becomes invalid
   useEffect(() => {
-    if (selectedProjectId && projects.length > 0) {
-      const projectExists = projects.some(p => p.id === selectedProjectId);
+    if (selectedProjectId && hasProjects) {
+      const projectExists = safeProjects.some(p => p.id === selectedProjectId);
       if (!projectExists) {
-        setSelectedProjectId(projects[0]?.id);
+        setSelectedProjectId(safeProjects[0]?.id);
       }
-    } else if (projects.length > 0 && !selectedProjectId) {
-      setSelectedProjectId(projects[0]?.id);
+    } else if (hasProjects && !selectedProjectId) {
+      setSelectedProjectId(safeProjects[0]?.id);
     }
-  }, [projects, selectedProjectId]);
+  }, [safeProjects, selectedProjectId, hasProjects]);
   
   return (
     <Card className="w-full max-w-lg mx-auto">
@@ -48,7 +52,7 @@ export function CreateTaskWithProject() {
               <SelectValue placeholder="Select a project" />
             </SelectTrigger>
             <SelectContent>
-              {projects.length > 0 ? projects.map((project) => (
+              {hasProjects ? safeProjects.map((project) => (
                 <SelectItem 
                   key={project.id || `project-${Math.random()}`} 
                   value={project.id || ''}

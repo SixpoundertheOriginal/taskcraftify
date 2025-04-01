@@ -33,6 +33,10 @@ export function TaskTemplateSelector({
     (currentTask.tags && currentTask.tags.length)
   );
 
+  // Ensure templates is an array
+  const safeTemplates = Array.isArray(templates) ? templates : [];
+  const hasTemplates = safeTemplates.length > 0;
+
   return (
     <div className="flex items-center gap-2">
       <Popover open={open} onOpenChange={setOpen}>
@@ -40,7 +44,7 @@ export function TaskTemplateSelector({
           <Button 
             variant="outline" 
             className="flex items-center gap-2"
-            disabled={isLoading || templates.length === 0}
+            disabled={isLoading || !hasTemplates}
           >
             <LayoutTemplate className="h-4 w-4" />
             <span>Templates</span>
@@ -52,33 +56,35 @@ export function TaskTemplateSelector({
             <CommandInput placeholder="Search templates..." />
             <CommandList>
               <CommandEmpty>No templates found.</CommandEmpty>
-              <CommandGroup heading="Your Templates">
-                {templates.map((template) => (
-                  <CommandItem
-                    key={template.id || `template-${Math.random()}`}
-                    value={template.id || `template-value-${Math.random()}`}
-                    onSelect={() => {
-                      onSelectTemplate(template);
-                      setOpen(false);
-                    }}
-                    className="flex items-center justify-between"
-                  >
-                    <div className="flex flex-col">
-                      <span>{template.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        Used {template.usageCount} times
-                      </span>
-                    </div>
-                    <div className="flex items-center">
-                      {template.tags?.slice(0, 2).map((tag) => (
-                        <Badge key={tag} variant="outline" className="mr-1">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
+              {hasTemplates && (
+                <CommandGroup heading="Your Templates">
+                  {safeTemplates.map((template) => (
+                    <CommandItem
+                      key={template.id || `template-${Math.random()}`}
+                      value={template.id || `template-value-${Math.random()}`}
+                      onSelect={() => {
+                        onSelectTemplate(template);
+                        setOpen(false);
+                      }}
+                      className="flex items-center justify-between"
+                    >
+                      <div className="flex flex-col">
+                        <span>{template.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          Used {template.usageCount} times
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        {template.tags?.slice(0, 2).map((tag) => (
+                          <Badge key={tag} variant="outline" className="mr-1">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
             </CommandList>
           </Command>
         </PopoverContent>

@@ -26,15 +26,15 @@ export function ProjectSelectorItem({
     onSelect(id);
   };
   
-  // This is the critical fix - ensure we have a valid non-empty string value
-  // Empty string values or undefined can cause iteration issues with the Command component
-  const itemValue = id !== undefined && id !== '' ? id : `no-project-id-${name.replace(/\s+/g, '-').toLowerCase()}`;
+  // Generate a reliable value string even if id is undefined
+  // This is critical for the Command component which needs a string value
+  const safeValue = id || `project-${name.replace(/\s+/g, '-').toLowerCase()}-${Math.random().toString(36).substring(2, 9)}`;
   
   return (
     <CommandItem
       className="flex items-center gap-2 cursor-pointer"
       onSelect={handleSelect}
-      value={itemValue}
+      value={safeValue}
     >
       {color ? (
         <div 

@@ -26,9 +26,9 @@ export function SmartTemplateSelector({
   onSaveAsTemplate 
 }: SmartTemplateSelectorProps) {
   const { 
-    templates, 
+    templates = [], 
     isLoading: templatesLoading,
-    suggestions, 
+    suggestions = [], 
     suggestionsMessage, 
     isSuggestionsLoading,
     getSuggestions
@@ -39,6 +39,13 @@ export function SmartTemplateSelector({
     currentTask.description || 
     currentTask.tags?.length
   );
+
+  // Ensure templates and suggestions are arrays
+  const safeTemplates = Array.isArray(templates) ? templates : [];
+  const safeSuggestions = Array.isArray(suggestions) ? suggestions : [];
+  
+  const hasTemplates = safeTemplates.length > 0;
+  const hasSuggestions = safeSuggestions.length > 0;
 
   // Get smart suggestions based on the current task context
   useEffect(() => {
@@ -55,7 +62,7 @@ export function SmartTemplateSelector({
             <Button 
               variant="outline" 
               className="flex items-center gap-2 w-full justify-between"
-              disabled={templatesLoading || templates.length === 0}
+              disabled={templatesLoading || !hasTemplates}
             >
               <div className="flex items-center gap-2">
                 <LayoutTemplate className="h-4 w-4" />
@@ -69,29 +76,32 @@ export function SmartTemplateSelector({
               <CommandInput placeholder="Search templates..." />
               <CommandList>
                 <CommandEmpty>No templates found.</CommandEmpty>
-                <CommandGroup heading="Your Templates">
-                  {templates.map((template) => (
-                    <CommandItem
-                      key={template.id}
-                      onSelect={() => onSelectTemplate(template)}
-                      className="flex items-center justify-between"
-                    >
-                      <div className="flex flex-col">
-                        <span>{template.name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          Used {template.usageCount} times
-                        </span>
-                      </div>
-                      <div className="flex items-center">
-                        {template.tags?.slice(0, 2).map((tag) => (
-                          <Badge key={tag} variant="outline" className="mr-1">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
+                {hasTemplates && (
+                  <CommandGroup heading="Your Templates">
+                    {safeTemplates.map((template) => (
+                      <CommandItem
+                        key={template.id || `template-${Math.random()}`}
+                        value={template.id || `template-id-${Math.random()}`}
+                        onSelect={() => onSelectTemplate(template)}
+                        className="flex items-center justify-between"
+                      >
+                        <div className="flex flex-col">
+                          <span>{template.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            Used {template.usageCount} times
+                          </span>
+                        </div>
+                        <div className="flex items-center">
+                          {template.tags?.slice(0, 2).map((tag) => (
+                            <Badge key={tag || `tag-${Math.random()}`} variant="outline" className="mr-1">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                )}
               </CommandList>
             </Command>
           </PopoverContent>
@@ -111,7 +121,7 @@ export function SmartTemplateSelector({
       </div>
       
       {/* Smart Suggestions */}
-      {(suggestions.length > 0 || isSuggestionsLoading) && (
+      {(hasSuggestions || isSuggestionsLoading) && (
         <div className="bg-muted/40 rounded-lg p-3 border border-muted">
           <div className="flex items-center gap-2 mb-2">
             <Sparkles className="h-4 w-4 text-primary" />
@@ -126,9 +136,9 @@ export function SmartTemplateSelector({
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-2">
-              {suggestions.slice(0, 4).map((template) => (
+              {safeSuggestions.slice(0, 4).map((template) => (
                 <Button
-                  key={template.id}
+                  key={template.id || `suggestion-${Math.random()}`}
                   variant="outline"
                   size="sm"
                   className="justify-start overflow-hidden bg-background hover:bg-background/90 border-border/60"

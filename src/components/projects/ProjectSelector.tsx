@@ -29,6 +29,9 @@ export function ProjectSelector({
   const { projects = [], selectedProjectId, selectProject } = useProjectStore();
   const { fetchTasksByProject } = useTaskStore();
   
+  // Ensure projects is an array
+  const safeProjects = Array.isArray(projects) ? projects : [];
+  
   const [open, setOpen] = useState(false);
   
   const handleOpenChange = (newOpenState: boolean) => {
@@ -58,8 +61,8 @@ export function ProjectSelector({
     currentProjectText = "All Projects";
   } else if (selectedProjectId === 'none') {
     currentProjectText = "No Project";
-  } else if (selectedProjectId && projects) {
-    const project = projects.find(p => p.id === selectedProjectId);
+  } else if (selectedProjectId && safeProjects.length > 0) {
+    const project = safeProjects.find(p => p.id === selectedProjectId);
     if (project) {
       currentProjectText = project.name || "Unnamed Project";
     }
@@ -97,7 +100,7 @@ export function ProjectSelector({
           No Project
         </DropdownMenuItem>
         
-        {projects && projects.length > 0 && projects.map(project => (
+        {safeProjects.length > 0 && safeProjects.map(project => (
           <DropdownMenuItem
             key={project.id || `project-${Math.random()}`}
             onClick={() => handleSelectProject(project.id)}
