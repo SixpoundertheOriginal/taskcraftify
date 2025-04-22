@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { 
@@ -33,6 +34,9 @@ import { useProjectStore } from '@/store';
 import { TaskForm } from '@/components/tasks/TaskForm';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { toast } from '@/hooks/use-toast';
+
+// Define the animation duration constant
+const EXIT_ANIMATION_DURATION = 500; // 500ms for the animation
 
 export interface TaskCardProps {
   task: Task;
@@ -405,7 +409,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
         onOpenChange={setIsTaskFormOpen}
         initialTask={task}
       />
-      <style jsx global>{`
+      <style>{`
         @keyframes fade-slide-out {
           0% {
             opacity: 1;
