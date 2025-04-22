@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useTheme } from 'next-themes';
+import { useTheme } from '@/providers/ThemeProvider';
 import { 
   Card, 
   CardContent, 

@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -53,6 +54,14 @@ export default {
           medium: 'hsl(var(--priority-medium))',
           high: 'hsl(var(--priority-high))',
           urgent: 'hsl(var(--priority-urgent))'
+        },
+        sidebar: {
+          background: 'hsl(var(--sidebar-background))',
+          foreground: 'hsl(var(--sidebar-foreground))',
+          border: 'hsl(var(--sidebar-border))',
+          primary: 'hsl(var(--sidebar-primary))',
+          hover: 'hsl(var(--sidebar-hover))',
+          'section-header': 'hsl(var(--sidebar-section-header))'
         }
       },
       fontFamily: {
