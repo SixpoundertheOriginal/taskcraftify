@@ -30,15 +30,14 @@ export function ProjectCommandMenu({
   onProjectCreated,
   onCancel
 }: ProjectCommandMenuProps) {
-  // Get projects and provide empty array as fallback
-  const { projects } = useProjectStore();
+  // Get projects from store with a safeguard
+  const projectStore = useProjectStore();
 
   // Create a memoized, safe projects array to avoid repeated processing
   const safeProjects = useMemo(() => {
     // Ensure we have a valid array to work with
-    if (!Array.isArray(projects)) return [];
-    return projects;
-  }, [projects]);
+    return Array.isArray(projectStore.projects) ? projectStore.projects : [];
+  }, [projectStore.projects]);
 
   const handleProjectSelect = (id: string | undefined) => {
     console.log("ProjectCommandMenu - Project selected:", id);

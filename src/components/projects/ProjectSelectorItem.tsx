@@ -31,7 +31,9 @@ export function ProjectSelectorItem({
   
   // Generate a reliable value string even if id is undefined
   // This is critical for the Command component which needs a string value
-  const safeValue = id || `project-${safeName.replace(/\s+/g, '-').toLowerCase()}-${Math.random().toString(36).substring(2, 9)}`;
+  // Using random suffix to ensure uniqueness
+  const safeValue = id || 
+    `project-${safeName.replace(/\s+/g, '-').toLowerCase()}-${Math.random().toString(36).substring(2, 9)}`;
   
   return (
     <CommandItem
