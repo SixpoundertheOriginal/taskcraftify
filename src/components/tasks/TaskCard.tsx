@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { format } from 'date-fns';
 import { 
@@ -84,10 +83,8 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
   };
 
   useEffect(() => {
-    // Synchronize the local task state with initialTask props
     setTask(initialTask);
     
-    // Reset removed state if the task status has changed back from DONE
     if (initialTask.status !== TaskStatus.DONE) {
       setIsRemoved(false);
     }
@@ -110,7 +107,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     setLastClickTime(currentTime);
 
     if (
-      isDoubleClick &&
+      (isDoubleClick || isExiting) &&
       task.status === TaskStatus.DONE &&
       completeTimeoutRef.current
     ) {
@@ -118,6 +115,8 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
       completeTimeoutRef.current = null;
       setTask(prevTask => ({ ...prevTask, status: TaskStatus.TODO }));
       setIsRemoved(false);
+      setIsExiting(false);
+
       updateTask({ id: task.id, status: TaskStatus.TODO })
         .then(() => {
           toast({
@@ -128,6 +127,8 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
         })
         .catch(() => {
           setTask(prevTask => ({ ...prevTask, status: TaskStatus.DONE }));
+          setIsExiting(false);
+          setIsRemoved(false);
           toast({
             title: "Restore failed",
             description: "Failed to restore task. Please try again.",
@@ -285,7 +286,6 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     );
   };
 
-  // Don't render the component if it's already been removed
   if ((task.status === TaskStatus.DONE && isRemoved && !completeTimeoutRef.current) || 
       (initialTask.status === TaskStatus.DONE && !completeTimeoutRef.current && !isExiting)) {
     return null;
@@ -295,10 +295,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     <>
       <div 
         ref={setNodeRef}
-        style={{
-          ...style,
-          pointerEvents: isExiting ? 'none' : undefined
-        }}
+        style={style}
         {...attributes}
         {...listeners}
         className={cn(
@@ -312,6 +309,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
         onClick={handleTaskClick}
         tabIndex={0}
         onAnimationEnd={finishExiting}
+        aria-disabled={isExiting ? true : undefined}
       >
         <div className="flex items-start gap-2 p-2">
           <StatusCheckbox />
