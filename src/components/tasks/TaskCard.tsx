@@ -252,9 +252,11 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
           "group relative flex flex-col rounded-md border shadow-sm transition-all cursor-pointer",
           "hover:shadow-md",
           "bg-[hsl(var(--card))] text-card-foreground",
+          "border-gray-200",
+          "dark:bg-gray-800/50",
+          "backdrop-blur-sm",
           isDragging && "shadow-lg z-50 opacity-90",
-          className,
-          isExiting && "animate-fade-slide-out"
+          className
         )}
         onClick={handleTaskClick}
         tabIndex={0}
