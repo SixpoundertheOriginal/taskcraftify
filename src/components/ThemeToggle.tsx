@@ -36,41 +36,42 @@ export function ThemeToggle() {
         <span className="sr-only">Toggle theme</span>
       </Button>
       
-      {/* Settings icon for dropdown (optional) */}
-      <Button 
-        variant="ghost" 
-        size="icon" 
-        className="absolute -top-2 -right-2 h-4 w-4 rounded-full bg-background border border-border hover:bg-muted"
-        asChild
-      >
-        <DropdownMenuTrigger>
-          <span className="text-xs">⚙️</span>
+      {/* Settings icon for dropdown with proper DropdownMenu wrapper */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="absolute -top-2 -right-2 h-4 w-4 rounded-full bg-background border border-border hover:bg-muted"
+          >
+            <span className="text-xs">⚙️</span>
+          </Button>
         </DropdownMenuTrigger>
-      </Button>
 
-      <DropdownMenuContent align="end" className="border-border/60 backdrop-blur-sm mt-2">
-        <DropdownMenuItem 
-          onClick={() => setTheme('light')}
-          className="cursor-pointer"
-        >
-          <Sun className="mr-2 h-4 w-4 text-amber-500" />
-          <span>Light</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem 
-          onClick={() => setTheme('dark')}
-          className="cursor-pointer"
-        >
-          <Moon className="mr-2 h-4 w-4 text-indigo-400" />
-          <span>Dark</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem 
-          onClick={() => setTheme('system')}
-          className="cursor-pointer"
-        >
-          <span className="mr-2">💻</span>
-          <span>System</span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
+        <DropdownMenuContent align="end" className="border-border/60 backdrop-blur-sm mt-2">
+          <DropdownMenuItem 
+            onClick={() => setTheme('light')}
+            className="cursor-pointer"
+          >
+            <Sun className="mr-2 h-4 w-4 text-amber-500" />
+            <span>Light</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem 
+            onClick={() => setTheme('dark')}
+            className="cursor-pointer"
+          >
+            <Moon className="mr-2 h-4 w-4 text-indigo-400" />
+            <span>Dark</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem 
+            onClick={() => setTheme('system')}
+            className="cursor-pointer"
+          >
+            <span className="mr-2">💻</span>
+            <span>System</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
