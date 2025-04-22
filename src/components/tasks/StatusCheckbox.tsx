@@ -32,7 +32,7 @@ export function StatusCheckbox({
               "h-6 w-6 min-w-[1.5rem] min-h-[1.5rem] border-2 shadow-sm",
               isDone
                 ? "bg-[#9b87f5] border-[#9b87f5] text-white hover:bg-[#8d70eb] hover:border-[#8d70eb]"
-                : "bg-white border-gray-300 text-[#8E9196] hover:border-[#9b87f5] hover:bg-purple-50",
+                : "bg-background border-gray-300 dark:border-gray-600 text-[#8E9196] hover:border-[#9b87f5] hover:bg-purple-50 dark:hover:bg-purple-900/20",
               isArchived && "opacity-40 cursor-not-allowed"
             )}
             aria-label={isDone ? (completeTimeoutRef.current ? "Double click to undo" : "Mark as not done") : "Mark as done"}
@@ -43,7 +43,11 @@ export function StatusCheckbox({
             {isDone ? (
               <Check className="h-4 w-4" strokeWidth={3} />
             ) : (
-              <span className="block rounded-full w-3 h-3 border border-gray-200 bg-white" />
+              <span className={cn(
+                "block rounded-full w-3 h-3", 
+                "border dark:border-gray-500",
+                "bg-card dark:bg-transparent"
+              )} />
             )}
           </button>
         </TooltipTrigger>

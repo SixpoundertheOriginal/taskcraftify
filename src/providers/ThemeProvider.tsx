@@ -30,45 +30,61 @@ export function ThemeProvider({
   ...props
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(
-    () => 'dark' // Always initialize as dark
+    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
   );
   
   const [resolvedTheme, setResolvedTheme] = useState<'dark' | 'light'>(
     () => 'dark' // Always initialize as dark
   );
 
-  // Apply the theme to the document - always apply dark
+  // Force apply the dark theme to the document on mount
   useEffect(() => {
     const root = window.document.documentElement;
     
-    // Remove existing theme classes
-    root.classList.remove('light');
+    // Remove any existing theme classes first
+    root.classList.remove('light', 'dark');
     
-    // Always add dark class
+    // Add dark class
     root.classList.add('dark');
     
-    // Update the resolved theme state
-    setResolvedTheme('dark');
-    
-    // Apply a data attribute for components that need to reference the theme
+    // Update the data attribute for components that reference the theme
     root.setAttribute('data-theme', 'dark');
     
-    // Log for debugging
+    // Update our state
+    setResolvedTheme('dark');
+    setTheme('dark');
+    
+    // Store the theme preference
+    localStorage.setItem(storageKey, 'dark');
+    
     console.log(`Theme enforced: dark`);
     console.log(`HTML classes: ${root.className}`);
   }, []);
 
-  // Override system theme changes - always keep dark
+  // Create a MutationObserver to ensure dark mode stays applied
   useEffect(() => {
-    // Force dark theme when system theme changes    
     const root = window.document.documentElement;
-    root.classList.remove('light');
-    root.classList.add('dark');
-    root.setAttribute('data-theme', 'dark');
-    setResolvedTheme('dark');
+    
+    // Create a MutationObserver to monitor class changes on the HTML element
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class' && !root.classList.contains('dark')) {
+          console.log('Dark class was removed, adding it back');
+          root.classList.add('dark');
+        }
+      });
+    });
+    
+    // Start observing the HTML element for class changes
+    observer.observe(root, { attributes: true });
+    
+    // Cleanup function
+    return () => {
+      observer.disconnect();
+    };
   }, []);
 
-  // Always persist dark theme to local storage
+  // Ensure dark theme is always persisted
   useEffect(() => {
     localStorage.setItem(storageKey, 'dark');
   }, [storageKey]);
