@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 type Theme = 'dark' | 'light' | 'system';
@@ -16,105 +15,70 @@ type ThemeProviderState = {
 };
 
 const initialState: ThemeProviderState = {
-  theme: 'system',
+  theme: 'dark', // Set initial state to dark
   setTheme: () => null,
-  resolvedTheme: 'light',
+  resolvedTheme: 'dark', // Set default resolved theme to dark
 };
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
 export function ThemeProvider({
   children,
-  defaultTheme = 'system',
+  defaultTheme = 'dark', // Change default to dark
   storageKey = 'taskcraft-theme',
   ...props
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
+    () => 'dark' // Always initialize as dark
   );
   
   const [resolvedTheme, setResolvedTheme] = useState<'dark' | 'light'>(
-    () => getSystemTheme()
+    () => 'dark' // Always initialize as dark
   );
 
-  // Helper to get system theme
-  function getSystemTheme(): 'dark' | 'light' {
-    if (typeof window === 'undefined') return 'light';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches
-      ? 'dark'
-      : 'light';
-  }
-  
-  // Apply the theme to the document
+  // Apply the theme to the document - always apply dark
   useEffect(() => {
     const root = window.document.documentElement;
     
     // Remove existing theme classes
-    root.classList.remove('light', 'dark');
+    root.classList.remove('light');
     
-    // Determine which theme to apply
-    let appliedTheme: 'light' | 'dark';
-    
-    if (theme === 'system') {
-      appliedTheme = getSystemTheme();
-    } else {
-      appliedTheme = theme as 'light' | 'dark';
-    }
-    
-    // Apply the theme class
-    root.classList.add(appliedTheme);
+    // Always add dark class
+    root.classList.add('dark');
     
     // Update the resolved theme state
-    setResolvedTheme(appliedTheme);
+    setResolvedTheme('dark');
     
     // Apply a data attribute for components that need to reference the theme
-    root.setAttribute('data-theme', appliedTheme);
+    root.setAttribute('data-theme', 'dark');
     
     // Log for debugging
-    console.log(`Theme applied: ${appliedTheme}, Theme selected: ${theme}`);
+    console.log(`Theme enforced: dark`);
     console.log(`HTML classes: ${root.className}`);
-    
-  }, [theme]);
+  }, []);
 
-  // Listen for system theme changes
+  // Override system theme changes - always keep dark
   useEffect(() => {
-    if (theme !== 'system') return;
-    
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    
-    const handleChange = () => {
-      const newResolvedTheme = getSystemTheme();
-      const root = window.document.documentElement;
-      
-      root.classList.remove('light', 'dark');
-      root.classList.add(newResolvedTheme);
-      root.setAttribute('data-theme', newResolvedTheme);
-      setResolvedTheme(newResolvedTheme);
-      
-      console.log(`System theme changed to: ${newResolvedTheme}`);
-    };
-    
-    // Initial call to set correct class
-    handleChange();
-    
-    // Add listener for theme changes
-    mediaQuery.addEventListener('change', handleChange);
-    
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, [theme]);
+    // Force dark theme when system theme changes    
+    const root = window.document.documentElement;
+    root.classList.remove('light');
+    root.classList.add('dark');
+    root.setAttribute('data-theme', 'dark');
+    setResolvedTheme('dark');
+  }, []);
 
-  // Persist theme to local storage
+  // Always persist dark theme to local storage
   useEffect(() => {
-    localStorage.setItem(storageKey, theme);
-  }, [theme, storageKey]);
+    localStorage.setItem(storageKey, 'dark');
+  }, [storageKey]);
 
   const value = {
-    theme,
+    theme: 'dark' as Theme,
     setTheme: (theme: Theme) => {
-      console.log(`Setting theme to: ${theme}`);
-      setTheme(theme);
+      console.log(`Setting theme to: dark (ignoring ${theme})`);
+      setTheme('dark');
     },
-    resolvedTheme,
+    resolvedTheme: 'dark',
   };
 
   return (
