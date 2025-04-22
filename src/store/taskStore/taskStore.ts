@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { Task, TaskStatus, TaskPriority } from '@/types/task';
@@ -26,7 +25,6 @@ import {
 
 export type TaskStore = TaskSlice & FilterSlice & SubscriptionSlice & StatsSlice & AttachmentSlice & {
   filteredTasks: Task[];
-  refreshTaskCounts: () => void;
   setTaskStatus: (taskId: string, status: string) => Promise<void>;
   toggleSubtaskCompletion: (subtaskId: string, completed: boolean) => Promise<void>;
   diagnosticDatabaseQuery?: () => Promise<any>;
@@ -65,7 +63,6 @@ export const useTaskStore = create<TaskStore>()(
           return filterSlice.getFilteredTasks(tasks);
         },
         
-        // Use refreshTaskCounts from statsSlice without arguments
         refreshTaskCounts: statsSlice.refreshTaskCounts,
         
         setTaskStatus: async (taskId: string, status: string): Promise<void> => {
