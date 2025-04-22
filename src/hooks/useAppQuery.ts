@@ -39,49 +39,34 @@ export function useAppQuery<
     ...queryOptions
   } = options;
 
-  // Use React Query's hook directly with proper callback handling
+  // Store the original callbacks
+  const originalOnSuccess = queryOptions.onSuccess;
+  const originalOnError = queryOptions.onError;
+  
+  // Create new options without the callbacks (we'll handle them ourselves)
+  const { onSuccess, onError, ...restOptions } = queryOptions;
+
   return useQuery<TQueryFnData, TError, TData, TQueryKey>({
-    ...queryOptions,
+    ...restOptions,
     meta: {
-      ...queryOptions.meta,
-      // You can add additional metadata here
-    },
-    gcTime: queryOptions.gcTime,
-    staleTime: queryOptions.staleTime,
-    queryFn: async (...args) => {
-      try {
-        // Call the original queryFn
-        if (!queryOptions.queryFn) {
-          throw new Error('Query function is required');
-        }
-        return await queryOptions.queryFn(...args);
-      } catch (error) {
-        // Handle error in queryFn
-        if (showErrorToast) {
-          toast({
-            title: 'Error',
-            description:
-              customErrorMessage ||
-              (error instanceof Error ? error.message : 'An error occurred'),
-            variant: 'destructive',
-          });
-        }
-        throw error; // Re-throw so React Query can handle it
-      }
+      ...restOptions.meta,
     },
     onSuccess: (data) => {
+      // Show success toast if requested
       if (showSuccessToast && customSuccessMessage) {
         toast({
           title: 'Success',
           description: customSuccessMessage,
         });
       }
-      // Call the original onSuccess if it exists
-      if (queryOptions.onSuccess) {
-        queryOptions.onSuccess(data);
+      
+      // Call the original onSuccess if provided
+      if (originalOnSuccess) {
+        originalOnSuccess(data);
       }
     },
     onError: (error) => {
+      // Show error toast if requested
       if (showErrorToast) {
         toast({
           title: 'Error',
@@ -91,9 +76,10 @@ export function useAppQuery<
           variant: 'destructive',
         });
       }
-      // Call the original onError if it exists
-      if (queryOptions.onError) {
-        queryOptions.onError(error);
+      
+      // Call the original onError if provided
+      if (originalOnError) {
+        originalOnError(error);
       }
     },
   });
