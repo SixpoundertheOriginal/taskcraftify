@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -30,7 +31,7 @@
   /* Only light mode now! No .dark rules */
   /* Card/component glass effect */
   .card-gradient {
-    @apply bg-white/5 dark:bg-black/30 backdrop-blur-xl border border-white/10 shadow-lg transition-shadow;
+    @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-lg transition-shadow;
     background-image: var(--gradient-dark-glass);
   }
   /* Gradient overlays for modals, overlays, etc. */

@@ -40,43 +40,21 @@ export function AppearanceSettings() {
             <span>Theme</span>
           </CardTitle>
           <CardDescription>
-            Choose your preferred theme and appearance settings
+            Currently only light mode is supported
           </CardDescription>
         </CardHeader>
         <CardContent>
           <RadioGroup
             value={theme}
             onValueChange={setTheme}
-            className="grid grid-cols-3 gap-4"
+            className="grid grid-cols-1 gap-4"
           >
             <Label
-              className={`flex flex-col items-center justify-between rounded-md border-2 border-muted p-4 hover:bg-accent hover:text-accent-foreground ${
-                theme === 'light' ? 'border-primary' : ''
-              }`}
+              className="flex flex-col items-center justify-between rounded-md border-2 border-primary p-4 hover:bg-accent hover:text-accent-foreground"
             >
               <RadioGroupItem value="light" className="sr-only" />
               <Sun className="h-5 w-5 mb-3" />
               <span className="text-center">Light</span>
-            </Label>
-            
-            <Label
-              className={`flex flex-col items-center justify-between rounded-md border-2 border-muted p-4 hover:bg-accent hover:text-accent-foreground ${
-                theme === 'dark' ? 'border-primary' : ''
-              }`}
-            >
-              <RadioGroupItem value="dark" className="sr-only" />
-              <Moon className="h-5 w-5 mb-3" />
-              <span className="text-center">Dark</span>
-            </Label>
-            
-            <Label
-              className={`flex flex-col items-center justify-between rounded-md border-2 border-muted p-4 hover:bg-accent hover:text-accent-foreground ${
-                theme === 'system' ? 'border-primary' : ''
-              }`}
-            >
-              <RadioGroupItem value="system" className="sr-only" />
-              <Monitor className="h-5 w-5 mb-3" />
-              <span className="text-center">System</span>
             </Label>
           </RadioGroup>
         </CardContent>

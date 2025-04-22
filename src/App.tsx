@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import { Toaster } from '@/components/ui/toaster';
@@ -164,7 +163,7 @@ function App() {
   }, [navigator.onLine, connectionError]);
   
   return (
-    <ThemeProvider defaultTheme="system" storageKey="taskcraft-theme">
+    <ThemeProvider defaultTheme="light" storageKey="taskcraft-theme">
       <UIProvider>
         <AuthProvider>
           <Router>
