@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { 
@@ -5,7 +6,13 @@ import {
   CheckCircle2, 
   ChevronDown, 
   ChevronRight, 
-  Tag 
+  Tag,
+  Clock,
+  Flag,
+  Circle,
+  CheckCircle,
+  CircleDashed,
+  AlertCircle
 } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -97,19 +104,63 @@ export function TaskCard({ task, compact = false, className }: TaskCardProps) {
     setIsTaskFormOpen(true);
   };
 
-  // Status dot with tooltip; replace icon/text with dot indicator
-  const statusDotColor = {
-    [TaskStatus.TODO]: "bg-gray-300",
-    [TaskStatus.IN_PROGRESS]: "bg-blue-400",
-    [TaskStatus.DONE]: "bg-green-400",
-    [TaskStatus.ARCHIVED]: "bg-muted",
-  }[task.status] || "bg-gray-300";
+  // Status icon with tooltip for each task status
+  const getStatusIcon = () => {
+    switch (task.status) {
+      case TaskStatus.TODO:
+        return <Circle className="h-4 w-4 text-gray-400" />;
+      case TaskStatus.IN_PROGRESS:
+        return <CircleDashed className="h-4 w-4 text-blue-500" />;
+      case TaskStatus.DONE:
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case TaskStatus.ARCHIVED:
+        return <AlertCircle className="h-4 w-4 text-gray-400" />;
+      default:
+        return <Circle className="h-4 w-4 text-gray-400" />;
+    }
+  };
+
+  // Get status label for tooltip
+  const getStatusLabel = () => {
+    return TaskStatus[task.status].replace(/_/g, " ");
+  };
 
   // Truncate "Demo task for project testing..." repetitive description for demo tasks
   let description = task.description || '';
   if (description?.startsWith("Demo task for project testing")) {
-    description = description.split('\n')[0].slice(0, 45) + (description.length > 45 ? "…" : "");
+    description = "Task description";
+  } else if (description.length > 100) {
+    description = description.slice(0, 100) + "...";
   }
+
+  // Priority flag with color based on priority
+  const getPriorityFlag = () => {
+    if (!task.priority) return null;
+    
+    const colorMap = {
+      [TaskPriority.LOW]: "text-green-500",
+      [TaskPriority.MEDIUM]: "text-blue-500",
+      [TaskPriority.HIGH]: "text-orange-500",
+      [TaskPriority.URGENT]: "text-red-500",
+    };
+
+    const priorityLabel = TaskPriority[task.priority];
+    
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="inline-flex">
+              <Flag className={cn("h-4 w-4", colorMap[task.priority])} />
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="text-xs">
+            {priorityLabel} Priority
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  };
 
   return (
     <>
@@ -120,6 +171,7 @@ export function TaskCard({ task, compact = false, className }: TaskCardProps) {
         {...listeners}
         className={cn(
           "group relative flex flex-col bg-card rounded-md border shadow-sm hover:shadow-md transition-all cursor-grab",
+          "hover:bg-muted/20 hover:border-primary/30", // Enhanced hover state
           task.status === TaskStatus.DONE && "opacity-80 bg-muted/40",
           isDragging && "shadow-lg z-50 opacity-90",
           className
@@ -127,28 +179,29 @@ export function TaskCard({ task, compact = false, className }: TaskCardProps) {
         onClick={handleTaskClick}
       >
         <div className="flex items-start gap-2 p-2">
-          {/* Replace check-circle with only a color bullet/status */}
+          {/* Replace colored dot with status icon */}
           <TooltipProvider>
             <Tooltip>
-              <TooltipTrigger asChild>
-                <span
-                  className={cn(
-                    "inline-block w-3 h-3 rounded-full border border-gray-300 cursor-pointer mt-1 mr-1",
-                    statusDotColor
-                  )}
-                  aria-label={TaskStatus[task.status]}
-                  tabIndex={0}
-                />
+              <TooltipTrigger asChild onClick={toggleStatus}>
+                <button 
+                  className="mt-1 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-1 rounded-full"
+                  aria-label={getStatusLabel()}
+                >
+                  {getStatusIcon()}
+                </button>
               </TooltipTrigger>
               <TooltipContent side="right">
-                {TaskStatus[task.status].replace(/_/g, " ")}
+                {getStatusLabel()}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-1">
-              <h3 className="font-medium text-base leading-tight truncate">
+              <h3 className={cn(
+                "font-medium text-base leading-tight truncate",
+                task.status === TaskStatus.DONE && "line-through opacity-70"
+              )}>
                 {task.title}
               </h3>
               {/* Keep expand/collapse, but smaller */}
@@ -214,9 +267,14 @@ export function TaskCard({ task, compact = false, className }: TaskCardProps) {
         {isExpanded && !compact && (
           <div className="px-3 pb-3 pt-1 flex flex-wrap gap-1.5 items-center">
             {task.dueDate && (
-              <div className="flex items-center text-xs text-muted-foreground">
-                <Calendar className="h-3 w-3 mr-1" />
-                {format(task.dueDate, 'MMM d')}
+              <div className={cn(
+                "flex items-center text-xs rounded-full px-2 py-0.5", 
+                new Date(task.dueDate) < new Date() && task.status !== TaskStatus.DONE 
+                  ? "bg-red-50 text-red-700 border border-red-200" 
+                  : "text-muted-foreground"
+              )}>
+                <Clock className="h-3 w-3 mr-1" />
+                {format(new Date(task.dueDate), 'MMM d')}
               </div>
             )}
             
@@ -257,27 +315,15 @@ export function TaskCard({ task, compact = false, className }: TaskCardProps) {
                 )}
               </div>
             )}
+            
+            {/* Add priority flag indicator */}
+            {task.priority !== undefined && task.priority !== null && (
+              <div className="ml-auto">
+                {getPriorityFlag()}
+              </div>
+            )}
           </div>
         )}
-        
-        {/* Priority indicator */}
-        <div className="absolute top-0 right-0">
-          <Badge 
-            className={cn(
-              "h-2 w-2 rounded-full absolute top-1 right-1 p-0 border-0",
-              task.priority === TaskPriority.LOW && "bg-green-500",
-              task.priority === TaskPriority.MEDIUM && "bg-blue-500",
-              task.priority === TaskPriority.HIGH && "bg-orange-500",
-              task.priority === TaskPriority.URGENT && "bg-red-500"
-            )}
-          />
-          
-          <Badge 
-            className="absolute top-1 right-1 opacity-0 h-0 w-0"
-          >
-            {task.priority}
-          </Badge>
-        </div>
       </div>
       
       {/* Add task form dialog */}
