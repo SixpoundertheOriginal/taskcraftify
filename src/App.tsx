@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import { Toaster } from '@/components/ui/toaster';
@@ -11,7 +12,6 @@ import Settings from '@/pages/Settings';
 import { useTaskStore, useProjectStore, useIntegrationStore } from '@/store';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 import { toast } from '@/hooks/use-toast';
-import { AlertCircle } from 'lucide-react';
 
 function App() {
   const { 

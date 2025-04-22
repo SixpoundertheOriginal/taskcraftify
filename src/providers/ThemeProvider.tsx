@@ -66,6 +66,9 @@ export function ThemeProvider({
       }
     };
     
+    // Initial call to set correct class
+    handleChange();
+    
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, [theme]);
