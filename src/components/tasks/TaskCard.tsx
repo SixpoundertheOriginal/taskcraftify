@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { 
+  Check,
   Calendar, 
   CheckCircle2, 
   ChevronDown, 
@@ -44,7 +45,7 @@ export function TaskCard({ task, compact = false, className }: TaskCardProps) {
   const { projects } = useProjectStore();
   const [isExpanded, setIsExpanded] = useState(true);
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
-  
+
   // useSortable hook gives us the drag and drop functionality
   const {
     attributes,
@@ -60,75 +61,91 @@ export function TaskCard({ task, compact = false, className }: TaskCardProps) {
       task
     }
   });
-  
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition
   };
-  
+
   // Count completed subtasks
   const { completed, total } = countCompletedSubtasks(task);
-  
-  // Toggle the task status between TODO, IN_PROGRESS, and DONE
-  const toggleStatus = (e: React.MouseEvent) => {
+
+  // Mark as done or revert to todo (checkbox-like)
+  const handleMarkDoneToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
-    let newStatus = TaskStatus.TODO;
-    
-    if (task.status === TaskStatus.TODO) {
-      newStatus = TaskStatus.IN_PROGRESS;
-    } else if (task.status === TaskStatus.IN_PROGRESS) {
+
+    let newStatus: TaskStatus;
+
+    if (task.status !== TaskStatus.DONE) {
       newStatus = TaskStatus.DONE;
-    } else if (task.status === TaskStatus.DONE) {
+    } else {
       newStatus = TaskStatus.TODO;
     }
-    
-    updateTask({
-      id: task.id,
-      status: newStatus
-    });
+
+    updateTask({ id: task.id, status: newStatus });
   };
-  
+
   // Get the project name for this task
   const projectName = task.projectId 
     ? projects.find(p => p.id === task.projectId)?.name || 'Unknown Project'
     : null;
-  
+
   // Toggle the expanded state
   const toggleExpanded = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsExpanded(!isExpanded);
   };
-  
+
   // Handle opening the task edit form
   const handleTaskClick = () => {
     setIsTaskFormOpen(true);
   };
 
-  // Status icon with tooltip for each task status
-  const getStatusIcon = () => {
-    switch (task.status) {
-      case TaskStatus.TODO:
-        return <Circle className="h-4 w-4 text-gray-400" />;
-      case TaskStatus.IN_PROGRESS:
-        return <CircleDashed className="h-4 w-4 text-blue-500" />;
-      case TaskStatus.DONE:
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case TaskStatus.ARCHIVED:
-        return <AlertCircle className="h-4 w-4 text-gray-400" />;
-      default:
-        return <Circle className="h-4 w-4 text-gray-400" />;
-    }
-  };
+  // Checkbox/status circle visual
+  function StatusCheckbox() {
+    // Color palette per provided context:
+    // - Done: filled purple with white check
+    // - Not done: gray border, white bg
 
-  // Get status label for tooltip
-  const getStatusLabel = () => {
-    return TaskStatus[task.status].replace(/_/g, " ");
-  };
+    const isDone = task.status === TaskStatus.DONE;
+
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={handleMarkDoneToggle}
+              className={cn(
+                "flex items-center justify-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-1",
+                "h-6 w-6 min-w-[1.5rem] min-h-[1.5rem] border-2 shadow-sm",
+                isDone
+                  ? "bg-[#9b87f5] border-[#9b87f5] text-white hover:bg-[#8d70eb] hover:border-[#8d70eb]" // purple
+                  : "bg-white border-gray-300 text-[#8E9196] hover:border-[#9b87f5] hover:bg-purple-50",
+                task.status === TaskStatus.ARCHIVED && "opacity-40 cursor-not-allowed"
+              )}
+              aria-label={isDone ? "Mark as not done" : "Mark as done"}
+              disabled={task.status === TaskStatus.ARCHIVED}
+              tabIndex={0}
+            >
+              {isDone ? (
+                <Check className="h-4 w-4" strokeWidth={3} />
+              ) : (
+                <span className="block rounded-full w-3 h-3 border border-gray-200 bg-white" />
+              )}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="right">
+            {isDone ? "Mark as not done" : "Mark as done"}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
 
   // Truncate "Demo task for project testing..." repetitive description for demo tasks
   let description = task.description || '';
   if (description?.startsWith("Demo task for project testing")) {
-    description = "Task description";
+    description = "";
   } else if (description.length > 100) {
     description = description.slice(0, 100) + "...";
   }
@@ -136,7 +153,6 @@ export function TaskCard({ task, compact = false, className }: TaskCardProps) {
   // Priority flag with color based on priority
   const getPriorityFlag = () => {
     if (!task.priority) return null;
-    
     const colorMap = {
       [TaskPriority.LOW]: "text-green-500",
       [TaskPriority.MEDIUM]: "text-blue-500",
@@ -145,7 +161,7 @@ export function TaskCard({ task, compact = false, className }: TaskCardProps) {
     };
 
     const priorityLabel = TaskPriority[task.priority];
-    
+
     return (
       <TooltipProvider>
         <Tooltip>
@@ -170,31 +186,18 @@ export function TaskCard({ task, compact = false, className }: TaskCardProps) {
         {...attributes}
         {...listeners}
         className={cn(
-          "group relative flex flex-col bg-card rounded-md border shadow-sm hover:shadow-md transition-all cursor-grab",
-          "hover:bg-muted/20 hover:border-primary/30", // Enhanced hover state
+          "group relative flex flex-col bg-card rounded-md border shadow-sm transition-all cursor-pointer",
+          "hover:shadow-md hover:bg-muted/20 hover:border-primary/30",
           task.status === TaskStatus.DONE && "opacity-80 bg-muted/40",
           isDragging && "shadow-lg z-50 opacity-90",
           className
         )}
         onClick={handleTaskClick}
+        tabIndex={0}
       >
         <div className="flex items-start gap-2 p-2">
-          {/* Replace colored dot with status icon */}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild onClick={toggleStatus}>
-                <button 
-                  className="mt-1 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-1 rounded-full"
-                  aria-label={getStatusLabel()}
-                >
-                  {getStatusIcon()}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                {getStatusLabel()}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          {/* Checkbox-style status indicator */}
+          <StatusCheckbox />
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-1">
@@ -220,15 +223,23 @@ export function TaskCard({ task, compact = false, className }: TaskCardProps) {
               </Button>
             </div>
             {/* Truncated description for demo tasks */}
-            <div
-              className={cn(
-                "text-sm text-muted-foreground mt-1 break-words",
-                task.status === TaskStatus.DONE && "line-through opacity-70",
-                !isExpanded && "hidden"
-              )}
-            >
-              {description || 'No description'}
-            </div>
+            {description && (
+              <div
+                className={cn(
+                  "text-sm text-muted-foreground mt-1 break-words truncate",
+                  task.status === TaskStatus.DONE && "line-through opacity-70",
+                  !isExpanded && "hidden"
+                )}
+                style={{
+                  display: '-webkit-box',
+                  WebkitLineClamp: 1,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden'
+                }}
+              >
+                {description || 'No description'}
+              </div>
+            )}
 
             <DropdownMenu>
               <DropdownMenuTrigger>
@@ -268,7 +279,7 @@ export function TaskCard({ task, compact = false, className }: TaskCardProps) {
           <div className="px-3 pb-3 pt-1 flex flex-wrap gap-1.5 items-center">
             {task.dueDate && (
               <div className={cn(
-                "flex items-center text-xs rounded-full px-2 py-0.5", 
+                "flex items-center text-xs rounded-full px-2 py-0.5 font-medium",
                 new Date(task.dueDate) < new Date() && task.status !== TaskStatus.DONE 
                   ? "bg-red-50 text-red-700 border border-red-200" 
                   : "text-muted-foreground"
