@@ -67,6 +67,9 @@ export function ThemeProvider({
     // Update the resolved theme state
     setResolvedTheme(appliedTheme);
     
+    // Force re-render of styled components by applying a data attribute
+    root.setAttribute('data-theme', appliedTheme);
+    
   }, [theme]);
 
   // Listen for system theme changes
@@ -81,6 +84,7 @@ export function ThemeProvider({
       
       root.classList.remove('light', 'dark');
       root.classList.add(newResolvedTheme);
+      root.setAttribute('data-theme', newResolvedTheme);
       setResolvedTheme(newResolvedTheme);
     };
     
