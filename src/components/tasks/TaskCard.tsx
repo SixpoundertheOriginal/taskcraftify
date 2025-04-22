@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { 
@@ -47,8 +46,8 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
   const [isExpanded, setIsExpanded] = useState(true);
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [task, setTask] = useState(initialTask);
+  const [isExiting, setIsExiting] = useState(false);
 
-  // useSortable hook gives us the drag and drop functionality
   const {
     attributes,
     listeners,
@@ -69,10 +68,8 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     transition
   };
 
-  // Count completed subtasks
   const { completed, total } = countCompletedSubtasks(task);
 
-  // Mark as done or revert to todo (checkbox-like)
   const handleMarkDoneToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     console.log("Toggle task completion clicked");
@@ -85,59 +82,73 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
       newStatus = TaskStatus.TODO;
     }
 
-    // Optimistically update the UI immediately
     setTask(prevTask => ({
       ...prevTask,
       status: newStatus
     }));
 
-    // Then update the database
-    updateTask({ id: task.id, status: newStatus })
-      .then(() => {
-        console.log(`Task ${task.id} status updated to ${newStatus}`);
-        toast({
-          title: newStatus === TaskStatus.DONE ? "Task completed" : "Task reopened",
-          description: `"${task.title}" has been ${newStatus === TaskStatus.DONE ? "marked as done" : "moved back to todo"}`,
-          variant: newStatus === TaskStatus.DONE ? "default" : "destructive"
+    if (newStatus === TaskStatus.DONE) {
+      setIsExiting(true);
+      setTimeout(() => {
+        updateTask({ id: task.id, status: newStatus })
+          .then(() => {
+            console.log(`Task ${task.id} status updated to ${newStatus}`);
+            toast({
+              title: "Task completed",
+              description: `"${task.title}" has been marked as done`,
+              variant: "default"
+            });
+          })
+          .catch(error => {
+            setTask(prevTask => ({
+              ...prevTask,
+              status: TaskStatus.TODO
+            }));
+            setIsExiting(false);
+            toast({
+              title: "Status update failed",
+              description: "Failed to update task status. Please try again.",
+              variant: "destructive"
+            });
+          });
+      }, EXIT_ANIMATION_DURATION);
+    } else {
+      updateTask({ id: task.id, status: newStatus })
+        .then(() => {
+          toast({
+            title: "Task reopened",
+            description: `"${task.title}" has been moved back to todo`,
+            variant: "destructive"
+          });
+        })
+        .catch(error => {
+          setTask(prevTask => ({
+            ...prevTask,
+            status: TaskStatus.DONE
+          }));
+          toast({
+            title: "Status update failed",
+            description: "Failed to update task status. Please try again.",
+            variant: "destructive"
+          });
         });
-      })
-      .catch(error => {
-        console.error("Error updating task status:", error);
-        // Revert optimistic update if there's an error
-        setTask(prevTask => ({
-          ...prevTask,
-          status: prevTask.status === TaskStatus.DONE ? TaskStatus.TODO : TaskStatus.DONE
-        }));
-        toast({
-          title: "Status update failed",
-          description: "Failed to update task status. Please try again.",
-          variant: "destructive"
-        });
-      });
+    }
   };
 
-  // Get the project name for this task
   const projectName = task.projectId 
     ? projects.find(p => p.id === task.projectId)?.name || 'Unknown Project'
     : null;
 
-  // Toggle the expanded state
   const toggleExpanded = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsExpanded(!isExpanded);
   };
 
-  // Handle opening the task edit form
   const handleTaskClick = () => {
     setIsTaskFormOpen(true);
   };
 
-  // Checkbox/status circle visual
   function StatusCheckbox() {
-    // Color palette per provided context:
-    // - Done: filled purple with white check
-    // - Not done: gray border, white bg
-
     const isDone = task.status === TaskStatus.DONE;
 
     return (
@@ -174,7 +185,6 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     );
   }
 
-  // Truncate "Demo task for project testing..." repetitive description for demo tasks
   let description = task.description || '';
   if (description?.startsWith("Demo task for project testing")) {
     description = "";
@@ -182,7 +192,6 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     description = description.slice(0, 100) + "...";
   }
 
-  // Priority flag with color based on priority
   const getPriorityFlag = () => {
     if (!task.priority) return null;
     const colorMap = {
@@ -214,7 +223,10 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     <>
       <div 
         ref={setNodeRef}
-        style={style}
+        style={{
+          ...style,
+          pointerEvents: isExiting ? 'none' : undefined
+        }}
         {...attributes}
         {...listeners}
         className={cn(
@@ -222,15 +234,14 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
           "hover:shadow-md hover:bg-muted/20 hover:border-primary/30",
           task.status === TaskStatus.DONE && "opacity-80 bg-muted/40",
           isDragging && "shadow-lg z-50 opacity-90",
-          className
+          className,
+          isExiting && "animate-fade-slide-out"
         )}
         onClick={handleTaskClick}
         tabIndex={0}
       >
         <div className="flex items-start gap-2 p-2">
-          {/* Checkbox-style status indicator */}
           <StatusCheckbox />
-
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-1">
               <h3 className={cn(
@@ -239,7 +250,6 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
               )}>
                 {task.title}
               </h3>
-              {/* Keep expand/collapse, but smaller */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -254,7 +264,6 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
                 <span className="sr-only">Toggle details</span>
               </Button>
             </div>
-            {/* Truncated description for demo tasks */}
             {description && (
               <div
                 className={cn(
@@ -272,7 +281,6 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
                 {description || 'No description'}
               </div>
             )}
-
             <DropdownMenu>
               <DropdownMenuTrigger>
                 <Button
@@ -383,7 +391,6 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
               </div>
             )}
             
-            {/* Add priority flag indicator */}
             {task.priority !== undefined && task.priority !== null && (
               <div className="ml-auto">
                 {getPriorityFlag()}
@@ -393,12 +400,30 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
         )}
       </div>
       
-      {/* Add task form dialog */}
       <TaskForm 
         open={isTaskFormOpen}
         onOpenChange={setIsTaskFormOpen}
         initialTask={task}
       />
+      <style jsx global>{`
+        @keyframes fade-slide-out {
+          0% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+          80% {
+            opacity: 0.8;
+            transform: translateY(0.25rem);
+          }
+          100% {
+            opacity: 0;
+            transform: translateY(0.5rem);
+          }
+        }
+        .animate-fade-slide-out {
+          animation: fade-slide-out ${EXIT_ANIMATION_DURATION}ms cubic-bezier(0.4,0,0.2,1);
+        }
+      `}</style>
     </>
   );
 }
