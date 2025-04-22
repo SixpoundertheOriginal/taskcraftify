@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { format } from 'date-fns';
 import { 
@@ -49,6 +50,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [task, setTask] = useState(initialTask);
   const [isExiting, setIsExiting] = useState(false);
+  const [isRemoved, setIsRemoved] = useState(false);
   const [lastClickTime, setLastClickTime] = useState(0);
   const completeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -76,8 +78,21 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
   
   const finishExiting = () => {
     setIsExiting(false);
+    if (task.status === TaskStatus.DONE && !completeTimeoutRef.current) {
+      setIsRemoved(true);
+    }
   };
 
+  useEffect(() => {
+    // Synchronize the local task state with initialTask props
+    setTask(initialTask);
+    
+    // Reset removed state if the task status has changed back from DONE
+    if (initialTask.status !== TaskStatus.DONE) {
+      setIsRemoved(false);
+    }
+  }, [initialTask]);
+  
   useEffect(() => {
     return () => {
       if (completeTimeoutRef.current) {
@@ -85,10 +100,6 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
       }
     };
   }, []);
-  
-  useEffect(() => {
-    setTask(initialTask);
-  }, [initialTask]);
 
   const handleStatusClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -106,6 +117,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
       clearTimeout(completeTimeoutRef.current);
       completeTimeoutRef.current = null;
       setTask(prevTask => ({ ...prevTask, status: TaskStatus.TODO }));
+      setIsRemoved(false);
       updateTask({ id: task.id, status: TaskStatus.TODO })
         .then(() => {
           toast({
@@ -141,10 +153,12 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
               variant: "default"
             });
             completeTimeoutRef.current = null;
+            setIsRemoved(true);
           })
           .catch(() => {
             setTask(prevTask => ({ ...prevTask, status: TaskStatus.TODO }));
             setIsExiting(false);
+            setIsRemoved(false);
             completeTimeoutRef.current = null;
             toast({
               title: "Status update failed",
@@ -156,29 +170,29 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
       return;
     }
 
-    if (task.status === TaskStatus.DONE) {
-      if (!completeTimeoutRef.current) {
-        setTask(prevTask => ({
-          ...prevTask,
-          status: TaskStatus.TODO
-        }));
-        updateTask({ id: task.id, status: TaskStatus.TODO })
-          .then(() => {
-            toast({
-              title: "Task reopened",
-              description: `"${task.title}" has been marked as to do.`,
-              variant: "default"
-            });
-          })
-          .catch(() => {
-            setTask(prevTask => ({ ...prevTask, status: TaskStatus.DONE }));
-            toast({
-              title: "Status update failed", 
-              description: "Failed to update task status. Please try again.",
-              variant: "destructive"
-            });
+    if (task.status === TaskStatus.DONE && !completeTimeoutRef.current) {
+      setIsRemoved(false);
+      setTask(prevTask => ({
+        ...prevTask,
+        status: TaskStatus.TODO
+      }));
+      updateTask({ id: task.id, status: TaskStatus.TODO })
+        .then(() => {
+          toast({
+            title: "Task reopened",
+            description: `"${task.title}" has been marked as to do.`,
+            variant: "default"
           });
-      }
+        })
+        .catch(() => {
+          setTask(prevTask => ({ ...prevTask, status: TaskStatus.DONE }));
+          setIsRemoved(true);
+          toast({
+            title: "Status update failed", 
+            description: "Failed to update task status. Please try again.",
+            variant: "destructive"
+          });
+        });
       return;
     }
   };
@@ -271,7 +285,9 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     );
   };
 
-  if (task.status === TaskStatus.DONE && !isExiting && !completeTimeoutRef.current) {
+  // Don't render the component if it's already been removed
+  if ((task.status === TaskStatus.DONE && isRemoved && !completeTimeoutRef.current) || 
+      (initialTask.status === TaskStatus.DONE && !completeTimeoutRef.current && !isExiting)) {
     return null;
   }
 
@@ -295,7 +311,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
         )}
         onClick={handleTaskClick}
         tabIndex={0}
-        onAnimationEnd={isExiting ? finishExiting : undefined}
+        onAnimationEnd={finishExiting}
       >
         <div className="flex items-start gap-2 p-2">
           <StatusCheckbox />
