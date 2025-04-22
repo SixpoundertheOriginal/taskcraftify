@@ -114,3 +114,157 @@ export function getContainerClasses(fluid: boolean = false): string {
     !fluid && 'max-w-7xl'
   );
 }
+
+/**
+ * Generate standard button classes for consistency
+ */
+export function getButtonClasses({
+  variant = 'default',
+  size = 'default',
+  fullWidth = false,
+  disabled = false
+}: {
+  variant?: 'default' | 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive',
+  size?: 'sm' | 'default' | 'lg' | 'icon',
+  fullWidth?: boolean,
+  disabled?: boolean
+} = {}): string {
+  const variantClasses = {
+    'default': 'bg-primary text-primary-foreground hover:bg-primary/90',
+    'primary': 'bg-primary text-primary-foreground hover:bg-primary/90',
+    'secondary': 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+    'outline': 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
+    'ghost': 'hover:bg-accent hover:text-accent-foreground',
+    'destructive': 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+  };
+  
+  const sizeClasses = {
+    'sm': 'h-9 rounded-md px-3',
+    'default': 'h-10 px-4 py-2',
+    'lg': 'h-11 rounded-md px-8',
+    'icon': 'h-10 w-10',
+  };
+  
+  return cn(
+    'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+    variantClasses[variant],
+    sizeClasses[size],
+    fullWidth && 'w-full',
+    disabled && 'opacity-50 pointer-events-none'
+  );
+}
+
+/**
+ * Generate consistent text styles
+ */
+export function getTextClasses({
+  variant = 'default',
+  size = 'default',
+  weight = 'normal',
+  color = 'default'
+}: {
+  variant?: 'default' | 'heading' | 'subheading' | 'label' | 'caption',
+  size?: 'xs' | 'sm' | 'default' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl',
+  weight?: 'light' | 'normal' | 'medium' | 'semibold' | 'bold',
+  color?: 'default' | 'muted' | 'accent' | 'primary' | 'success' | 'warning' | 'error'
+} = {}): string {
+  const variantClasses = {
+    'default': '',
+    'heading': 'tracking-tight',
+    'subheading': 'text-muted-foreground',
+    'label': 'font-medium',
+    'caption': 'text-xs text-muted-foreground',
+  };
+  
+  const sizeClasses = {
+    'xs': 'text-xs',
+    'sm': 'text-sm',
+    'default': 'text-base',
+    'lg': 'text-lg',
+    'xl': 'text-xl',
+    '2xl': 'text-2xl',
+    '3xl': 'text-3xl',
+    '4xl': 'text-4xl',
+  };
+  
+  const weightClasses = {
+    'light': 'font-light',
+    'normal': 'font-normal',
+    'medium': 'font-medium',
+    'semibold': 'font-semibold',
+    'bold': 'font-bold',
+  };
+  
+  const colorClasses = {
+    'default': 'text-foreground',
+    'muted': 'text-muted-foreground',
+    'accent': 'text-accent-foreground',
+    'primary': 'text-primary',
+    'success': 'text-green-600 dark:text-green-400',
+    'warning': 'text-amber-600 dark:text-amber-400',
+    'error': 'text-red-600 dark:text-red-400',
+  };
+  
+  return cn(
+    variantClasses[variant],
+    sizeClasses[size],
+    weightClasses[weight],
+    colorClasses[color]
+  );
+}
+
+/**
+ * Generate consistent badge/chip classes
+ */
+export function getBadgeClasses({
+  variant = 'default',
+  size = 'default'
+}: {
+  variant?: 'default' | 'secondary' | 'outline' | 'success' | 'warning' | 'error',
+  size?: 'sm' | 'default' | 'lg'
+} = {}): string {
+  const variantClasses = {
+    'default': 'bg-primary text-primary-foreground hover:bg-primary/80',
+    'secondary': 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+    'outline': 'border border-input bg-background text-foreground',
+    'success': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+    'warning': 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300',
+    'error': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+  };
+  
+  const sizeClasses = {
+    'sm': 'px-2 py-0.5 text-xs leading-3',
+    'default': 'px-2.5 py-0.5 text-xs',
+    'lg': 'px-3 py-1 text-sm',
+  };
+  
+  return cn(
+    'inline-flex items-center rounded-full font-semibold transition-colors',
+    variantClasses[variant],
+    sizeClasses[size]
+  );
+}
+
+/**
+ * Generate consistent form input classes
+ */
+export function getInputClasses({
+  hasError = false,
+  disabled = false,
+  fullWidth = true
+}: {
+  hasError?: boolean,
+  disabled?: boolean,
+  fullWidth?: boolean
+} = {}): string {
+  return cn(
+    'flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm',
+    'file:border-0 file:bg-transparent file:text-sm file:font-medium',
+    'placeholder:text-muted-foreground',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+    hasError && 'border-red-500 focus-visible:ring-red-500',
+    disabled && 'opacity-50 cursor-not-allowed',
+    fullWidth && 'w-full'
+  );
+}

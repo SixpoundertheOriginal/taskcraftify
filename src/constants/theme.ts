@@ -70,6 +70,41 @@ export const THEME_CONSTANTS = {
     popover: 1060,
     tooltip: 1070,
   },
+  
+  // Color palette
+  colors: {
+    // Primary colors
+    primary: {
+      50: '#f5f3ff',
+      100: '#ede9fe',
+      200: '#ddd6fe',
+      300: '#c4b5fd',
+      400: '#a78bfa',
+      500: '#8b5cf6',
+      600: '#7c3aed',
+      700: '#6d28d9',
+      800: '#5b21b6',
+      900: '#4c1d95',
+      950: '#2e1065',
+    },
+    
+    // Status colors
+    status: {
+      todo: 'hsl(var(--status-todo))',
+      inProgress: 'hsl(var(--status-in-progress))',
+      done: 'hsl(var(--status-done))',
+      archived: 'hsl(var(--status-archived))',
+      backlog: 'hsl(var(--status-backlog))',
+    },
+    
+    // Priority colors
+    priority: {
+      low: 'hsl(var(--priority-low))',
+      medium: 'hsl(var(--priority-medium))',
+      high: 'hsl(var(--priority-high))',
+      urgent: 'hsl(var(--priority-urgent))',
+    },
+  },
 };
 
 // Common UI gradients
@@ -77,4 +112,24 @@ export const GRADIENTS = {
   dark: 'linear-gradient(120deg, #221F26 0%, #403E43 100%)',
   darkGlass: 'linear-gradient(120deg, #181823 60%, #403E43 120%)',
   overlay: 'linear-gradient(180deg, rgba(34,31,38,0.95) 0%, rgba(64,62,67,0.85) 100%)',
+  purpleLight: 'linear-gradient(135deg, #9b87f5 0%, #7E69AB 100%)',
+  purpleDark: 'linear-gradient(135deg, #6E59A5 0%, #1A1F2C 100%)',
+};
+
+// Media query breakpoints
+export const BREAKPOINTS = {
+  xs: '480px',
+  sm: '640px',
+  md: '768px',
+  lg: '1024px',
+  xl: '1280px',
+  '2xl': '1536px',
+};
+
+// Animation presets
+export const ANIMATIONS = {
+  fadeIn: 'fade-in 0.3s ease-out',
+  slideUp: 'slide-up 0.3s ease-out',
+  slideDown: 'slide-down 0.3s ease-out',
+  pulse: 'pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite',
 };

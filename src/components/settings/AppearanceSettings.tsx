@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTheme } from '@/providers/ThemeProvider';
+import { useUI } from '@/providers/UIProvider';
 import { 
   Card, 
   CardContent, 
@@ -15,47 +16,16 @@ import { Separator } from '@/components/ui/separator';
 import { Palette, Monitor, Moon, Sun, Layout, Type } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Slider } from '@/components/ui/slider';
-import { useTaskStore } from '@/store';
 
 export function AppearanceSettings() {
   const { theme, setTheme } = useTheme();
+  const { preferences, updatePreferences, setDefaultView, toggleCompactMode, setFontScale } = useUI();
   const [mounted, setMounted] = useState(false);
-  const [defaultView, setDefaultView] = useState('list');
-  const [compactView, setCompactView] = useState(false);
-  const [fontScale, setFontScale] = useState([100]);
   
   // Wait until mounted to avoid hydration mismatch
   useEffect(() => {
     setMounted(true);
-    
-    // Load user preferences from local storage
-    const savedView = localStorage.getItem('taskcraft-default-view') || 'list';
-    const savedCompactView = localStorage.getItem('taskcraft-compact-view') === 'true';
-    const savedFontScale = localStorage.getItem('taskcraft-font-scale');
-    
-    setDefaultView(savedView);
-    setCompactView(savedCompactView);
-    setFontScale(savedFontScale ? [parseInt(savedFontScale)] : [100]);
   }, []);
-  
-  // Save preferences to local storage
-  const saveViewPreference = (view: string) => {
-    setDefaultView(view);
-    localStorage.setItem('taskcraft-default-view', view);
-  };
-  
-  const saveCompactViewPreference = (value: boolean) => {
-    setCompactView(value);
-    localStorage.setItem('taskcraft-compact-view', String(value));
-  };
-  
-  const saveFontScalePreference = (value: number[]) => {
-    setFontScale(value);
-    localStorage.setItem('taskcraft-font-scale', String(value[0]));
-    
-    // Apply font scale to root element
-    document.documentElement.style.fontSize = `${value[0]}%`;
-  };
   
   if (!mounted) {
     return null;
@@ -126,9 +96,9 @@ export function AppearanceSettings() {
           <div className="space-y-4">
             <h3 className="text-sm font-medium">Default Task View</h3>
             <Tabs 
-              defaultValue={defaultView} 
-              value={defaultView}
-              onValueChange={saveViewPreference}
+              defaultValue={preferences.defaultView} 
+              value={preferences.defaultView}
+              onValueChange={(value) => setDefaultView(value as 'list' | 'kanban' | 'groups')}
               className="w-full"
             >
               <TabsList className="grid w-full max-w-md grid-cols-2">
@@ -148,8 +118,8 @@ export function AppearanceSettings() {
               </p>
             </div>
             <Switch 
-              checked={compactView} 
-              onCheckedChange={saveCompactViewPreference} 
+              checked={preferences.compactMode} 
+              onCheckedChange={toggleCompactMode} 
             />
           </div>
           
@@ -163,17 +133,17 @@ export function AppearanceSettings() {
                   Adjust the text size across the application
                 </p>
               </div>
-              <span className="font-medium text-sm">{fontScale[0]}%</span>
+              <span className="font-medium text-sm">{preferences.fontScale}%</span>
             </div>
             
             <div className="pt-2">
               <Slider
-                defaultValue={fontScale}
+                defaultValue={[preferences.fontScale]}
                 min={75}
                 max={150}
                 step={5}
-                value={fontScale}
-                onValueChange={saveFontScalePreference}
+                value={[preferences.fontScale]}
+                onValueChange={(value) => setFontScale(value[0])}
               />
               <div className="flex justify-between mt-1 text-xs text-muted-foreground">
                 <span>Smaller</span>
