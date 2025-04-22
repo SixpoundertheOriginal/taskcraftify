@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { TaskView, KanbanBoard, ViewToggle, FloatingActionButton } from '@/components/tasks';
 import { CalendarView } from '@/components/calendar';
@@ -56,37 +55,33 @@ export default function Index() {
           </SidebarHeader>
           
           <SidebarSeparator />
-          
+
           <SidebarContent className="pt-3">
-            <div className="px-2 mb-4">
-              <ProjectSelector />
-            </div>
-            
-            <SidebarGroup>
-              <div className="sidebar-section-header">
-                Navigation
-              </div>
+            {/* MAIN NAVIGATION SECTION */}
+            <SidebarGroup className="mb-4">
+              <SidebarGroupLabel className="px-3 text-xs text-muted-foreground/80 uppercase tracking-widest font-semibold">
+                Main Navigation
+              </SidebarGroupLabel>
               <SidebarGroupContent className="space-y-1">
                 <SidebarMenu>
                   <SidebarMenuItem>
-                    <div 
-                      className="sidebar-item-indicator" 
-                      data-active={activeTab === 'tasks'}
-                    />
+                    <div className="sidebar-item-indicator" data-active={activeTab === 'tasks'} />
                     <SidebarMenuButton 
                       className={`flex items-center gap-2 ${activeTab === 'tasks' ? 'sidebar-item-active' : ''}`}
                       isActive={activeTab === 'tasks'}
                       onClick={() => setActiveTab('tasks')}
                     >
                       <List className="h-4 w-4" />
-                      <span className="font-medium">Tasks</span>
+                      <span className="font-medium">
+                        Tasks{activeTab === 'tasks' && (
+                          // Insert count bubble if available (optional improvement for hierarchy)
+                          <span className="ml-2 bg-muted text-xs px-2 rounded-full">{/* Add count if wanted */}</span>
+                        )}
+                      </span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                    <div 
-                      className="sidebar-item-indicator" 
-                      data-active={activeTab === 'calendar'}
-                    />
+                    <div className="sidebar-item-indicator" data-active={activeTab === 'calendar'} />
                     <SidebarMenuButton 
                       className={`flex items-center gap-2 ${activeTab === 'calendar' ? 'sidebar-item-active' : ''}`}
                       isActive={activeTab === 'calendar'}
@@ -97,10 +92,7 @@ export default function Index() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                    <div 
-                      className="sidebar-item-indicator" 
-                      data-active={activeTab === 'integrations'}
-                    />
+                    <div className="sidebar-item-indicator" data-active={activeTab === 'integrations'} />
                     <SidebarMenuButton 
                       className={`flex items-center gap-2 ${activeTab === 'integrations' ? 'sidebar-item-active' : ''}`}
                       isActive={activeTab === 'integrations'}
@@ -125,11 +117,16 @@ export default function Index() {
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
-            
-            <SidebarSeparator />
-            
+
+            {/* PROJECTS SECTION */}
+            <SidebarSeparator className="my-2 bg-muted" />
             <SidebarGroup>
-              <EnhancedProjectList />
+              <SidebarGroupLabel className="px-3 text-xs text-muted-foreground/80 uppercase tracking-widest font-semibold">
+                Projects
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <EnhancedProjectList />
+              </SidebarGroupContent>
             </SidebarGroup>
           </SidebarContent>
         </Sidebar>
