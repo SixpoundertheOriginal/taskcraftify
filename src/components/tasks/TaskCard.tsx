@@ -24,6 +24,7 @@ import { countCompletedSubtasks } from '@/types/task';
 import { useTaskStore } from '@/store';
 import { useProjectStore } from '@/store';
 import { TaskForm } from '@/components/tasks/TaskForm';
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 export interface TaskCardProps {
   task: Task;
@@ -95,7 +96,21 @@ export function TaskCard({ task, compact = false, className }: TaskCardProps) {
   const handleTaskClick = () => {
     setIsTaskFormOpen(true);
   };
-  
+
+  // Status dot with tooltip; replace icon/text with dot indicator
+  const statusDotColor = {
+    [TaskStatus.TODO]: "bg-gray-300",
+    [TaskStatus.IN_PROGRESS]: "bg-blue-400",
+    [TaskStatus.DONE]: "bg-green-400",
+    [TaskStatus.ARCHIVED]: "bg-muted",
+  }[task.status] || "bg-gray-300";
+
+  // Truncate "Demo task for project testing..." repetitive description for demo tasks
+  let description = task.description || '';
+  if (description?.startsWith("Demo task for project testing")) {
+    description = description.split('\n')[0].slice(0, 45) + (description.length > 45 ? "…" : "");
+  }
+
   return (
     <>
       <div 
@@ -111,30 +126,32 @@ export function TaskCard({ task, compact = false, className }: TaskCardProps) {
         )}
         onClick={handleTaskClick}
       >
-        <div className="flex items-start gap-2 p-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-5 w-5 shrink-0 rounded-full -ml-1"
-            onClick={toggleStatus}
-          >
-            <CheckCircle2 
-              className={cn(
-                "h-4 w-4 transition-colors",
-                task.status === TaskStatus.DONE 
-                  ? "text-green-500 fill-green-500" 
-                  : "text-muted-foreground"
-              )}
-            />
-            <span className="sr-only">Toggle task status</span>
-          </Button>
-          
+        <div className="flex items-start gap-2 p-2">
+          {/* Replace check-circle with only a color bullet/status */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span
+                  className={cn(
+                    "inline-block w-3 h-3 rounded-full border border-gray-300 cursor-pointer mt-1 mr-1",
+                    statusDotColor
+                  )}
+                  aria-label={TaskStatus[task.status]}
+                  tabIndex={0}
+                />
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                {TaskStatus[task.status].replace(/_/g, " ")}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-1">
               <h3 className="font-medium text-base leading-tight truncate">
                 {task.title}
               </h3>
-              
+              {/* Keep expand/collapse, but smaller */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -149,17 +166,17 @@ export function TaskCard({ task, compact = false, className }: TaskCardProps) {
                 <span className="sr-only">Toggle details</span>
               </Button>
             </div>
-            
-            <div 
+            {/* Truncated description for demo tasks */}
+            <div
               className={cn(
-                "text-sm text-muted-foreground line-clamp-2 mt-1",
+                "text-sm text-muted-foreground mt-1 break-words",
                 task.status === TaskStatus.DONE && "line-through opacity-70",
                 !isExpanded && "hidden"
               )}
             >
-              {task.description || 'No description'}
+              {description || 'No description'}
             </div>
-            
+
             <DropdownMenu>
               <DropdownMenuTrigger>
                 <Button

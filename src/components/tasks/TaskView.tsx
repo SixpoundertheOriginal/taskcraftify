@@ -22,6 +22,7 @@ import { TaskGroup } from './TaskGroup';
 import { ProjectSelector } from '@/components/projects/ProjectSelector';
 import { FilterBar } from './FilterBar';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { MyFocusView } from './MyFocusView';
 import { KanbanBoard } from './KanbanBoard';
@@ -136,6 +137,14 @@ export function TaskView() {
     key !== 'searchQuery' || (key === 'searchQuery' && filters.searchQuery && filters.searchQuery.trim() !== '')
   );
   
+  const showEmptyStats = overdueTasks.length > 0 || tasksDueToday.length > 0 || filteredTasks.length > 0;
+
+  let listHeader = '';
+  if (activeTab === 'my-tasks') listHeader = `Tasks (${filteredTasks.length})`;
+  else if (activeTab === 'all-tasks') listHeader = `All Tasks (${filteredTasks.length})`;
+  else if (activeTab === 'completed') listHeader = `Completed (${filteredTasks.length})`;
+  else if (activeTab === 'focus') listHeader = `My Focus`;
+
   if (isLoading && tasks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-60">
@@ -155,34 +164,34 @@ export function TaskView() {
   }
   
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-5 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold">Tasks</h1>
+          <h1 className="text-2xl font-bold">{listHeader}</h1>
           {isLoading && tasks.length > 0 && (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           )}
         </div>
-        
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
           <div className="w-full sm:w-auto">
             <ProjectSelector 
               buttonClassName="w-full sm:w-auto bg-background text-sm font-medium" 
             />
           </div>
-          
-          <ViewToggle 
-            activeView={activeViewMode} 
-            onViewChange={handleViewModeChange} 
-          />
+          <div className="flex items-center gap-2">
+            <ViewToggle
+              activeView={activeViewMode}
+              onViewChange={handleViewModeChange}
+            />
+          </div>
         </div>
       </div>
       
-      <div className="relative">
+      <div className="relative max-w-xs">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search tasks..."
-          className="pl-9 bg-background/50 backdrop-blur-sm"
+          className="pl-9 bg-background/60 backdrop-blur-sm border border-muted rounded-lg"
           value={searchQuery}
           onChange={handleSearchChange}
         />
@@ -303,7 +312,7 @@ export function TaskView() {
       )}
       
       <Tabs defaultValue="my-tasks" value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="w-full mb-6 bg-muted/50 backdrop-blur-sm">
+        <TabsList className="w-full mb-4 bg-muted/50 backdrop-blur-sm">
           <TabsTrigger value="my-tasks" className="flex-1">Active</TabsTrigger>
           <TabsTrigger value="all-tasks" className="flex-1">All</TabsTrigger>
           <TabsTrigger value="completed" className="flex-1">Completed</TabsTrigger>
@@ -315,7 +324,7 @@ export function TaskView() {
         </TabsContent>
         
         <TabsContent value="my-tasks" className="mt-0">
-          {activeViewMode === 'list' ? (
+          {showEmptyStats ? (
             <>
               {overdueTasks.length > 0 && (
                 <TaskGroup 
@@ -366,10 +375,11 @@ export function TaskView() {
                 </div>
               </TaskGroup>
             </>
-          ) : activeViewMode === 'kanban' ? (
-            <KanbanBoard />
           ) : (
-            <TaskGroups />
+            <div className="flex justify-center items-center p-10">
+              <CheckCircle className="h-10 w-10 text-green-400 mr-3" />
+              <span className="text-lg text-green-600 font-medium">You're all caught up!</span>
+            </div>
           )}
         </TabsContent>
         

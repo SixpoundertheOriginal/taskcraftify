@@ -31,10 +31,10 @@ export default function Index() {
   const [activeTab, setActiveTab] = useState<string>('tasks');
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const { user } = useAuth();
-  
+
   // Don't show insights panel on integrations tab
   const showInsightsPanel = activeTab !== 'integrations';
-  
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -48,17 +48,16 @@ export default function Index() {
                 <ThemeToggle />
               </div>
             </div>
-            
             <div className="px-2">
               <QuickAddButton />
             </div>
           </SidebarHeader>
-          
+
           <SidebarSeparator />
 
-          <SidebarContent className="pt-3">
+          <SidebarContent className="pt-2">
             {/* MAIN NAVIGATION SECTION */}
-            <SidebarGroup className="mb-4">
+            <SidebarGroup className="mb-2">
               <SidebarGroupLabel className="px-3 text-xs text-muted-foreground/80 uppercase tracking-widest font-semibold">
                 Main Navigation
               </SidebarGroupLabel>
@@ -66,23 +65,20 @@ export default function Index() {
                 <SidebarMenu>
                   <SidebarMenuItem>
                     <div className="sidebar-item-indicator" data-active={activeTab === 'tasks'} />
-                    <SidebarMenuButton 
+                    <SidebarMenuButton
                       className={`flex items-center gap-2 ${activeTab === 'tasks' ? 'sidebar-item-active' : ''}`}
                       isActive={activeTab === 'tasks'}
                       onClick={() => setActiveTab('tasks')}
                     >
                       <List className="h-4 w-4" />
                       <span className="font-medium">
-                        Tasks{activeTab === 'tasks' && (
-                          // Insert count bubble if available (optional improvement for hierarchy)
-                          <span className="ml-2 bg-muted text-xs px-2 rounded-full">{/* Add count if wanted */}</span>
-                        )}
+                        Tasks
                       </span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
                     <div className="sidebar-item-indicator" data-active={activeTab === 'calendar'} />
-                    <SidebarMenuButton 
+                    <SidebarMenuButton
                       className={`flex items-center gap-2 ${activeTab === 'calendar' ? 'sidebar-item-active' : ''}`}
                       isActive={activeTab === 'calendar'}
                       onClick={() => setActiveTab('calendar')}
@@ -93,7 +89,7 @@ export default function Index() {
                   </SidebarMenuItem>
                   <SidebarMenuItem>
                     <div className="sidebar-item-indicator" data-active={activeTab === 'integrations'} />
-                    <SidebarMenuButton 
+                    <SidebarMenuButton
                       className={`flex items-center gap-2 ${activeTab === 'integrations' ? 'sidebar-item-active' : ''}`}
                       isActive={activeTab === 'integrations'}
                       onClick={() => setActiveTab('integrations')}
@@ -104,7 +100,7 @@ export default function Index() {
                   </SidebarMenuItem>
                   <SidebarMenuItem>
                     <div className="sidebar-item-indicator" />
-                    <SidebarMenuButton 
+                    <SidebarMenuButton
                       className="flex items-center gap-2"
                       asChild
                     >
@@ -118,8 +114,10 @@ export default function Index() {
               </SidebarGroupContent>
             </SidebarGroup>
 
+            {/* CLEARER SEPARATION */}
+            <SidebarSeparator className="my-3 bg-muted" />
+
             {/* PROJECTS SECTION */}
-            <SidebarSeparator className="my-2 bg-muted" />
             <SidebarGroup>
               <SidebarGroupLabel className="px-3 text-xs text-muted-foreground/80 uppercase tracking-widest font-semibold">
                 Projects
@@ -129,20 +127,21 @@ export default function Index() {
               </SidebarGroupContent>
             </SidebarGroup>
           </SidebarContent>
+
+          {/* Move Demo Data button to sidebar footer/utility */}
+          <SidebarFooter className="pb-4 pt-2">
+            <div className="flex flex-col gap-1 px-3">
+              <DemoDataButton />
+            </div>
+          </SidebarFooter>
         </Sidebar>
-        
+
         <SidebarInset className="p-6 bg-background">
           <div className="w-full max-w-5xl mx-auto">
             <Tabs defaultValue="tasks" value={activeTab} onValueChange={setActiveTab} className="w-full">
               <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">
-                  {activeTab === 'tasks' && 'My Tasks'}
-                  {activeTab === 'calendar' && 'Calendar'}
-                  {activeTab === 'integrations' && 'Integrations'}
-                </h1>
+                <div />
                 <div className="flex items-center gap-2">
-                  {/* Add Demo Data Button here */}
-                  <DemoDataButton />
                   <TabsList>
                     <TabsTrigger value="tasks" className="flex items-center gap-1">
                       <List className="h-4 w-4" />
@@ -159,26 +158,26 @@ export default function Index() {
                   </TabsList>
                 </div>
               </div>
-              
+
               {showInsightsPanel && (
                 <PersonalizedGreeting />
               )}
-              
+
               <TabsContent value="tasks" className="mt-0">
                 <TaskView />
               </TabsContent>
-              
+
               <TabsContent value="calendar" className="mt-0">
                 <CalendarView />
               </TabsContent>
-              
+
               <TabsContent value="integrations" className="mt-0">
                 <IntegrationsSettings />
               </TabsContent>
             </Tabs>
-            
+
             {(activeTab === 'tasks' || activeTab === 'calendar') && (
-              <FloatingActionButton 
+              <FloatingActionButton
                 open={isTaskFormOpen}
                 onOpenChange={setIsTaskFormOpen}
                 initialDueDate={activeTab === 'calendar' ? new Date() : undefined}
