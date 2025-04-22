@@ -76,17 +76,26 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
   const { completed, total } = countCompletedSubtasks(task);
   
   const finishExiting = () => {
-    setIsExiting(false);
-    if (task.status === TaskStatus.DONE && !completeTimeoutRef.current) {
-      setIsRemoved(true);
+    if (isExiting) {
+      setIsExiting(false);
+      if (task.status === TaskStatus.DONE && !completeTimeoutRef.current) {
+        setIsRemoved(true);
+      }
     }
   };
 
   useEffect(() => {
-    setTask(initialTask);
-    
-    if (initialTask.status !== TaskStatus.DONE) {
-      setIsRemoved(false);
+    if (initialTask.id === task.id) {
+      setTask(initialTask);
+      
+      if (initialTask.status !== TaskStatus.DONE) {
+        setIsExiting(false);
+        setIsRemoved(false);
+        if (completeTimeoutRef.current) {
+          clearTimeout(completeTimeoutRef.current);
+          completeTimeoutRef.current = null;
+        }
+      }
     }
   }, [initialTask]);
   
@@ -106,16 +115,15 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     const isDoubleClick = currentTime - lastClickTime < 350;
     setLastClickTime(currentTime);
 
-    if (
-      (isDoubleClick || isExiting) &&
-      task.status === TaskStatus.DONE &&
-      completeTimeoutRef.current
-    ) {
-      clearTimeout(completeTimeoutRef.current);
-      completeTimeoutRef.current = null;
+    if ((isDoubleClick || isExiting) && task.status === TaskStatus.DONE) {
+      if (completeTimeoutRef.current) {
+        clearTimeout(completeTimeoutRef.current);
+        completeTimeoutRef.current = null;
+      }
+      
       setTask(prevTask => ({ ...prevTask, status: TaskStatus.TODO }));
-      setIsRemoved(false);
       setIsExiting(false);
+      setIsRemoved(false);
 
       updateTask({ id: task.id, status: TaskStatus.TODO })
         .then(() => {
@@ -144,6 +152,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
         status: TaskStatus.DONE
       }));
       setIsExiting(true);
+      setIsRemoved(false);
 
       completeTimeoutRef.current = setTimeout(() => {
         updateTask({ id: task.id, status: TaskStatus.DONE })
@@ -154,7 +163,9 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
               variant: "default"
             });
             completeTimeoutRef.current = null;
-            setIsRemoved(true);
+            if (isExiting) {
+              setIsRemoved(true);
+            }
           })
           .catch(() => {
             setTask(prevTask => ({ ...prevTask, status: TaskStatus.TODO }));
