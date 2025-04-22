@@ -1,5 +1,5 @@
 
-import { cn } from './utils';
+import { cn } from '@/lib/utils';
 import { TaskStatus, TaskPriority } from '@/types/task';
 import { THEME_CONSTANTS } from '@/constants/theme';
 
