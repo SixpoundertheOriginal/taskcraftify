@@ -1,0 +1,102 @@
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 246 80% 60%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 246 80% 60%;
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 246 80% 60%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 246 80% 60%;
+    --sidebar-hover: 240 5% 96%;
+    --sidebar-section-header: 240 5% 65%;
+
+    /* Task status and priority colors */
+    --status-todo: 221 83% 53%;
+    --status-in-progress: 35 92% 51%;
+    --status-done: 171 68% 41%;
+    --status-archived: 262 80% 56%;
+    --status-backlog: 220 14% 75%;
+
+    --priority-low: 221 83% 53%;
+    --priority-medium: 171 68% 41%;
+    --priority-high: 35 92% 51%;
+    --priority-urgent: 0 84% 60%;
+
+    /* Gradients */
+    --gradient-dark: linear-gradient(120deg, #221F26 0%, #403E43 100%);
+    --gradient-dark-glass: linear-gradient(120deg, #181823 60%, #403E43 120%);
+    --gradient-overlay: linear-gradient(180deg,rgba(34,31,38,0.95) 0%,rgba(64,62,67,0.85) 100%);
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 246 80% 60%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 246 80% 60%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 246 80% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 246 80% 60%;
+    --sidebar-hover: 240 5% 13%;
+    --sidebar-section-header: 240 5% 75%;
+
+    /* Task status and priority colors - adjusted for dark mode */
+    --status-todo: 213 94% 68%;
+    --status-in-progress: 38 95% 64%;
+    --status-done: 166 73% 46%;
+    --status-archived: 263 85% 74%;
+    --status-backlog: 220 13% 69%;
+
+    --priority-low: 213 94% 68%;
+    --priority-medium: 166 73% 46%;
+    --priority-high: 38 95% 64%;
+    --priority-urgent: 0 91% 71%;
+
+    /* Gradients */
+    --gradient-dark: linear-gradient(120deg, #1A1F2C 0%, #403E43 100%);
+    --gradient-dark-glass: linear-gradient(120deg, #181823 60%, #403E43 120%);
+    --gradient-overlay: linear-gradient(180deg,rgba(34,31,38,0.95) 0%,rgba(64,62,67,0.85) 100%);
+  }
+}

@@ -1,0 +1,58 @@
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    background-image: var(--gradient-dark);
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-size: cover;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  /* Card/component glass effect */
+  .card-gradient {
+    @apply bg-white/5 dark:bg-black/30 backdrop-blur-xl border border-white/10 shadow-lg transition-shadow;
+    background-image: var(--gradient-dark-glass);
+  }
+  /* Gradient overlays for modals, overlays, etc. */
+  .gradient-overlay {
+    background-image: var(--gradient-overlay);
+  }
+  /* Theme transition for common elements */
+  button, 
+  a, 
+  input, 
+  select, 
+  textarea,
+  .card,
+  .dialog,
+  .dropdown-menu {
+    transition: background-color 0.3s ease, 
+                color 0.3s ease, 
+                border-color 0.3s ease, 
+                box-shadow 0.3s ease;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.4);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.6);
+}
