@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { 
@@ -35,8 +34,7 @@ import { TaskForm } from '@/components/tasks/TaskForm';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { toast } from '@/hooks/use-toast';
 
-// Define the animation duration constant
-const EXIT_ANIMATION_DURATION = 500; // 500ms for the animation
+const EXIT_ANIMATION_DURATION = 500;
 
 export interface TaskCardProps {
   task: Task;
@@ -74,16 +72,48 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
 
   const { completed, total } = countCompletedSubtasks(task);
 
-  const handleMarkDoneToggle = (e: React.MouseEvent) => {
+  const finishExiting = () => setIsExiting(false);
+
+  const handleMarkDoneToggle = (e: React.MouseEvent | React.MouseEvent<HTMLButtonElement, MouseEvent>, doubleClick: boolean = false) => {
     e.stopPropagation();
-    console.log("Toggle task completion clicked");
+    if (task.status === TaskStatus.ARCHIVED) return;
+
+    if (
+      doubleClick &&
+      task.status === TaskStatus.DONE
+    ) {
+      setTask(prevTask => ({
+        ...prevTask,
+        status: TaskStatus.TODO
+      }));
+      updateTask({ id: task.id, status: TaskStatus.TODO })
+        .then(() => {
+          toast({
+            title: "Task restored",
+            description: `"${task.title}" moved back to todo.`,
+            variant: "default"
+          });
+        })
+        .catch(() => {
+          setTask(prevTask => ({
+            ...prevTask,
+            status: TaskStatus.DONE
+          }));
+          toast({
+            title: "Restore failed",
+            description: "Failed to restore task. Please try again.",
+            variant: "destructive"
+          });
+        });
+      return;
+    }
 
     let newStatus: TaskStatus;
 
     if (task.status !== TaskStatus.DONE) {
       newStatus = TaskStatus.DONE;
     } else {
-      newStatus = TaskStatus.TODO;
+      return;
     }
 
     setTask(prevTask => ({
@@ -91,52 +121,29 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
       status: newStatus
     }));
 
-    if (newStatus === TaskStatus.DONE) {
-      setIsExiting(true);
-      setTimeout(() => {
-        updateTask({ id: task.id, status: newStatus })
-          .then(() => {
-            console.log(`Task ${task.id} status updated to ${newStatus}`);
-            toast({
-              title: "Task completed",
-              description: `"${task.title}" has been marked as done`,
-              variant: "default"
-            });
-          })
-          .catch(error => {
-            setTask(prevTask => ({
-              ...prevTask,
-              status: TaskStatus.TODO
-            }));
-            setIsExiting(false);
-            toast({
-              title: "Status update failed",
-              description: "Failed to update task status. Please try again.",
-              variant: "destructive"
-            });
-          });
-      }, EXIT_ANIMATION_DURATION);
-    } else {
+    setIsExiting(true);
+    setTimeout(() => {
       updateTask({ id: task.id, status: newStatus })
         .then(() => {
           toast({
-            title: "Task reopened",
-            description: `"${task.title}" has been moved back to todo`,
-            variant: "destructive"
+            title: "Task completed",
+            description: `"${task.title}" has been marked as done`,
+            variant: "default"
           });
         })
-        .catch(error => {
+        .catch(() => {
           setTask(prevTask => ({
             ...prevTask,
-            status: TaskStatus.DONE
+            status: TaskStatus.TODO
           }));
+          setIsExiting(false);
           toast({
             title: "Status update failed",
             description: "Failed to update task status. Please try again.",
             variant: "destructive"
           });
         });
-    }
+    }, EXIT_ANIMATION_DURATION);
   };
 
   const projectName = task.projectId 
@@ -160,12 +167,13 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
         <Tooltip>
           <TooltipTrigger asChild>
             <button
-              onClick={handleMarkDoneToggle}
+              onClick={(e) => handleMarkDoneToggle(e, false)}
+              onDoubleClick={(e) => handleMarkDoneToggle(e, true)}
               className={cn(
                 "flex items-center justify-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-1",
                 "h-6 w-6 min-w-[1.5rem] min-h-[1.5rem] border-2 shadow-sm",
                 isDone
-                  ? "bg-[#9b87f5] border-[#9b87f5] text-white hover:bg-[#8d70eb] hover:border-[#8d70eb]" // purple
+                  ? "bg-[#9b87f5] border-[#9b87f5] text-white hover:bg-[#8d70eb] hover:border-[#8d70eb]"
                   : "bg-white border-gray-300 text-[#8E9196] hover:border-[#9b87f5] hover:bg-purple-50",
                 task.status === TaskStatus.ARCHIVED && "opacity-40 cursor-not-allowed"
               )}
@@ -182,7 +190,9 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
             </button>
           </TooltipTrigger>
           <TooltipContent side="right">
-            {isDone ? "Mark as not done" : "Mark as done"}
+            {isDone
+              ? "Double click to restore"
+              : "Click to mark as done"}
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -243,6 +253,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
         )}
         onClick={handleTaskClick}
         tabIndex={0}
+        onAnimationEnd={isExiting ? finishExiting : undefined}
       >
         <div className="flex items-start gap-2 p-2">
           <StatusCheckbox />
