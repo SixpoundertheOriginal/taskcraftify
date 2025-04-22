@@ -39,14 +39,49 @@ export function useAppQuery<
     ...queryOptions
   } = options;
 
-  // Use React Query's hook directly
-  const result = useQuery({
+  // Use React Query's hook directly with proper callback handling
+  return useQuery<TQueryFnData, TError, TData, TQueryKey>({
     ...queryOptions,
     meta: {
       ...queryOptions.meta,
-      // Allows global onError handling via meta if you want
+      // You can add additional metadata here
     },
-    onError: (error: any) => {
+    gcTime: queryOptions.gcTime,
+    staleTime: queryOptions.staleTime,
+    queryFn: async (...args) => {
+      try {
+        // Call the original queryFn
+        if (!queryOptions.queryFn) {
+          throw new Error('Query function is required');
+        }
+        return await queryOptions.queryFn(...args);
+      } catch (error) {
+        // Handle error in queryFn
+        if (showErrorToast) {
+          toast({
+            title: 'Error',
+            description:
+              customErrorMessage ||
+              (error instanceof Error ? error.message : 'An error occurred'),
+            variant: 'destructive',
+          });
+        }
+        throw error; // Re-throw so React Query can handle it
+      }
+    },
+    onSuccess: (data) => {
+      if (showSuccessToast && customSuccessMessage) {
+        toast({
+          title: 'Success',
+          description: customSuccessMessage,
+        });
+      }
+      // Call the original onSuccess if it exists
+      if (queryOptions.onSuccess) {
+        queryOptions.onSuccess(data);
+      }
+    },
+    onError: (error) => {
       if (showErrorToast) {
         toast({
           title: 'Error',
@@ -56,23 +91,10 @@ export function useAppQuery<
           variant: 'destructive',
         });
       }
+      // Call the original onError if it exists
       if (queryOptions.onError) {
-        // Type assertion needed due to differing types
-        (queryOptions.onError as (err: unknown) => void)(error);
-      }
-    },
-    onSuccess: (data: any) => {
-      if (showSuccessToast && customSuccessMessage) {
-        toast({
-          title: 'Success',
-          description: customSuccessMessage,
-        });
-      }
-      if (queryOptions.onSuccess) {
-        (queryOptions.onSuccess as (data: unknown) => void)(data);
+        queryOptions.onError(error);
       }
     },
   });
-
-  return result;
 }
