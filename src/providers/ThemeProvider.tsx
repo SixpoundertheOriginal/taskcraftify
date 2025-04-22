@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 type Theme = 'dark' | 'light' | 'system';
@@ -72,13 +73,13 @@ export function ThemeProvider({
     localStorage.setItem(storageKey, 'dark');
   }, [storageKey]);
 
-  const value = {
+  const value: ThemeProviderState = {
     theme: 'dark' as Theme,
     setTheme: (theme: Theme) => {
       console.log(`Setting theme to: dark (ignoring ${theme})`);
       setTheme('dark');
     },
-    resolvedTheme: 'dark',
+    resolvedTheme: 'dark' as 'dark', // Explicitly typed as 'dark' literal type
   };
 
   return (
