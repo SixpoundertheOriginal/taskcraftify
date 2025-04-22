@@ -73,6 +73,7 @@ export function TaskCard({ task, compact = false, className }: TaskCardProps) {
   // Mark as done or revert to todo (checkbox-like)
   const handleMarkDoneToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
+    console.log("Toggle task completion clicked");
 
     let newStatus: TaskStatus;
 
@@ -82,7 +83,9 @@ export function TaskCard({ task, compact = false, className }: TaskCardProps) {
       newStatus = TaskStatus.TODO;
     }
 
-    updateTask({ id: task.id, status: newStatus });
+    updateTask({ id: task.id, status: newStatus })
+      .then(() => console.log(`Task ${task.id} status updated to ${newStatus}`))
+      .catch(error => console.error("Error updating task status:", error));
   };
 
   // Get the project name for this task
@@ -126,6 +129,7 @@ export function TaskCard({ task, compact = false, className }: TaskCardProps) {
               aria-label={isDone ? "Mark as not done" : "Mark as done"}
               disabled={task.status === TaskStatus.ARCHIVED}
               tabIndex={0}
+              type="button"
             >
               {isDone ? (
                 <Check className="h-4 w-4" strokeWidth={3} />
