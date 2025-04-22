@@ -11,6 +11,7 @@ import NotFound from '@/pages/NotFound';
 import Settings from '@/pages/Settings';
 import { useTaskStore, useProjectStore, useIntegrationStore } from '@/store';
 import { ThemeProvider } from '@/providers/ThemeProvider';
+import { UIProvider } from '@/providers/UIProvider';
 import { toast } from '@/hooks/use-toast';
 
 function App() {
@@ -164,32 +165,34 @@ function App() {
   
   return (
     <ThemeProvider defaultTheme="system" storageKey="taskcraft-theme">
-      <AuthProvider>
-        <Router>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/auth/callback" element={<OAuthCallback />} />
-            <Route 
-              path="/" 
-              element={
-                <ProtectedRoute>
-                  <Index />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/settings" 
-              element={
-                <ProtectedRoute>
-                  <Settings />
-                </ProtectedRoute>
-              } 
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Router>
-        <Toaster />
-      </AuthProvider>
+      <UIProvider>
+        <AuthProvider>
+          <Router>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/auth/callback" element={<OAuthCallback />} />
+              <Route 
+                path="/" 
+                element={
+                  <ProtectedRoute>
+                    <Index />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/settings" 
+                element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Router>
+          <Toaster />
+        </AuthProvider>
+      </UIProvider>
     </ThemeProvider>
   );
 }

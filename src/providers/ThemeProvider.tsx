@@ -12,11 +12,13 @@ type ThemeProviderProps = {
 type ThemeProviderState = {
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  resolvedTheme: 'dark' | 'light'; // Always resolves to actual applied theme
 };
 
 const initialState: ThemeProviderState = {
   theme: 'system',
   setTheme: () => null,
+  resolvedTheme: 'light',
 };
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
@@ -30,23 +32,41 @@ export function ThemeProvider({
   const [theme, setTheme] = useState<Theme>(
     () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
   );
+  
+  const [resolvedTheme, setResolvedTheme] = useState<'dark' | 'light'>(
+    () => getSystemTheme()
+  );
 
+  // Helper to get system theme
+  function getSystemTheme(): 'dark' | 'light' {
+    if (typeof window === 'undefined') return 'light';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+      ? 'dark'
+      : 'light';
+  }
+  
+  // Apply the theme to the document
   useEffect(() => {
     const root = window.document.documentElement;
     
-    // Remove the current theme class
+    // Remove existing theme classes
     root.classList.remove('light', 'dark');
     
+    // Determine which theme to apply
+    let appliedTheme: 'light' | 'dark';
+    
     if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
-        ? 'dark'
-        : 'light';
-      
-      root.classList.add(systemTheme);
-      return;
+      appliedTheme = getSystemTheme();
+    } else {
+      appliedTheme = theme as 'light' | 'dark';
     }
     
-    root.classList.add(theme);
+    // Apply the theme class
+    root.classList.add(appliedTheme);
+    
+    // Update the resolved theme state
+    setResolvedTheme(appliedTheme);
+    
   }, [theme]);
 
   // Listen for system theme changes
@@ -56,20 +76,20 @@ export function ThemeProvider({
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     
     const handleChange = () => {
+      const newResolvedTheme = getSystemTheme();
       const root = window.document.documentElement;
-      if (mediaQuery.matches) {
-        root.classList.remove('light');
-        root.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
-        root.classList.add('light');
-      }
+      
+      root.classList.remove('light', 'dark');
+      root.classList.add(newResolvedTheme);
+      setResolvedTheme(newResolvedTheme);
     };
     
     // Initial call to set correct class
     handleChange();
     
+    // Add listener for theme changes
     mediaQuery.addEventListener('change', handleChange);
+    
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, [theme]);
 
@@ -83,6 +103,7 @@ export function ThemeProvider({
     setTheme: (theme: Theme) => {
       setTheme(theme);
     },
+    resolvedTheme,
   };
 
   return (

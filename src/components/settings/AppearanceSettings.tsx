@@ -75,7 +75,6 @@ export function AppearanceSettings() {
         </CardHeader>
         <CardContent>
           <RadioGroup
-            defaultValue={theme}
             value={theme}
             onValueChange={setTheme}
             className="grid grid-cols-3 gap-4"
