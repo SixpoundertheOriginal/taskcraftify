@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { useProjectStore, useTaskStore } from '@/store';
 import { Task, TaskPriority, TaskStatus } from '@/types/task';
@@ -74,7 +73,6 @@ export function EnhancedProjectList() {
     return saved ? JSON.parse(saved) : [];
   });
   
-  // Update recent projects when selected project changes
   useEffect(() => {
     if (selectedProjectId && selectedProjectId !== 'none') {
       setRecentProjects(prev => {
@@ -86,14 +84,12 @@ export function EnhancedProjectList() {
     }
   }, [selectedProjectId]);
   
-  // Save pinned projects to localStorage when changed
   useEffect(() => {
     localStorage.setItem('favoriteProjects', JSON.stringify(pinnedProjects));
   }, [pinnedProjects]);
   
   const { items: sortedProjects, onDragEnd } = useDndSortable(projects);
   
-  // Calculate project stats for display
   const projectStats = useMemo(() => {
     const stats: Record<string, {
       total: number,
@@ -144,7 +140,6 @@ export function EnhancedProjectList() {
       }
     });
     
-    // Calculate completion percentages
     Object.keys(stats).forEach(id => {
       if (stats[id].total > 0) {
         stats[id].completion = Math.round((stats[id].done / stats[id].total) * 100);
@@ -244,22 +239,18 @@ export function EnhancedProjectList() {
     return projects.find(p => p.id === id);
   };
   
-  // Keyboard shortcut handlers
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Skip if in an input field
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }
       
-      // Ctrl+N for new project
       if (e.ctrlKey && e.key === 'n') {
         e.preventDefault();
         setCreateDialogOpen(true);
         return;
       }
       
-      // Alt+Up/Down for navigating projects
       if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
         e.preventDefault();
         
@@ -283,7 +274,6 @@ export function EnhancedProjectList() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedProjectId, sortedProjects, handleSelectProject]);
   
-  // Renders task statistics badges and counts
   const renderTaskStats = (id: string) => {
     const stats = id === 'all' ? projectStats['all'] : projectStats[id];
     
@@ -346,7 +336,6 @@ export function EnhancedProjectList() {
     );
   };
   
-  // Renders progress bar for project completion
   const renderProgressBar = (id: string) => {
     const stats = projectStats[id];
     if (!stats || stats.total === 0) return null;
@@ -361,7 +350,6 @@ export function EnhancedProjectList() {
     );
   };
   
-  // Renders a single project item with actions
   const renderProjectItem = (project: Project, isPinned = false) => (
     <SidebarMenuItem 
       key={project.id} 
@@ -506,7 +494,6 @@ export function EnhancedProjectList() {
     </SidebarMenuItem>
   );
   
-  // Filter projects for different sections
   const pinnedProjectItems = useMemo(() => 
     pinnedProjects
       .map(id => projects.find(p => p.id === id))
@@ -516,7 +503,7 @@ export function EnhancedProjectList() {
   
   const recentProjectItems = useMemo(() => 
     recentProjects
-      .filter(id => !pinnedProjects.includes(id)) // Don't show pinned projects in recent
+      .filter(id => !pinnedProjects.includes(id))
       .map(id => projects.find(p => p.id === id))
       .filter(Boolean) as Project[],
     [recentProjects, pinnedProjects, projects]
@@ -533,8 +520,10 @@ export function EnhancedProjectList() {
   return (
     <TooltipProvider delayDuration={300}>
       <>
-        <div className="sidebar-section-header">
-          Projects
+        <div className="sidebar-section-header flex items-center mt-2 mb-1 px-2 select-none">
+          <span className="uppercase tracking-widest text-xs font-semibold text-muted-foreground">
+            Projects
+          </span>
           <kbd className="ml-2 rounded bg-muted px-1.5 text-[10px] font-medium text-muted-foreground">
             Alt+↑↓
           </kbd>
@@ -546,7 +535,7 @@ export function EnhancedProjectList() {
               <Button 
                 variant="outline" 
                 size="icon" 
-                className="h-7 w-7 border-dashed border-sidebar-border text-sidebar-foreground/70 hover:text-sidebar-primary" 
+                className="h-7 w-7 border-dashed border-sidebar-border text-sidebar-foreground/70 hover:text-sidebar-primary rounded-md shadow-sm"
                 onClick={handleRefreshCounts}
                 disabled={isRefreshing}
               >
@@ -562,7 +551,7 @@ export function EnhancedProjectList() {
               <Button 
                 variant="outline" 
                 size="icon" 
-                className="h-7 w-7 border-sidebar-border text-sidebar-primary border-sidebar-primary/30 hover:border-sidebar-primary/70 hover:bg-sidebar-primary/10" 
+                className="h-7 w-7 border-sidebar-border text-sidebar-primary border-sidebar-primary/30 hover:border-sidebar-primary/70 hover:bg-sidebar-primary/10 rounded-md"
                 onClick={() => setCreateDialogOpen(true)}
               >
                 <Plus className="h-3.5 w-3.5" />
@@ -577,7 +566,7 @@ export function EnhancedProjectList() {
               <Button 
                 variant="outline" 
                 size="icon" 
-                className="h-7 w-7 ml-auto border-sidebar-border text-sidebar-foreground/70 hover:text-sidebar-foreground" 
+                className="h-7 w-7 ml-auto border-sidebar-border text-sidebar-foreground/70 hover:text-sidebar-foreground rounded-md"
               >
                 <Filter className="h-3.5 w-3.5" />
                 <span className="sr-only">Filter Projects</span>
@@ -587,7 +576,7 @@ export function EnhancedProjectList() {
           </Tooltip>
         </div>
         
-        <div className="space-y-1">
+        <div className="mb-2">
           <SidebarMenu>
             <SidebarMenuItem>
               <div className="sidebar-item-indicator" data-active={selectedProjectId === null} />
@@ -595,199 +584,196 @@ export function EnhancedProjectList() {
                 isActive={selectedProjectId === null}
                 onClick={() => handleSelectProject(null)}
                 className={cn(
-                  "group relative pl-6 transition-all",
+                  "group relative pl-6 transition-all sidebar-item-active:bg-muted/60 rounded-md font-semibold",
                   selectedProjectId === null && "sidebar-item-active"
                 )}
               >
                 <Layers className="w-4 h-4 mr-2" />
-                <span className="font-medium">All Projects</span>
+                <span className="font-semibold">All Projects</span>
                 {renderTaskStats('all')}
               </SidebarMenuButton>
               {renderProgressBar('all')}
             </SidebarMenuItem>
           </SidebarMenu>
-          
-          <SidebarSeparator className="my-2" />
-          
-          {/* Pinned Projects Section */}
-          {pinnedProjectItems.length > 0 && (
-            <Collapsible 
-              open={pinnedOpen} 
-              onOpenChange={setPinnedOpen}
-              className="space-y-1 mb-2"
-            >
-              <div className="flex items-center px-2">
-                <CollapsibleTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-6 px-1 py-1 gap-1 -ml-1 text-sidebar-foreground hover:text-sidebar-foreground hover:bg-transparent"
-                  >
-                    {pinnedOpen ? 
-                      <ChevronDown className="h-3.5 w-3.5 text-sidebar-foreground/70" /> : 
-                      <ChevronRight className="h-3.5 w-3.5 text-sidebar-foreground/70" />
-                    }
-                    <span className="text-xs font-semibold">Pinned</span>
-                  </Button>
-                </CollapsibleTrigger>
-                <Badge 
-                  variant="outline" 
-                  className="ml-auto h-5 text-[10px] font-normal py-0 px-1.5 border-sidebar-border"
-                >
-                  {pinnedProjectItems.length}
-                </Badge>
-              </div>
-              
-              <CollapsibleContent className="space-y-1">
-                <SidebarMenu className="pl-3">
-                  {pinnedProjectItems.map(project => 
-                    renderProjectItem(project, true)
-                  )}
-                </SidebarMenu>
-              </CollapsibleContent>
-            </Collapsible>
-          )}
-          
-          {/* Recent Projects Section */}
-          {recentProjectItems.length > 0 && (
-            <Collapsible 
-              open={recentOpen} 
-              onOpenChange={setRecentOpen}
-              className="space-y-1 mb-2"
-            >
-              <div className="flex items-center px-2">
-                <CollapsibleTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-6 px-1 py-1 gap-1 -ml-1 text-sidebar-foreground hover:text-sidebar-foreground hover:bg-transparent"
-                  >
-                    {recentOpen ? 
-                      <ChevronDown className="h-3.5 w-3.5 text-sidebar-foreground/70" /> : 
-                      <ChevronRight className="h-3.5 w-3.5 text-sidebar-foreground/70" />
-                    }
-                    <span className="text-xs font-semibold">Recent</span>
-                  </Button>
-                </CollapsibleTrigger>
-                <Badge 
-                  variant="outline" 
-                  className="ml-auto h-5 text-[10px] font-normal py-0 px-1.5 border-sidebar-border"
-                >
-                  {recentProjectItems.length}
-                </Badge>
-              </div>
-              
-              <CollapsibleContent className="space-y-1">
-                <SidebarMenu className="pl-3">
-                  {recentProjectItems.map(project => (
-                    <SidebarMenuItem key={project.id}>
-                      <div 
-                        className="sidebar-item-indicator" 
-                        data-active={selectedProjectId === project.id}
-                      />
-                      <SidebarMenuButton 
-                        isActive={selectedProjectId === project.id}
-                        onClick={() => handleSelectProject(project.id)}
-                        className={cn(
-                          "group relative pl-6 transition-all",
-                          selectedProjectId === project.id && "sidebar-item-active"
-                        )}
-                      >
-                        <div className="relative flex items-center">
-                          <div 
-                            className="absolute left-0 top-1/2 -ml-4 h-2 w-2 -translate-y-1/2 rounded-full" 
-                            style={{ backgroundColor: project.color }}
-                          />
-                          <Clock className="h-3.5 w-3.5 text-muted-foreground mr-2" />
-                          <span className="truncate max-w-[100px] inline-block">
-                            {project.name}
-                          </span>
-                        </div>
-                        {renderTaskStats(project.id)}
-                      </SidebarMenuButton>
-                      {renderProgressBar(project.id)}
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </CollapsibleContent>
-            </Collapsible>
-          )}
-          
-          {/* All Projects Section */}
+        </div>
+        
+        <SidebarSeparator className="my-2 bg-muted/60" />
+        
+        {pinnedProjectItems.length > 0 && (
           <Collapsible 
-            open={allProjectsOpen} 
-            onOpenChange={setAllProjectsOpen}
-            className="space-y-1"
+            open={pinnedOpen} 
+            onOpenChange={setPinnedOpen}
+            className="space-y-1 mb-2"
           >
             <div className="flex items-center px-2">
               <CollapsibleTrigger asChild>
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="h-6 px-1 py-1 gap-1 -ml-1 text-sidebar-foreground hover:text-sidebar-foreground hover:bg-transparent"
+                  className="h-6 px-1 py-1 gap-1 -ml-1 bg-soft-yellow/70 border border-yellow-100 rounded text-sidebar-foreground hover:bg-yellow-50 hover:text-sidebar-foreground"
                 >
-                  {allProjectsOpen ? 
+                  {pinnedOpen ? 
                     <ChevronDown className="h-3.5 w-3.5 text-sidebar-foreground/70" /> : 
                     <ChevronRight className="h-3.5 w-3.5 text-sidebar-foreground/70" />
                   }
-                  <span className="text-xs font-semibold">All Projects</span>
+                  <span className="text-xs font-semibold uppercase tracking-widest">Pinned</span>
                 </Button>
               </CollapsibleTrigger>
               <Badge 
                 variant="outline" 
-                className="ml-auto h-5 text-[10px] font-normal py-0 px-1.5 border-sidebar-border"
+                className="ml-auto h-5 text-[10px] font-normal py-0 px-1.5 border-sidebar-border bg-soft-yellow/50"
               >
-                {projects.length}
+                {pinnedProjectItems.length}
               </Badge>
             </div>
             
             <CollapsibleContent className="space-y-1">
-              {projects.length === 0 ? (
-                <div className="px-3 py-6 text-center">
-                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                    <FolderPlus className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                  <h3 className="text-sm font-medium">No projects</h3>
-                  <p className="text-xs text-muted-foreground mb-4">
-                    Create your first project to organize your tasks.
-                  </p>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="gap-1"
-                    onClick={() => setCreateDialogOpen(true)}
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    New Project
-                  </Button>
-                </div>
-              ) : (
-                <SidebarMenu className="pl-3">
-                  {/* Show other projects (not pinned or recent) */}
-                  {otherProjects.length > 0 ? (
-                    otherProjects.map(project => renderProjectItem(project))
-                  ) : (
-                    <div className="text-xs text-muted-foreground py-2 px-4">
-                      All your projects are in the Pinned or Recent sections above.
-                    </div>
-                  )}
-                  
-                  <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      onClick={() => setCreateDialogOpen(true)}
-                      className="text-sidebar-primary hover:text-sidebar-primary transition-all mt-1"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      <span className="font-medium">New Project</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              )}
+              <SidebarMenu className="pl-3">
+                {pinnedProjectItems.map(project => 
+                  renderProjectItem(project, true)
+                )}
+              </SidebarMenu>
             </CollapsibleContent>
           </Collapsible>
-        </div>
+        )}
         
-        {/* Project creation and editing dialogs */}
+        {recentProjectItems.length > 0 && (
+          <Collapsible 
+            open={recentOpen} 
+            onOpenChange={setRecentOpen}
+            className="space-y-1 mb-2"
+          >
+            <div className="flex items-center px-2">
+              <CollapsibleTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 px-1 py-1 gap-1 -ml-1 bg-soft-blue/60 border border-blue-100 rounded text-sidebar-foreground hover:bg-blue-50 hover:text-sidebar-foreground"
+                >
+                  {recentOpen ? 
+                    <ChevronDown className="h-3.5 w-3.5 text-sidebar-foreground/70" /> : 
+                    <ChevronRight className="h-3.5 w-3.5 text-sidebar-foreground/70" />
+                  }
+                  <span className="text-xs font-semibold uppercase tracking-widest">Recent</span>
+                </Button>
+              </CollapsibleTrigger>
+              <Badge 
+                variant="outline" 
+                className="ml-auto h-5 text-[10px] font-normal py-0 px-1.5 border-sidebar-border bg-soft-blue/40"
+              >
+                {recentProjectItems.length}
+              </Badge>
+            </div>
+            
+            <CollapsibleContent className="space-y-1">
+              <SidebarMenu className="pl-3">
+                {recentProjectItems.map(project => (
+                  <SidebarMenuItem key={project.id}>
+                    <div 
+                      className="sidebar-item-indicator" 
+                      data-active={selectedProjectId === project.id}
+                    />
+                    <SidebarMenuButton 
+                      isActive={selectedProjectId === project.id}
+                      onClick={() => handleSelectProject(project.id)}
+                      className={cn(
+                        "group relative pl-6 transition-all sidebar-item-active:bg-muted/40 rounded-md",
+                        selectedProjectId === project.id && "sidebar-item-active"
+                      )}
+                    >
+                      <div className="relative flex items-center">
+                        <div 
+                          className="absolute left-0 top-1/2 -ml-4 h-2 w-2 -translate-y-1/2 rounded-full" 
+                          style={{ backgroundColor: project.color }}
+                        />
+                        <Clock className="h-3.5 w-3.5 text-muted-foreground mr-2" />
+                        <span className="truncate max-w-[100px] inline-block">
+                          {project.name}
+                        </span>
+                      </div>
+                      {renderTaskStats(project.id)}
+                    </SidebarMenuButton>
+                    {renderProgressBar(project.id)}
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+        
+        <Collapsible 
+          open={allProjectsOpen} 
+          onOpenChange={setAllProjectsOpen}
+          className="space-y-1"
+        >
+          <div className="flex items-center px-2">
+            <CollapsibleTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-6 px-1 py-1 gap-1 -ml-1 dark:bg-soft-gray/30 bg-soft-gray/60 border border-gray-100 rounded text-sidebar-foreground hover:bg-gray-50 hover:text-sidebar-foreground"
+              >
+                {allProjectsOpen ? 
+                  <ChevronDown className="h-3.5 w-3.5 text-sidebar-foreground/70" /> : 
+                  <ChevronRight className="h-3.5 w-3.5 text-sidebar-foreground/70" />
+                }
+                <span className="text-xs font-semibold uppercase tracking-widest">All Projects</span>
+              </Button>
+            </CollapsibleTrigger>
+            <Badge 
+              variant="outline" 
+              className="ml-auto h-5 text-[10px] font-normal py-0 px-1.5 border-sidebar-border bg-soft-gray/40"
+            >
+              {projects.length}
+            </Badge>
+          </div>
+          
+          <CollapsibleContent className="space-y-1">
+            {projects.length === 0 ? (
+              <div className="px-3 py-6 text-center">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                  <FolderPlus className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <h3 className="text-sm font-medium">No projects</h3>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Create your first project to organize your tasks.
+                </p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-1"
+                  onClick={() => setCreateDialogOpen(true)}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  New Project
+                </Button>
+              </div>
+            ) : (
+              <SidebarMenu className="pl-3">
+                {otherProjects.length > 0 ? (
+                  otherProjects.map(project => renderProjectItem(project))
+                ) : (
+                  <div className="text-xs text-muted-foreground py-2 px-4">
+                    All your projects are in the Pinned or Recent sections above.
+                  </div>
+                )}
+                
+                <SidebarMenuItem>
+                  <SidebarMenuButton 
+                    onClick={() => setCreateDialogOpen(true)}
+                    className="text-sidebar-primary hover:text-sidebar-primary transition-all mt-1"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    <span className="font-medium">New Project</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            )}
+          </CollapsibleContent>
+        </Collapsible>
+        
+        <SidebarSeparator className="my-3 bg-muted/60 rounded" />
+        
         <ProjectDialog 
           open={createDialogOpen}
           onOpenChange={setCreateDialogOpen}
@@ -803,7 +789,6 @@ export function EnhancedProjectList() {
           />
         )}
         
-        {/* Project deletion confirmation dialog */}
         <AlertDialog 
           open={Boolean(projectToDelete)} 
           onOpenChange={(open) => {
