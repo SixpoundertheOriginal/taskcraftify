@@ -75,6 +75,9 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
   };
 
   const { completed, total } = countCompletedSubtasks(task);
+  
+  // Add this function that was missing
+  const finishExiting = () => setIsExiting(false);
 
   // Clean up timeout when component unmounts
   useEffect(() => {
