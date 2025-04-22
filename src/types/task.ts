@@ -1,3 +1,4 @@
+
 // Import necessary modules
 import { Database } from '@/integrations/supabase/types';
 import { parseISO } from 'date-fns';
@@ -17,6 +18,20 @@ export enum TaskPriority {
   MEDIUM = 'MEDIUM',
   HIGH = 'HIGH',
   URGENT = 'URGENT'
+}
+
+// Task attachment interface
+export interface TaskAttachment {
+  id: string;
+  taskId: string;
+  fileName: string;
+  originalName: string;
+  fileType: string;
+  fileSize: number;
+  storagePath: string;
+  thumbnailPath?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // Task interfaces
@@ -64,6 +79,7 @@ export interface UpdateTaskDTO {
   projectId?: string | null;
   taskGroupId?: string | null;
   position?: number;
+  _isRemoved?: boolean; // Add _isRemoved flag to UpdateTaskDTO
 }
 
 // API Task interface (from Supabase)

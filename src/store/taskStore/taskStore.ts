@@ -65,6 +65,7 @@ export const useTaskStore = create<TaskStore>()(
           return filterSlice.getFilteredTasks(tasks);
         },
         
+        // Use refreshTaskCounts from statsSlice without arguments
         refreshTaskCounts: statsSlice.refreshTaskCounts,
         
         setTaskStatus: async (taskId: string, status: string): Promise<void> => {

@@ -26,7 +26,8 @@ export const createStatsSlice: StateCreator<
       TODO: 0,
       IN_PROGRESS: 0,
       DONE: 0,
-      ARCHIVED: 0
+      ARCHIVED: 0,
+      BACKLOG: 0
     }
   },
   
@@ -34,11 +35,8 @@ export const createStatsSlice: StateCreator<
     console.log("Refreshing task counts");
     
     try {
-      // Calculate counts based on current tasks in the store
-      // Filter out tasks that have status DONE and are visually removed
-      const tasks = get().tasks.filter(task => 
-        !(task.status === TaskStatus.DONE && task._isRemoved)
-      );
+      // Calculate counts based on current tasks in the store, filtering out removed tasks
+      const tasks = get().tasks.filter(task => !task._isRemoved);
       
       console.log(`Calculating counts for ${tasks.length} visible tasks in store`);
       
