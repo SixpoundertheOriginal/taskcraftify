@@ -122,7 +122,8 @@ export default {
         'sidebar-dark': '0 0 10px rgba(0, 0, 0, 0.3)'
       },
       backgroundColor: {
-        'sidebar-hover': 'hsl(var(--sidebar-hover))'
+        'sidebar-hover': 'hsl(var(--sidebar-hover))',
+        'sidebar-primary': 'hsl(var(--sidebar-primary))'
       },
       textColor: {
         'muted-foreground': 'hsl(var(--muted-foreground) / <alpha-value>)',
