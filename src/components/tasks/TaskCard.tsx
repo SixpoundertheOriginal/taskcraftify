@@ -49,6 +49,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [task, setTask] = useState(initialTask);
   const [isExiting, setIsExiting] = useState(false);
+  const [lastClickTime, setLastClickTime] = useState(0);
 
   const {
     attributes,
@@ -74,11 +75,15 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
 
   const finishExiting = () => setIsExiting(false);
 
-  const handleMarkDoneToggle = (e: React.MouseEvent | React.MouseEvent<HTMLButtonElement, MouseEvent>, doubleClick: boolean = false) => {
+  const handleStatusClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (task.status === TaskStatus.ARCHIVED) return;
-
-    if (doubleClick && task.status === TaskStatus.DONE) {
+    
+    const currentTime = new Date().getTime();
+    const isDoubleClick = currentTime - lastClickTime < 300;
+    setLastClickTime(currentTime);
+    
+    if (isDoubleClick && task.status === TaskStatus.DONE) {
       setTask(prevTask => ({
         ...prevTask,
         status: TaskStatus.TODO
@@ -104,20 +109,20 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
         });
       return;
     }
-
+    
     let newStatus: TaskStatus;
-
+    
     if (task.status !== TaskStatus.DONE) {
       newStatus = TaskStatus.DONE;
     } else {
       newStatus = TaskStatus.TODO;
     }
-
+    
     setTask(prevTask => ({
       ...prevTask,
       status: newStatus
     }));
-
+    
     if (newStatus === TaskStatus.DONE) {
       setIsExiting(true);
       setTimeout(() => {
@@ -172,8 +177,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
         <Tooltip>
           <TooltipTrigger asChild>
             <button
-              onClick={(e) => handleMarkDoneToggle(e, false)}
-              onDoubleClick={(e) => handleMarkDoneToggle(e, true)}
+              onClick={handleStatusClick}
               className={cn(
                 "flex items-center justify-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-1",
                 "h-6 w-6 min-w-[1.5rem] min-h-[1.5rem] border-2 shadow-sm",
