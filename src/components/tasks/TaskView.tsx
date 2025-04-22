@@ -28,6 +28,7 @@ import { MyFocusView } from './MyFocusView';
 import { KanbanBoard } from './KanbanBoard';
 import { ViewToggle, ViewMode } from './ViewToggle';
 import { TaskGroups } from './TaskGroups';
+import { FilterIndicator } from './FilterIndicator';
 
 export function TaskView() {
   const { 
@@ -133,6 +134,42 @@ export function TaskView() {
     setSearchQuery('');
   };
   
+  const clearStatusFilter = () => {
+    const { status, ...restFilters } = filters;
+    setFilters(restFilters);
+  };
+  
+  const clearPriorityFilter = () => {
+    const { priority, ...restFilters } = filters;
+    setFilters(restFilters);
+  };
+  
+  const clearDateFilters = () => {
+    const { dueDateFrom, dueDateTo, ...restFilters } = filters;
+    setFilters(restFilters);
+  };
+  
+  const clearSearchFilter = () => {
+    setSearchQuery('');
+    const { searchQuery, ...restFilters } = filters;
+    setFilters(restFilters);
+  };
+  
+  const clearTagsFilter = () => {
+    const { tags, ...restFilters } = filters;
+    setFilters(restFilters);
+  };
+  
+  const allTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    tasks.forEach(task => {
+      if (task.tags) {
+        task.tags.forEach(tag => tagSet.add(tag));
+      }
+    });
+    return Array.from(tagSet);
+  }, [tasks]);
+  
   const hasActiveFilters = Object.keys(filters).some(key => 
     key !== 'searchQuery' || (key === 'searchQuery' && filters.searchQuery && filters.searchQuery.trim() !== '')
   );
@@ -179,6 +216,16 @@ export function TaskView() {
             />
           </div>
           <div className="flex items-center gap-2">
+            <FilterIndicator 
+              filters={filters}
+              onClearStatusFilter={clearStatusFilter}
+              onClearPriorityFilter={clearPriorityFilter}
+              onClearDateFilters={clearDateFilters}
+              onClearSearchFilter={clearSearchFilter}
+              onClearTagsFilter={clearTagsFilter}
+              onClearAllFilters={clearAllFilters}
+              allTags={allTags}
+            />
             <ViewToggle
               activeView={activeViewMode}
               onViewChange={handleViewModeChange}
@@ -187,129 +234,34 @@ export function TaskView() {
         </div>
       </div>
       
-      <div className="relative max-w-xs">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search tasks..."
-          className="pl-9 bg-background/60 backdrop-blur-sm border border-muted rounded-lg"
-          value={searchQuery}
-          onChange={handleSearchChange}
-        />
-      </div>
-      
-      {hasActiveFilters && (
-        <div className="flex flex-wrap gap-1 items-center">
-          <span className="text-xs text-muted-foreground">Active filters:</span>
-          
-          {filters.projectId && (
-            <Badge 
-              variant="outline" 
-              className="flex items-center gap-1 text-xs px-2 py-1 bg-soft-gray/70 border border-gray-200 rounded-full"
-              style={{ maxWidth: 160 }}
-              title={filters.projectId === 'none'
-                ? 'No Project'
-                : projects.find(p => p.id === filters.projectId)?.name || 'Unknown'
-              }
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search tasks..."
+            className="pl-9 bg-background/60 backdrop-blur-sm border border-muted rounded-lg"
+            value={searchQuery}
+            onChange={handleSearchChange}
+          />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1.5 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+              onClick={clearSearchFilter}
             >
-              Project: {filters.projectId === 'none'
-                ? <span className="truncate">No Project</span>
-                : <span className="truncate">{projects.find(p => p.id === filters.projectId)?.name || 'Unknown'}</span>}
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-4 w-4 p-0 ml-1 hover:bg-gray-100"
-                onClick={() => {
-                  const { projectId, ...rest } = filters;
-                  setFilters(rest);
-                }}
-              >
-                <FilterX className="h-2.5 w-2.5" />
-                <span className="sr-only">Clear project filter</span>
-              </Button>
-            </Badge>
+              <FilterX className="h-3.5 w-3.5" />
+              <span className="sr-only">Clear search</span>
+            </Button>
           )}
-          
-          {filters.status && (
-            <Badge 
-              variant="outline" 
-              className="flex items-center gap-1 text-xs px-2 py-1 bg-soft-gray border border-gray-200 rounded-full"
-              style={{ maxWidth: 160 }}
-            >
-              Status: <span className="truncate">{filters.status.map(s => TaskStatus[s]).join(', ')}</span>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-4 w-4 p-0 ml-1 hover:bg-gray-100"
-                onClick={() => {
-                  const { status, ...rest } = filters;
-                  setFilters(rest);
-                }}
-              >
-                <FilterX className="h-2.5 w-2.5" />
-                <span className="sr-only">Clear status filter</span>
-              </Button>
-            </Badge>
-          )}
-          
-          {filters.priority && (
-            <Badge 
-              variant="outline" 
-              className="flex items-center gap-1 text-xs px-2 py-1 bg-soft-peach/70 border border-gray-200 rounded-full"
-              style={{ maxWidth: 150 }}
-            >
-              Priority: <span className="truncate">{filters.priority.map(p => TaskPriority[p]).join(', ')}</span>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                className="h-4 w-4 p-0 ml-1 hover:bg-gray-100"
-                onClick={() => {
-                  const { priority, ...rest } = filters;
-                  setFilters(rest);
-                }}
-              >
-                <FilterX className="h-2.5 w-2.5" />
-                <span className="sr-only">Clear priority filter</span>
-              </Button>
-            </Badge>
-          )}
-          
-          {filters.searchQuery && (
-            <Badge 
-              variant="outline" 
-              className="flex items-center gap-1 text-xs px-2 py-1 bg-soft-blue/70 border border-gray-200 rounded-full"
-              style={{ maxWidth: 140 }}
-              title={filters.searchQuery}
-            >
-              Search:
-              <span className="truncate">{filters.searchQuery.length > 18
-                ? filters.searchQuery.slice(0, 16) + "…"
-                : filters.searchQuery}</span>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-4 w-4 p-0 ml-1 hover:bg-gray-100"
-                onClick={() => {
-                  setSearchQuery('');
-                  const { searchQuery, ...rest } = filters;
-                  setFilters(rest);
-                }}
-              >
-                <FilterX className="h-2.5 w-2.5" />
-                <span className="sr-only">Clear search filter</span>
-              </Button>
-            </Badge>
-          )}
-          
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="h-7 px-2 text-xs ml-2 opacity-80 hover:opacity-100" 
-            onClick={clearAllFilters}
-          >
-            Clear all
-          </Button>
         </div>
-      )}
+        
+        {hasActiveFilters && (
+          <div className="text-xs text-muted-foreground py-1 px-2 border border-dashed rounded-md">
+            Showing filtered results
+          </div>
+        )}
+      </div>
       
       <Tabs defaultValue="my-tasks" value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="w-full mb-4 bg-muted/50 backdrop-blur-sm">
