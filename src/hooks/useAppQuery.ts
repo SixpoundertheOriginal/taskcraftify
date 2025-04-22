@@ -39,29 +39,24 @@ export function useAppQuery<
     ...queryOptions
   } = options;
 
-  // Extract the original callbacks
+  // Extract the original callbacks for use later
   const originalOnSuccess = queryOptions.onSuccess;
   const originalOnError = queryOptions.onError;
 
-  // Remove callbacks from the options to avoid TypeScript errors
-  // as they're not supported directly in the options object
-  const {
-    onSuccess,
-    onError,
-    ...restOptions
-  } = queryOptions as any;
+  // Remove callbacks from options to handle properly with React Query v5
+  const updatedOptions = { ...queryOptions };
+  
+  // Clean up by deleting instead of destructuring to avoid TypeScript errors
+  delete updatedOptions.onSuccess;
+  delete updatedOptions.onError;
 
   const query = useQuery<TQueryFnData, TError, TData, TQueryKey>({
-    ...restOptions,
-    meta: {
-      ...restOptions.meta,
-    },
+    ...updatedOptions,
   });
 
   // Handle success case with toast if data is available
-  if (query.data && showSuccessToast && customSuccessMessage && !query.isPreviousData) {
-    // We need to use React's useEffect here, but for simplicity, we'll do a direct toast
-    // This isn't ideal, but will work for basic cases
+  if (query.data && showSuccessToast && customSuccessMessage && !query.isFetched) {
+    // Direct toast for simplicity
     toast({
       title: 'Success',
       description: customSuccessMessage,
