@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { format } from 'date-fns';
 import { 
@@ -80,30 +79,30 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     console.log(`Animation ended for task ${task.id}, status: ${task.status}, isExiting: ${isExiting}`);
     if (isExiting) {
       setIsExiting(false);
-      if (task.status === TaskStatus.DONE && !completeTimeoutRef.current) {
-        console.log(`Setting isRemoved to true for task ${task.id}`);
-        setIsRemoved(true);
-      }
+      setIsRemoved(true);
+      console.log(`Setting isRemoved to true for task ${task.id} after animation`);
     }
   };
 
   useEffect(() => {
     if (initialTask.id === task.id) {
+      console.log(`initialTask updated for ${initialTask.id}, status: ${initialTask.status}, current status: ${task.status}`);
+      
       setTask(initialTask);
       
-      if (initialTask.status !== TaskStatus.DONE) {
-        console.log(`Task ${initialTask.id} is not done anymore, resetting states`);
+      if (initialTask.status === TaskStatus.DONE) {
+        if (!isExiting && !isRemoved && !completeTimeoutRef.current) {
+          console.log(`Task ${initialTask.id} has DONE status from props but no animation yet`);
+          setIsExiting(true);
+        }
+      } else {
+        console.log(`Task ${initialTask.id} is not DONE anymore, resetting states`);
         setIsExiting(false);
         setIsRemoved(false);
         if (completeTimeoutRef.current) {
           clearTimeout(completeTimeoutRef.current);
           completeTimeoutRef.current = null;
         }
-      }
-      
-      if (initialTask.status === TaskStatus.DONE && !isExiting && !isRemoved && !completeTimeoutRef.current) {
-        console.log(`Task ${initialTask.id} is done from initialTask, setting isRemoved`);
-        setIsRemoved(true);
       }
     }
   }, [initialTask]);
@@ -175,10 +174,6 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
               variant: "default"
             });
             completeTimeoutRef.current = null;
-            if (isExiting) {
-              console.log(`API update successful, setting isRemoved=true for ${task.id}`);
-              setIsRemoved(true);
-            }
           })
           .catch(() => {
             setTask(prevTask => ({ ...prevTask, status: TaskStatus.TODO }));
@@ -311,9 +306,9 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     );
   };
 
-  // Fix for the TypeScript error on line 314
-  if ((task.status === TaskStatus.DONE && isRemoved && !completeTimeoutRef.current) || 
-      (initialTask.status === TaskStatus.DONE && !completeTimeoutRef.current && !isExiting && task.status === TaskStatus.DONE)) {
+  const shouldHideTask = task.status === TaskStatus.DONE && isRemoved;
+  
+  if (shouldHideTask) {
     console.log(`Not rendering task ${task.id} as it's done and removed`);
     return null;
   }
