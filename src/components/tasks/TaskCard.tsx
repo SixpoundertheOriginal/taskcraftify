@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { format } from 'date-fns';
 import { 
@@ -78,24 +79,29 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
   const finishExiting = () => {
     console.log(`Animation ended for task ${task.id}, status: ${task.status}, isExiting: ${isExiting}`);
     if (isExiting) {
+      // Simply mark as removed when the animation completes
       setIsExiting(false);
       setIsRemoved(true);
-      console.log(`Setting isRemoved to true for task ${task.id} after animation`);
+      console.log(`Task ${task.id} animation complete, marked as removed`);
     }
   };
 
+  // Synchronize with initialTask prop changes
   useEffect(() => {
     if (initialTask.id === task.id) {
-      console.log(`initialTask updated for ${initialTask.id}, status: ${initialTask.status}, current status: ${task.status}`);
-      
+      // Always update the task state with the latest from props
+      console.log(`Task ${initialTask.id} updated from props, status: ${initialTask.status}`);
       setTask(initialTask);
       
+      // Handle DONE status specifically
       if (initialTask.status === TaskStatus.DONE) {
         if (!isExiting && !isRemoved && !completeTimeoutRef.current) {
-          console.log(`Task ${initialTask.id} has DONE status from props but no animation yet`);
+          // Initiate exit animation for newly completed tasks
+          console.log(`Task ${initialTask.id} is now DONE, starting exit animation`);
           setIsExiting(true);
         }
       } else {
+        // Reset states when a task is no longer DONE
         console.log(`Task ${initialTask.id} is not DONE anymore, resetting states`);
         setIsExiting(false);
         setIsRemoved(false);
@@ -107,6 +113,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     }
   }, [initialTask]);
   
+  // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
       if (completeTimeoutRef.current) {
@@ -123,6 +130,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     const isDoubleClick = currentTime - lastClickTime < 350;
     setLastClickTime(currentTime);
 
+    // Handle double-click to undo completion
     if ((isDoubleClick || isExiting) && task.status === TaskStatus.DONE) {
       if (completeTimeoutRef.current) {
         clearTimeout(completeTimeoutRef.current);
@@ -155,8 +163,11 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
       return;
     }
 
+    // Handle marking a task as done
     if (task.status !== TaskStatus.DONE) {
       console.log(`Marking task ${task.id} as done`);
+      
+      // Update local state immediately for UI feedback
       setTask(prevTask => ({
         ...prevTask,
         status: TaskStatus.DONE
@@ -164,6 +175,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
       setIsExiting(true);
       setIsRemoved(false);
 
+      // Delay the API call until animation completes
       completeTimeoutRef.current = setTimeout(() => {
         console.log(`Timeout completed for task ${task.id}, sending API update`);
         updateTask({ id: task.id, status: TaskStatus.DONE })
@@ -174,8 +186,10 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
               variant: "default"
             });
             completeTimeoutRef.current = null;
+            // We don't need to set isRemoved here anymore - the animation finishExiting handler will do that
           })
           .catch(() => {
+            // Revert state on error
             setTask(prevTask => ({ ...prevTask, status: TaskStatus.TODO }));
             setIsExiting(false);
             setIsRemoved(false);
@@ -190,6 +204,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
       return;
     }
 
+    // Handle reopening a done task
     if (task.status === TaskStatus.DONE && !completeTimeoutRef.current) {
       console.log(`Reopening already-done task ${task.id}`);
       setIsRemoved(false);
@@ -306,10 +321,11 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     );
   };
 
+  // Simplified visibility logic - a task should be hidden if it's both DONE and removed
   const shouldHideTask = task.status === TaskStatus.DONE && isRemoved;
   
   if (shouldHideTask) {
-    console.log(`Not rendering task ${task.id} as it's done and removed`);
+    console.log(`Task ${task.id} is hidden because it's done and removed`);
     return null;
   }
 
