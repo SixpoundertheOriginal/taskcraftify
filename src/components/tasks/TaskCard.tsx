@@ -249,9 +249,9 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
         {...attributes}
         {...listeners}
         className={cn(
-          "group relative flex flex-col bg-card rounded-md border shadow-sm transition-all cursor-pointer",
-          "hover:shadow-md hover:bg-muted/20 hover:border-primary/30",
-          task.status === TaskStatus.DONE && "opacity-80 bg-muted/40",
+          "group relative flex flex-col rounded-md border shadow-sm transition-all cursor-pointer",
+          "hover:shadow-md",
+          "bg-[hsl(var(--card))] text-card-foreground",
           isDragging && "shadow-lg z-50 opacity-90",
           className,
           isExiting && "animate-fade-slide-out"

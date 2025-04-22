@@ -1,3 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import './styles/theme.css';
+@import './styles/base.css';
+@import './styles/utilities.css';
+
+/* Add Inter font */
+@import url('https://rsms.me/inter/inter.css');
 
 @layer base {
   * {
@@ -16,6 +26,8 @@
     background-size: cover;
     transition: background-color 0.3s ease, color 0.3s ease;
   }
+
+  /* Only light mode now! No .dark rules */
   /* Card/component glass effect */
   .card-gradient {
     @apply bg-white/5 dark:bg-black/30 backdrop-blur-xl border border-white/10 shadow-lg transition-shadow;
