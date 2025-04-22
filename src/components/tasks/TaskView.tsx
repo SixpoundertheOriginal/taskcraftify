@@ -189,18 +189,26 @@ export function TaskView() {
       </div>
       
       {hasActiveFilters && (
-        <div className="flex flex-wrap gap-2 items-center">
+        <div className="flex flex-wrap gap-1 items-center">
           <span className="text-xs text-muted-foreground">Active filters:</span>
           
           {filters.projectId && (
-            <Badge variant="outline" className="flex items-center gap-1 bg-purple-50 text-purple-700">
-              Project: {filters.projectId === 'none' 
-                ? 'No Project' 
-                : projects.find(p => p.id === filters.projectId)?.name || 'Unknown'}
+            <Badge 
+              variant="outline" 
+              className="flex items-center gap-1 text-xs px-2 py-1 bg-soft-gray/70 border border-gray-200 rounded-full"
+              style={{ maxWidth: 160 }}
+              title={filters.projectId === 'none'
+                ? 'No Project'
+                : projects.find(p => p.id === filters.projectId)?.name || 'Unknown'
+              }
+            >
+              Project: {filters.projectId === 'none'
+                ? <span className="truncate">No Project</span>
+                : <span className="truncate">{projects.find(p => p.id === filters.projectId)?.name || 'Unknown'}</span>}
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-4 w-4 p-0 ml-1 hover:bg-purple-100" 
+                className="h-4 w-4 p-0 ml-1 hover:bg-gray-100"
                 onClick={() => {
                   const { projectId, ...rest } = filters;
                   setFilters(rest);
@@ -213,12 +221,16 @@ export function TaskView() {
           )}
           
           {filters.status && (
-            <Badge variant="outline" className="flex items-center gap-1 bg-blue-50 text-blue-700">
-              Status: {filters.status.map(s => TaskStatus[s]).join(', ')}
+            <Badge 
+              variant="outline" 
+              className="flex items-center gap-1 text-xs px-2 py-1 bg-soft-gray border border-gray-200 rounded-full"
+              style={{ maxWidth: 160 }}
+            >
+              Status: <span className="truncate">{filters.status.map(s => TaskStatus[s]).join(', ')}</span>
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-4 w-4 p-0 ml-1 hover:bg-blue-100" 
+                className="h-4 w-4 p-0 ml-1 hover:bg-gray-100"
                 onClick={() => {
                   const { status, ...rest } = filters;
                   setFilters(rest);
@@ -231,12 +243,16 @@ export function TaskView() {
           )}
           
           {filters.priority && (
-            <Badge variant="outline" className="flex items-center gap-1 bg-orange-50 text-orange-700">
-              Priority: {filters.priority.map(p => TaskPriority[p]).join(', ')}
+            <Badge 
+              variant="outline" 
+              className="flex items-center gap-1 text-xs px-2 py-1 bg-soft-peach/70 border border-gray-200 rounded-full"
+              style={{ maxWidth: 150 }}
+            >
+              Priority: <span className="truncate">{filters.priority.map(p => TaskPriority[p]).join(', ')}</span>
               <Button 
                 variant="ghost" 
-                size="icon" 
-                className="h-4 w-4 p-0 ml-1 hover:bg-orange-100" 
+                size="icon"
+                className="h-4 w-4 p-0 ml-1 hover:bg-gray-100"
                 onClick={() => {
                   const { priority, ...rest } = filters;
                   setFilters(rest);
@@ -249,12 +265,20 @@ export function TaskView() {
           )}
           
           {filters.searchQuery && (
-            <Badge variant="outline" className="flex items-center gap-1 bg-slate-50 text-slate-700">
-              Search: {filters.searchQuery}
+            <Badge 
+              variant="outline" 
+              className="flex items-center gap-1 text-xs px-2 py-1 bg-soft-blue/70 border border-gray-200 rounded-full"
+              style={{ maxWidth: 140 }}
+              title={filters.searchQuery}
+            >
+              Search:
+              <span className="truncate">{filters.searchQuery.length > 18
+                ? filters.searchQuery.slice(0, 16) + "…"
+                : filters.searchQuery}</span>
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-4 w-4 p-0 ml-1 hover:bg-slate-100" 
+                className="h-4 w-4 p-0 ml-1 hover:bg-gray-100"
                 onClick={() => {
                   setSearchQuery('');
                   const { searchQuery, ...rest } = filters;
@@ -270,7 +294,7 @@ export function TaskView() {
           <Button 
             variant="ghost" 
             size="sm" 
-            className="h-7 px-2 text-xs ml-auto" 
+            className="h-7 px-2 text-xs ml-2 opacity-80 hover:opacity-100" 
             onClick={clearAllFilters}
           >
             Clear all
