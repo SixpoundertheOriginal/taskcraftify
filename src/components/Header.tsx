@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, User, AlertCircle, Bug } from 'lucide-react';
@@ -26,12 +25,10 @@ export function Header() {
     error
   } = useTaskStore();
   
-  // On component mount, fetch tasks and set up subscription
   useEffect(() => {
     if (user) {
       console.log("[Header] Component mounted, setting up tasks");
       
-      // Set up the task subscription which handles both initial load and real-time updates
       const unsubscribe = setupTaskSubscription();
       
       return () => {
@@ -41,7 +38,6 @@ export function Header() {
     }
   }, [setupTaskSubscription, user]);
   
-  // Watch for errors and update local state
   useEffect(() => {
     if (error) {
       setLoadError(typeof error === 'string' ? error : 'Failed to load tasks');
@@ -50,16 +46,13 @@ export function Header() {
     }
   }, [error]);
   
-  // Calculate task statistics for the welcome message
   const taskStats = getTasksCountByStatus();
   const overdueTasks = getOverdueTasks();
   const hasTasks = tasks.length > 0;
   
-  // Get user's email and extract name
   const userEmail = user?.email || '';
   const userName = userEmail ? userEmail.split('@')[0] : 'there';
   
-  // Format name - capitalize first letter of each word
   const formattedName = userName
     .split(/[._-]/)
     .map(part => part.charAt(0).toUpperCase() + part.slice(1))
