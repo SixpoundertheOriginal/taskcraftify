@@ -78,10 +78,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     e.stopPropagation();
     if (task.status === TaskStatus.ARCHIVED) return;
 
-    if (
-      doubleClick &&
-      task.status === TaskStatus.DONE
-    ) {
+    if (doubleClick && task.status === TaskStatus.DONE) {
       setTask(prevTask => ({
         ...prevTask,
         status: TaskStatus.TODO
@@ -113,7 +110,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     if (task.status !== TaskStatus.DONE) {
       newStatus = TaskStatus.DONE;
     } else {
-      return;
+      newStatus = TaskStatus.TODO;
     }
 
     setTask(prevTask => ({
@@ -121,29 +118,37 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
       status: newStatus
     }));
 
-    setIsExiting(true);
-    setTimeout(() => {
-      updateTask({ id: task.id, status: newStatus })
-        .then(() => {
-          toast({
-            title: "Task completed",
-            description: `"${task.title}" has been marked as done`,
-            variant: "default"
-          });
-        })
-        .catch(() => {
-          setTask(prevTask => ({
-            ...prevTask,
-            status: TaskStatus.TODO
-          }));
-          setIsExiting(false);
-          toast({
-            title: "Status update failed",
-            description: "Failed to update task status. Please try again.",
-            variant: "destructive"
-          });
+    if (newStatus === TaskStatus.DONE) {
+      setIsExiting(true);
+      setTimeout(() => {
+        updateTaskStatus(newStatus);
+      }, EXIT_ANIMATION_DURATION);
+    } else {
+      updateTaskStatus(newStatus);
+    }
+  };
+
+  const updateTaskStatus = (newStatus: TaskStatus) => {
+    updateTask({ id: task.id, status: newStatus })
+      .then(() => {
+        toast({
+          title: newStatus === TaskStatus.DONE ? "Task completed" : "Task reopened",
+          description: `"${task.title}" has been marked as ${newStatus === TaskStatus.DONE ? 'done' : 'to do'}`,
+          variant: "default"
         });
-    }, EXIT_ANIMATION_DURATION);
+      })
+      .catch(() => {
+        setTask(prevTask => ({
+          ...prevTask,
+          status: prevTask.status === TaskStatus.DONE ? TaskStatus.TODO : TaskStatus.DONE
+        }));
+        setIsExiting(false);
+        toast({
+          title: "Status update failed",
+          description: "Failed to update task status. Please try again.",
+          variant: "destructive"
+        });
+      });
   };
 
   const projectName = task.projectId 
@@ -420,7 +425,8 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
         onOpenChange={setIsTaskFormOpen}
         initialTask={task}
       />
-      <style>{`
+      <style>
+        {`
         @keyframes fade-slide-out {
           0% {
             opacity: 1;
@@ -438,7 +444,8 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
         .animate-fade-slide-out {
           animation: fade-slide-out ${EXIT_ANIMATION_DURATION}ms cubic-bezier(0.4,0,0.2,1);
         }
-      `}</style>
+        `}
+      </style>
     </>
   );
 }
