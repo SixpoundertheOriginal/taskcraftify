@@ -33,6 +33,7 @@ import { useTaskStore } from '@/store';
 import { useProjectStore } from '@/store';
 import { TaskForm } from '@/components/tasks/TaskForm';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { toast } from '@/hooks/use-toast';
 
 export interface TaskCardProps {
   task: Task;
@@ -40,11 +41,12 @@ export interface TaskCardProps {
   className?: string;
 }
 
-export function TaskCard({ task, compact = false, className }: TaskCardProps) {
+export function TaskCard({ task: initialTask, compact = false, className }: TaskCardProps) {
   const { updateTask, deleteTask } = useTaskStore();
   const { projects } = useProjectStore();
   const [isExpanded, setIsExpanded] = useState(true);
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
+  const [task, setTask] = useState(initialTask);
 
   // useSortable hook gives us the drag and drop functionality
   const {
@@ -83,9 +85,35 @@ export function TaskCard({ task, compact = false, className }: TaskCardProps) {
       newStatus = TaskStatus.TODO;
     }
 
+    // Optimistically update the UI immediately
+    setTask(prevTask => ({
+      ...prevTask,
+      status: newStatus
+    }));
+
+    // Then update the database
     updateTask({ id: task.id, status: newStatus })
-      .then(() => console.log(`Task ${task.id} status updated to ${newStatus}`))
-      .catch(error => console.error("Error updating task status:", error));
+      .then(() => {
+        console.log(`Task ${task.id} status updated to ${newStatus}`);
+        toast({
+          title: newStatus === TaskStatus.DONE ? "Task completed" : "Task reopened",
+          description: `"${task.title}" has been ${newStatus === TaskStatus.DONE ? "marked as done" : "moved back to todo"}`,
+          variant: newStatus === TaskStatus.DONE ? "default" : "destructive"
+        });
+      })
+      .catch(error => {
+        console.error("Error updating task status:", error);
+        // Revert optimistic update if there's an error
+        setTask(prevTask => ({
+          ...prevTask,
+          status: prevTask.status === TaskStatus.DONE ? TaskStatus.TODO : TaskStatus.DONE
+        }));
+        toast({
+          title: "Status update failed",
+          description: "Failed to update task status. Please try again.",
+          variant: "destructive"
+        });
+      });
   };
 
   // Get the project name for this task
@@ -258,16 +286,40 @@ export function TaskCard({ task, compact = false, className }: TaskCardProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
-                <DropdownMenuItem onClick={() => updateTask({ id: task.id, status: TaskStatus.TODO })}>
+                <DropdownMenuItem onClick={() => {
+                  setTask(prevTask => ({
+                    ...prevTask,
+                    status: TaskStatus.TODO
+                  }));
+                  updateTask({ id: task.id, status: TaskStatus.TODO });
+                }}>
                   Mark as To Do
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => updateTask({ id: task.id, status: TaskStatus.IN_PROGRESS })}>
+                <DropdownMenuItem onClick={() => {
+                  setTask(prevTask => ({
+                    ...prevTask,
+                    status: TaskStatus.IN_PROGRESS
+                  }));
+                  updateTask({ id: task.id, status: TaskStatus.IN_PROGRESS });
+                }}>
                   Mark as In Progress
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => updateTask({ id: task.id, status: TaskStatus.DONE })}>
+                <DropdownMenuItem onClick={() => {
+                  setTask(prevTask => ({
+                    ...prevTask,
+                    status: TaskStatus.DONE
+                  }));
+                  updateTask({ id: task.id, status: TaskStatus.DONE });
+                }}>
                   Mark as Done
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => updateTask({ id: task.id, status: TaskStatus.ARCHIVED })}>
+                <DropdownMenuItem onClick={() => {
+                  setTask(prevTask => ({
+                    ...prevTask,
+                    status: TaskStatus.ARCHIVED
+                  }));
+                  updateTask({ id: task.id, status: TaskStatus.ARCHIVED });
+                }}>
                   Archive
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
