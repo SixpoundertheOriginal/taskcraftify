@@ -70,6 +70,10 @@ export function ThemeProvider({
     // Force re-render of styled components by applying a data attribute
     root.setAttribute('data-theme', appliedTheme);
     
+    // Log debug info to help troubleshoot theme issues
+    console.log(`Theme applied: ${appliedTheme}, Theme selected: ${theme}`);
+    console.log(`HTML classes: ${root.className}`);
+    
   }, [theme]);
 
   // Listen for system theme changes
@@ -86,6 +90,9 @@ export function ThemeProvider({
       root.classList.add(newResolvedTheme);
       root.setAttribute('data-theme', newResolvedTheme);
       setResolvedTheme(newResolvedTheme);
+      
+      // Log debug info for system theme changes
+      console.log(`System theme changed to: ${newResolvedTheme}`);
     };
     
     // Initial call to set correct class
@@ -105,6 +112,7 @@ export function ThemeProvider({
   const value = {
     theme,
     setTheme: (theme: Theme) => {
+      console.log(`Setting theme to: ${theme}`);
       setTheme(theme);
     },
     resolvedTheme,
