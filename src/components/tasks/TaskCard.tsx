@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { format } from 'date-fns';
 import { 
   Check,
@@ -50,6 +50,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
   const [task, setTask] = useState(initialTask);
   const [isExiting, setIsExiting] = useState(false);
   const [lastClickTime, setLastClickTime] = useState(0);
+  const completeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
     attributes,
@@ -75,61 +76,61 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
 
   const finishExiting = () => setIsExiting(false);
 
+  useEffect(() => {
+    return () => {
+      if (completeTimeoutRef.current) {
+        clearTimeout(completeTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleStatusClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (task.status === TaskStatus.ARCHIVED) return;
-    
+
     const currentTime = new Date().getTime();
-    const isDoubleClick = currentTime - lastClickTime < 300;
+    const isDoubleClick = currentTime - lastClickTime < 350;
     setLastClickTime(currentTime);
-    
-    if (isDoubleClick && task.status === TaskStatus.DONE) {
-      setTask(prevTask => ({
-        ...prevTask,
-        status: TaskStatus.TODO
-      }));
-      updateTask({ id: task.id, status: TaskStatus.TODO })
-        .then(() => {
-          toast({
-            title: "Task restored",
-            description: `"${task.title}" moved back to todo.`,
-            variant: "default"
-          });
-        })
-        .catch(() => {
-          setTask(prevTask => ({
-            ...prevTask,
-            status: TaskStatus.DONE
-          }));
-          toast({
-            title: "Restore failed",
-            description: "Failed to restore task. Please try again.",
-            variant: "destructive"
-          });
-        });
+
+    if (
+      isDoubleClick &&
+      task.status === TaskStatus.DONE &&
+      completeTimeoutRef.current
+    ) {
+      clearTimeout(completeTimeoutRef.current);
+      completeTimeoutRef.current = null;
+      setTask(prevTask => ({ ...prevTask, status: TaskStatus.TODO }));
+      toast({
+        title: "Task restored",
+        description: `"${task.title}" moved back to todo.`,
+        variant: "default"
+      });
       return;
     }
-    
-    let newStatus: TaskStatus;
-    
+
     if (task.status !== TaskStatus.DONE) {
-      newStatus = TaskStatus.DONE;
-    } else {
-      newStatus = TaskStatus.TODO;
-    }
-    
-    setTask(prevTask => ({
-      ...prevTask,
-      status: newStatus
-    }));
-    
-    if (newStatus === TaskStatus.DONE) {
+      setTask(prevTask => ({
+        ...prevTask,
+        status: TaskStatus.DONE
+      }));
       setIsExiting(true);
-      setTimeout(() => {
-        updateTaskStatus(newStatus);
-      }, EXIT_ANIMATION_DURATION);
-    } else {
-      updateTaskStatus(newStatus);
+
+      completeTimeoutRef.current = setTimeout(() => {
+        updateTaskStatus(TaskStatus.DONE);
+        completeTimeoutRef.current = null;
+      }, 3000);
+      return;
+    }
+
+    if (task.status === TaskStatus.DONE) {
+      if (!completeTimeoutRef.current) {
+        setTask(prevTask => ({
+          ...prevTask,
+          status: TaskStatus.TODO
+        }));
+        updateTaskStatus(TaskStatus.TODO);
+      }
+      return;
     }
   };
 
@@ -141,6 +142,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
           description: `"${task.title}" has been marked as ${newStatus === TaskStatus.DONE ? 'done' : 'to do'}`,
           variant: "default"
         });
+        setIsExiting(false);
       })
       .catch(() => {
         setTask(prevTask => ({
@@ -186,7 +188,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
                   : "bg-white border-gray-300 text-[#8E9196] hover:border-[#9b87f5] hover:bg-purple-50",
                 task.status === TaskStatus.ARCHIVED && "opacity-40 cursor-not-allowed"
               )}
-              aria-label={isDone ? "Mark as not done" : "Mark as done"}
+              aria-label={isDone ? (completeTimeoutRef.current ? "Double click to undo" : "Mark as not done") : "Mark as done"}
               disabled={task.status === TaskStatus.ARCHIVED}
               tabIndex={0}
               type="button"
@@ -199,9 +201,11 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
             </button>
           </TooltipTrigger>
           <TooltipContent side="right">
-            {isDone
-              ? "Double click to restore"
-              : "Click to mark as done"}
+            {task.status === TaskStatus.DONE && completeTimeoutRef.current
+              ? "Double click to undo completion"
+              : isDone
+                ? "Click to mark as not done"
+                : "Click to mark as done"}
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
