@@ -76,9 +76,11 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
   const { completed, total } = countCompletedSubtasks(task);
   
   const finishExiting = () => {
+    console.log(`Animation ended for task ${task.id}, status: ${task.status}, isExiting: ${isExiting}`);
     if (isExiting) {
       setIsExiting(false);
       if (task.status === TaskStatus.DONE && !completeTimeoutRef.current) {
+        console.log(`Setting isRemoved to true for task ${task.id}`);
         setIsRemoved(true);
       }
     }
@@ -89,12 +91,18 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
       setTask(initialTask);
       
       if (initialTask.status !== TaskStatus.DONE) {
+        console.log(`Task ${initialTask.id} is not done anymore, resetting states`);
         setIsExiting(false);
         setIsRemoved(false);
         if (completeTimeoutRef.current) {
           clearTimeout(completeTimeoutRef.current);
           completeTimeoutRef.current = null;
         }
+      }
+      
+      if (initialTask.status === TaskStatus.DONE && !isExiting && !isRemoved && !completeTimeoutRef.current) {
+        console.log(`Task ${initialTask.id} is done from initialTask, setting isRemoved`);
+        setIsRemoved(true);
       }
     }
   }, [initialTask]);
@@ -121,6 +129,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
         completeTimeoutRef.current = null;
       }
       
+      console.log(`Undoing completion for task ${task.id}`);
       setTask(prevTask => ({ ...prevTask, status: TaskStatus.TODO }));
       setIsExiting(false);
       setIsRemoved(false);
@@ -147,6 +156,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     }
 
     if (task.status !== TaskStatus.DONE) {
+      console.log(`Marking task ${task.id} as done`);
       setTask(prevTask => ({
         ...prevTask,
         status: TaskStatus.DONE
@@ -155,6 +165,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
       setIsRemoved(false);
 
       completeTimeoutRef.current = setTimeout(() => {
+        console.log(`Timeout completed for task ${task.id}, sending API update`);
         updateTask({ id: task.id, status: TaskStatus.DONE })
           .then(() => {
             toast({
@@ -164,6 +175,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
             });
             completeTimeoutRef.current = null;
             if (isExiting) {
+              console.log(`API update successful, setting isRemoved=true for ${task.id}`);
               setIsRemoved(true);
             }
           })
@@ -183,6 +195,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     }
 
     if (task.status === TaskStatus.DONE && !completeTimeoutRef.current) {
+      console.log(`Reopening already-done task ${task.id}`);
       setIsRemoved(false);
       setTask(prevTask => ({
         ...prevTask,
@@ -298,10 +311,13 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
   };
 
   if ((task.status === TaskStatus.DONE && isRemoved && !completeTimeoutRef.current) || 
-      (initialTask.status === TaskStatus.DONE && !completeTimeoutRef.current && !isExiting)) {
+      (initialTask.status === TaskStatus.DONE && !completeTimeoutRef.current && !isExiting && !task.status !== TaskStatus.TODO)) {
+    console.log(`Not rendering task ${task.id} as it's done and removed`);
     return null;
   }
 
+  console.log(`Rendering task ${task.id}, status: ${task.status}, isRemoved: ${isRemoved}, isExiting: ${isExiting}`);
+  
   return (
     <>
       <div 
@@ -381,6 +397,8 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
                     ...prevTask,
                     status: TaskStatus.TODO
                   }));
+                  setIsExiting(false);
+                  setIsRemoved(false);
                   updateTask({ id: task.id, status: TaskStatus.TODO });
                 }}>
                   Mark as To Do
@@ -390,6 +408,8 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
                     ...prevTask,
                     status: TaskStatus.IN_PROGRESS
                   }));
+                  setIsExiting(false);
+                  setIsRemoved(false);
                   updateTask({ id: task.id, status: TaskStatus.IN_PROGRESS });
                 }}>
                   Mark as In Progress
@@ -399,6 +419,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
                     ...prevTask,
                     status: TaskStatus.DONE
                   }));
+                  setIsExiting(true);
                   updateTask({ id: task.id, status: TaskStatus.DONE });
                 }}>
                   Mark as Done
