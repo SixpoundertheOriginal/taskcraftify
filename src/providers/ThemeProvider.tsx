@@ -16,86 +16,82 @@ type ThemeProviderState = {
 };
 
 const initialState: ThemeProviderState = {
-  theme: 'dark', // Set initial state to dark
+  theme: 'system',
   setTheme: () => null,
-  resolvedTheme: 'dark', // Set default resolved theme to dark
+  resolvedTheme: 'dark',
 };
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
+function getSystemTheme(): 'dark' | 'light' {
+  if (typeof window !== 'undefined' && window.matchMedia) {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  return 'dark';
+}
+
 export function ThemeProvider({
   children,
-  defaultTheme = 'dark', // Change default to dark
+  defaultTheme = 'system',
   storageKey = 'taskcraft-theme',
   ...props
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(
+  const [theme, setThemeState] = useState<Theme>(
     () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
   );
-  
-  const [resolvedTheme, setResolvedTheme] = useState<'dark' | 'light'>(
-    () => 'dark' // Always initialize as dark
-  );
 
-  // Force apply the dark theme to the document on mount
+  const [resolvedTheme, setResolvedTheme] = useState<'dark' | 'light'>(() => {
+    if ((localStorage.getItem(storageKey) as Theme) === 'system' || !localStorage.getItem(storageKey)) {
+      return getSystemTheme();
+    }
+    return (localStorage.getItem(storageKey) as Theme) === 'dark' ? 'dark' : 'light';
+  });
+
+  // Update theme classes on mount and whenever theme changes
   useEffect(() => {
     const root = window.document.documentElement;
-    
-    // Remove any existing theme classes first
-    root.classList.remove('light', 'dark');
-    
-    // Add dark class
-    root.classList.add('dark');
-    
-    // Update the data attribute for components that reference the theme
-    root.setAttribute('data-theme', 'dark');
-    
-    // Update our state
-    setResolvedTheme('dark');
-    setTheme('dark');
-    
-    // Store the theme preference
-    localStorage.setItem(storageKey, 'dark');
-    
-    console.log(`Theme enforced: dark`);
-    console.log(`HTML classes: ${root.className}`);
-  }, []);
+    let appliedTheme: 'dark' | 'light';
+    if (theme === 'system') {
+      appliedTheme = getSystemTheme();
+    } else {
+      appliedTheme = theme;
+    }
 
-  // Create a MutationObserver to ensure dark mode stays applied
+    // Remove both classes first, then add the resolved class
+    root.classList.remove('dark', 'light');
+    root.classList.add(appliedTheme);
+
+    root.setAttribute('data-theme', appliedTheme);
+
+    setResolvedTheme(appliedTheme);
+    localStorage.setItem(storageKey, theme);
+  }, [theme, storageKey]);
+
+  // Listen to system changes if theme is "system"
   useEffect(() => {
-    const root = window.document.documentElement;
-    
-    // Create a MutationObserver to monitor class changes on the HTML element
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.attributeName === 'class' && !root.classList.contains('dark')) {
-          console.log('Dark class was removed, adding it back');
-          root.classList.add('dark');
-        }
-      });
-    });
-    
-    // Start observing the HTML element for class changes
-    observer.observe(root, { attributes: true });
-    
-    // Cleanup function
-    return () => {
-      observer.disconnect();
+    if (theme !== 'system') return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = () => {
+      const sysTheme = getSystemTheme();
+      const root = window.document.documentElement;
+      root.classList.remove('dark', 'light');
+      root.classList.add(sysTheme);
+      root.setAttribute('data-theme', sysTheme);
+      setResolvedTheme(sysTheme);
     };
-  }, []);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, [theme]);
 
-  // Ensure dark theme is always persisted
-  useEffect(() => {
-    localStorage.setItem(storageKey, 'dark');
-  }, [storageKey]);
+  const setTheme = (newTheme: Theme) => {
+    setThemeState(newTheme);
+    localStorage.setItem(storageKey, newTheme);
+  };
 
   const value: ThemeProviderState = {
-    theme: 'dark' as Theme,
-    setTheme: (theme: Theme) => {
-      console.log(`Setting theme to: dark (ignoring ${theme})`);
-      setTheme('dark');
-    },
-    resolvedTheme: 'dark' as 'dark', // Explicitly typed as 'dark' literal type
+    theme,
+    setTheme,
+    resolvedTheme,
   };
 
   return (
@@ -107,9 +103,7 @@ export function ThemeProvider({
 
 export const useTheme = () => {
   const context = useContext(ThemeProviderContext);
-  
   if (context === undefined)
     throw new Error("useTheme must be used within a ThemeProvider");
-    
   return context;
 };
