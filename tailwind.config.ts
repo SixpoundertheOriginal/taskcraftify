@@ -121,8 +121,12 @@ export default {
         'sidebar': '0 0 15px rgba(0, 0, 0, 0.05), 0 0 4px rgba(0, 0, 0, 0.1)',
         'sidebar-dark': '0 0 10px rgba(0, 0, 0, 0.3)'
       },
+      backgroundColor: {
+        'sidebar-hover': 'hsl(var(--sidebar-hover))'
+      },
       textColor: {
         'muted-foreground': 'hsl(var(--muted-foreground) / <alpha-value>)',
+        'sidebar-primary': 'hsl(var(--sidebar-primary))'
       }
     }
   },
