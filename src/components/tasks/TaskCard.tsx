@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { format } from 'date-fns';
 import { 
@@ -35,7 +34,6 @@ import { TaskForm } from '@/components/tasks/TaskForm';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { toast } from '@/hooks/use-toast';
 
-// Updated to match the timeout duration (3 seconds)
 const EXIT_ANIMATION_DURATION = 3000;
 
 export interface TaskCardProps {
@@ -53,7 +51,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
   const [isExiting, setIsExiting] = useState(false);
   const [lastClickTime, setLastClickTime] = useState(0);
   const completeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
+  
   const {
     attributes,
     listeners,
@@ -76,10 +74,10 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
 
   const { completed, total } = countCompletedSubtasks(task);
   
-  // Add this function that was missing
-  const finishExiting = () => setIsExiting(false);
+  const finishExiting = () => {
+    setIsExiting(false);
+  };
 
-  // Clean up timeout when component unmounts
   useEffect(() => {
     return () => {
       if (completeTimeoutRef.current) {
@@ -87,6 +85,10 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
       }
     };
   }, []);
+  
+  useEffect(() => {
+    setTask(initialTask);
+  }, [initialTask]);
 
   const handleStatusClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -96,7 +98,6 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     const isDoubleClick = currentTime - lastClickTime < 350;
     setLastClickTime(currentTime);
 
-    // Handle double click on a task that's in the process of being completed
     if (
       isDoubleClick &&
       task.status === TaskStatus.DONE &&
@@ -105,15 +106,25 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
       clearTimeout(completeTimeoutRef.current);
       completeTimeoutRef.current = null;
       setTask(prevTask => ({ ...prevTask, status: TaskStatus.TODO }));
-      toast({
-        title: "Task restored",
-        description: `"${task.title}" moved back to todo.`,
-        variant: "default"
-      });
+      updateTask({ id: task.id, status: TaskStatus.TODO })
+        .then(() => {
+          toast({
+            title: "Task restored",
+            description: `"${task.title}" moved back to todo.`,
+            variant: "default"
+          });
+        })
+        .catch(() => {
+          setTask(prevTask => ({ ...prevTask, status: TaskStatus.DONE }));
+          toast({
+            title: "Restore failed",
+            description: "Failed to restore task. Please try again.",
+            variant: "destructive"
+          });
+        });
       return;
     }
 
-    // If task is not done, mark as done and start exit animation
     if (task.status !== TaskStatus.DONE) {
       setTask(prevTask => ({
         ...prevTask,
@@ -121,49 +132,55 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
       }));
       setIsExiting(true);
 
-      // Set timeout to actually update the task status after animation
       completeTimeoutRef.current = setTimeout(() => {
-        updateTaskStatus(TaskStatus.DONE);
-        completeTimeoutRef.current = null;
-      }, EXIT_ANIMATION_DURATION); // Match the animation duration
+        updateTask({ id: task.id, status: TaskStatus.DONE })
+          .then(() => {
+            toast({
+              title: "Task completed",
+              description: `"${task.title}" has been marked as done.`,
+              variant: "default"
+            });
+            completeTimeoutRef.current = null;
+          })
+          .catch(() => {
+            setTask(prevTask => ({ ...prevTask, status: TaskStatus.TODO }));
+            setIsExiting(false);
+            completeTimeoutRef.current = null;
+            toast({
+              title: "Status update failed",
+              description: "Failed to update task status. Please try again.",
+              variant: "destructive"
+            });
+          });
+      }, EXIT_ANIMATION_DURATION);
       return;
     }
 
-    // If task is already done (and not in transition)
     if (task.status === TaskStatus.DONE) {
       if (!completeTimeoutRef.current) {
         setTask(prevTask => ({
           ...prevTask,
           status: TaskStatus.TODO
         }));
-        updateTaskStatus(TaskStatus.TODO);
+        updateTask({ id: task.id, status: TaskStatus.TODO })
+          .then(() => {
+            toast({
+              title: "Task reopened",
+              description: `"${task.title}" has been marked as to do.`,
+              variant: "default"
+            });
+          })
+          .catch(() => {
+            setTask(prevTask => ({ ...prevTask, status: TaskStatus.DONE }));
+            toast({
+              title: "Status update failed", 
+              description: "Failed to update task status. Please try again.",
+              variant: "destructive"
+            });
+          });
       }
       return;
     }
-  };
-
-  const updateTaskStatus = (newStatus: TaskStatus) => {
-    updateTask({ id: task.id, status: newStatus })
-      .then(() => {
-        toast({
-          title: newStatus === TaskStatus.DONE ? "Task completed" : "Task reopened",
-          description: `"${task.title}" has been marked as ${newStatus === TaskStatus.DONE ? 'done' : 'to do'}`,
-          variant: "default"
-        });
-        setIsExiting(false);
-      })
-      .catch(() => {
-        setTask(prevTask => ({
-          ...prevTask,
-          status: prevTask.status === TaskStatus.DONE ? TaskStatus.TODO : TaskStatus.DONE
-        }));
-        setIsExiting(false);
-        toast({
-          title: "Status update failed",
-          description: "Failed to update task status. Please try again.",
-          variant: "destructive"
-        });
-      });
   };
 
   const projectName = task.projectId 
@@ -253,6 +270,10 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
       </TooltipProvider>
     );
   };
+
+  if (task.status === TaskStatus.DONE && !isExiting && !completeTimeoutRef.current) {
+    return null;
+  }
 
   return (
     <>
