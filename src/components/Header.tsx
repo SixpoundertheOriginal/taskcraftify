@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, User, AlertCircle, Bug } from 'lucide-react';
@@ -31,12 +32,23 @@ export function Header() {
       
       const unsubscribe = setupTaskSubscription();
       
+      // Refresh task counts when component mounts
+      refreshTaskCounts();
+      
       return () => {
         console.log("[Header] Component unmounting, cleaning up subscription");
         unsubscribe();
       };
     }
-  }, [setupTaskSubscription, user]);
+  }, [setupTaskSubscription, refreshTaskCounts, user]);
+  
+  // Refresh task counts when tasks array changes
+  useEffect(() => {
+    if (tasks.length > 0) {
+      console.log("[Header] Tasks updated, refreshing counts");
+      refreshTaskCounts();
+    }
+  }, [tasks, refreshTaskCounts]);
   
   useEffect(() => {
     if (error) {

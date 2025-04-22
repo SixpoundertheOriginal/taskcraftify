@@ -35,8 +35,12 @@ export const createStatsSlice: StateCreator<
     
     try {
       // Calculate counts based on current tasks in the store
-      const tasks = get().tasks;
-      console.log(`Calculating counts for ${tasks.length} tasks in store`);
+      // Filter out tasks that have status DONE and are visually removed
+      const tasks = get().tasks.filter(task => 
+        !(task.status === TaskStatus.DONE && task._isRemoved)
+      );
+      
+      console.log(`Calculating counts for ${tasks.length} visible tasks in store`);
       
       const byProject: Record<string, number> = {};
       const byStatus: Record<string, number> = {};

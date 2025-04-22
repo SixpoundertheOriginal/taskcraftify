@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { format } from 'date-fns';
 import { 
@@ -47,7 +48,7 @@ export interface TaskCardProps {
 }
 
 export function TaskCard({ task: initialTask, compact = false, className }: TaskCardProps) {
-  const { updateTask, deleteTask } = useTaskStore();
+  const { updateTask, deleteTask, refreshTaskCounts } = useTaskStore();
   const { projects } = useProjectStore();
   const [isExpanded, setIsExpanded] = useState(true);
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
@@ -84,6 +85,16 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     if (isExiting) {
       setIsExiting(false);
       setIsRemoved(true);
+      
+      // Update the task in the store with _isRemoved flag
+      updateTask({ 
+        id: task.id, 
+        _isRemoved: true 
+      });
+      
+      // Refresh task counts to update the counters
+      refreshTaskCounts();
+      
       console.log(`Task ${task.id} animation complete, marked as removed`);
     }
   };
@@ -99,6 +110,13 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
       } else {
         setIsExiting(false);
         setIsRemoved(false);
+        
+        // If task is restored from completed, update the _isRemoved flag
+        if (initialTask._isRemoved) {
+          updateTask({ id: task.id, _isRemoved: false });
+          refreshTaskCounts();
+        }
+        
         if (completeTimeoutRef.current) {
           clearTimeout(completeTimeoutRef.current);
           completeTimeoutRef.current = null;
@@ -134,8 +152,9 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
       setIsExiting(false);
       setIsRemoved(false);
 
-      updateTask({ id: task.id, status: TaskStatus.TODO })
+      updateTask({ id: task.id, status: TaskStatus.TODO, _isRemoved: false })
         .then(() => {
+          refreshTaskCounts();
           toast({
             title: "Task restored",
             description: `"${task.title}" moved back to todo.`,
@@ -167,8 +186,9 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
 
       completeTimeoutRef.current = setTimeout(() => {
         console.log(`Timeout completed for task ${task.id}, sending API update`);
-        updateTask({ id: task.id, status: TaskStatus.DONE })
+        updateTask({ id: task.id, status: TaskStatus.DONE, _isRemoved: true })
           .then(() => {
+            refreshTaskCounts();
             toast({
               title: "Task completed",
               description: `"${task.title}" has been marked as done.`,
@@ -198,8 +218,9 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
         ...prevTask,
         status: TaskStatus.TODO
       }));
-      updateTask({ id: task.id, status: TaskStatus.TODO })
+      updateTask({ id: task.id, status: TaskStatus.TODO, _isRemoved: false })
         .then(() => {
+          refreshTaskCounts();
           toast({
             title: "Task reopened",
             description: `"${task.title}" has been marked as to do.`,

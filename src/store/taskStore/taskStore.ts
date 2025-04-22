@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { Task, TaskStatus, TaskPriority } from '@/types/task';
@@ -59,7 +60,9 @@ export const useTaskStore = create<TaskStore>()(
         
         get filteredTasks() {
           console.log("[TaskStore] Computing filteredTasks, tasks count:", taskSlice.tasks.length);
-          return filterSlice.getFilteredTasks();
+          // Filter out tasks that are marked as visually removed
+          const tasks = taskSlice.tasks.filter(task => !task._isRemoved);
+          return filterSlice.getFilteredTasks(tasks);
         },
         
         refreshTaskCounts: statsSlice.refreshTaskCounts,

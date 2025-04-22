@@ -1,4 +1,3 @@
-
 // Import necessary modules
 import { Database } from '@/integrations/supabase/types';
 import { parseISO } from 'date-fns';
@@ -27,16 +26,19 @@ export interface Task {
   description?: string;
   status: TaskStatus;
   priority: TaskPriority;
-  dueDate?: Date;
+  dueDate?: Date; 
   tags?: string[];
   projectId?: string;
   taskGroupId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  parentId?: string;
   position: number;
+  attachments?: TaskAttachment[];
   subtasks?: Subtask[];
   comments?: Comment[];
   activities?: ActivityItem[];
-  createdAt: Date;
-  updatedAt: Date;
+  _isRemoved?: boolean; // Flag to track visually removed tasks
 }
 
 export interface CreateTaskDTO {
