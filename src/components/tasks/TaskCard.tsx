@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { format } from 'date-fns';
 import { 
@@ -34,7 +35,8 @@ import { TaskForm } from '@/components/tasks/TaskForm';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { toast } from '@/hooks/use-toast';
 
-const EXIT_ANIMATION_DURATION = 500;
+// Updated to match the timeout duration (3 seconds)
+const EXIT_ANIMATION_DURATION = 3000;
 
 export interface TaskCardProps {
   task: Task;
@@ -74,8 +76,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
 
   const { completed, total } = countCompletedSubtasks(task);
 
-  const finishExiting = () => setIsExiting(false);
-
+  // Clean up timeout when component unmounts
   useEffect(() => {
     return () => {
       if (completeTimeoutRef.current) {
@@ -92,6 +93,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     const isDoubleClick = currentTime - lastClickTime < 350;
     setLastClickTime(currentTime);
 
+    // Handle double click on a task that's in the process of being completed
     if (
       isDoubleClick &&
       task.status === TaskStatus.DONE &&
@@ -108,6 +110,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
       return;
     }
 
+    // If task is not done, mark as done and start exit animation
     if (task.status !== TaskStatus.DONE) {
       setTask(prevTask => ({
         ...prevTask,
@@ -115,13 +118,15 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
       }));
       setIsExiting(true);
 
+      // Set timeout to actually update the task status after animation
       completeTimeoutRef.current = setTimeout(() => {
         updateTaskStatus(TaskStatus.DONE);
         completeTimeoutRef.current = null;
-      }, 3000);
+      }, EXIT_ANIMATION_DURATION); // Match the animation duration
       return;
     }
 
+    // If task is already done (and not in transition)
     if (task.status === TaskStatus.DONE) {
       if (!completeTimeoutRef.current) {
         setTask(prevTask => ({
