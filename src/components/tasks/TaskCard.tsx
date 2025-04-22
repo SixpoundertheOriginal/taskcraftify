@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { format } from 'date-fns';
 import { 
@@ -310,8 +311,9 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     );
   };
 
+  // Fix for the TypeScript error on line 314
   if ((task.status === TaskStatus.DONE && isRemoved && !completeTimeoutRef.current) || 
-      (initialTask.status === TaskStatus.DONE && !completeTimeoutRef.current && !isExiting && !task.status !== TaskStatus.TODO)) {
+      (initialTask.status === TaskStatus.DONE && !completeTimeoutRef.current && !isExiting && task.status === TaskStatus.DONE)) {
     console.log(`Not rendering task ${task.id} as it's done and removed`);
     return null;
   }
