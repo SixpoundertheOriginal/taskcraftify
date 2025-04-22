@@ -12,70 +12,65 @@ import {
 export function ThemeToggle() {
   const { theme, setTheme, resolvedTheme } = useTheme();
 
-  // Helper function to directly change the theme when clicking the button
-  // This gives users an immediate toggle option without going through the dropdown
+  // Direct toggle function for the button click
   const toggleTheme = () => {
-    // Toggle between light and dark directly
     setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="transition-colors duration-300 h-8 w-8 text-sidebar-foreground hover:bg-sidebar-hover"
-          aria-label="Toggle theme"
-          // Added onClick handler that stops propagation and toggles theme
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleTheme();
-            // Return false to prevent the dropdown from opening
-            return false;
-          }}
-        >
-          <Sun className={`h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all text-amber-500 ${
-            resolvedTheme === 'dark' ? 'rotate-90 scale-0' : ''
-          }`} />
-          <Moon className={`absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all text-indigo-400 ${
-            resolvedTheme === 'dark' ? 'rotate-0 scale-100' : ''
-          }`} />
-          <span className="sr-only">Toggle theme</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="border-border/60 backdrop-blur-sm">
+    <div className="relative">
+      {/* Main toggle button - completely separate from dropdown */}
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        className="transition-colors duration-300 h-8 w-8 text-sidebar-foreground hover:bg-sidebar-hover"
+        aria-label="Toggle theme"
+        onClick={toggleTheme}
+      >
+        <Sun className={`h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all text-amber-500 ${
+          resolvedTheme === 'dark' ? 'rotate-90 scale-0' : ''
+        }`} />
+        <Moon className={`absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all text-indigo-400 ${
+          resolvedTheme === 'dark' ? 'rotate-0 scale-100' : ''
+        }`} />
+        <span className="sr-only">Toggle theme</span>
+      </Button>
+      
+      {/* Settings icon for dropdown (optional) */}
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        className="absolute -top-2 -right-2 h-4 w-4 rounded-full bg-background border border-border hover:bg-muted"
+        asChild
+      >
+        <DropdownMenuTrigger>
+          <span className="text-xs">⚙️</span>
+        </DropdownMenuTrigger>
+      </Button>
+
+      <DropdownMenuContent align="end" className="border-border/60 backdrop-blur-sm mt-2">
         <DropdownMenuItem 
-          onClick={(e) => {
-            e.stopPropagation();
-            setTheme('light');
-          }}
+          onClick={() => setTheme('light')}
           className="cursor-pointer"
         >
           <Sun className="mr-2 h-4 w-4 text-amber-500" />
           <span>Light</span>
         </DropdownMenuItem>
         <DropdownMenuItem 
-          onClick={(e) => {
-            e.stopPropagation();
-            setTheme('dark');
-          }}
+          onClick={() => setTheme('dark')}
           className="cursor-pointer"
         >
           <Moon className="mr-2 h-4 w-4 text-indigo-400" />
           <span>Dark</span>
         </DropdownMenuItem>
         <DropdownMenuItem 
-          onClick={(e) => {
-            e.stopPropagation();
-            setTheme('system');
-          }}
+          onClick={() => setTheme('system')}
           className="cursor-pointer"
         >
           <span className="mr-2">💻</span>
           <span>System</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
-    </DropdownMenu>
+    </div>
   );
 }

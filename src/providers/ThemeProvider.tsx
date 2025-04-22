@@ -67,10 +67,10 @@ export function ThemeProvider({
     // Update the resolved theme state
     setResolvedTheme(appliedTheme);
     
-    // Force re-render of styled components by applying a data attribute
+    // Apply a data attribute for components that need to reference the theme
     root.setAttribute('data-theme', appliedTheme);
     
-    // Log debug info to help troubleshoot theme issues
+    // Log for debugging
     console.log(`Theme applied: ${appliedTheme}, Theme selected: ${theme}`);
     console.log(`HTML classes: ${root.className}`);
     
@@ -91,7 +91,6 @@ export function ThemeProvider({
       root.setAttribute('data-theme', newResolvedTheme);
       setResolvedTheme(newResolvedTheme);
       
-      // Log debug info for system theme changes
       console.log(`System theme changed to: ${newResolvedTheme}`);
     };
     
