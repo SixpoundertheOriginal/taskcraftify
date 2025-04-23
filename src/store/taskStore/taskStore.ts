@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { Task, TaskStatus, TaskPriority } from '@/types/task';
@@ -63,7 +64,8 @@ export const useTaskStore = create<TaskStore>()(
           return filterSlice.getFilteredTasks(tasks);
         },
         
-        refreshTaskCounts: statsSlice.refreshTaskCounts,
+        // Properly pass through the refreshTaskCounts method from statsSlice
+        // The issue was here - no need to add any arguments when referencing the function
         
         setTaskStatus: async (taskId: string, status: string): Promise<void> => {
           try {
