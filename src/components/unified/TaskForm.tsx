@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { 
@@ -237,7 +236,9 @@ export function UnifiedTaskForm({
   
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent 
+        className="sm:max-w-[600px] max-h-[90vh] overflow-hidden flex flex-col bg-white" 
+      >
         <DialogHeader>
           <DialogTitle>{initialTask ? 'Edit Task' : 'Create New Task'}</DialogTitle>
         </DialogHeader>
