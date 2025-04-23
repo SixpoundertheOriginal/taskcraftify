@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -183,7 +182,6 @@ export function FilterBar({
     const query = e.target.value;
     setSearchQuery(query);
     
-    // Debounce could be added here
     setFilters({
       ...filters,
       searchQuery: query
@@ -209,7 +207,7 @@ export function FilterBar({
               )}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-80 p-4" align="start">
+          <PopoverContent className="w-80 p-4 bg-white shadow-lg border rounded-md" align="start">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h4 className="font-medium">Filters</h4>
@@ -240,7 +238,7 @@ export function FilterBar({
                   <TabsTrigger value="tags">Tags</TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="status" className="mt-2 space-y-3">
+                <TabsContent value="status" className="mt-2 space-y-3 bg-white">
                   <h5 className="text-sm font-medium mb-2">Task Status</h5>
                   <ToggleGroup 
                     type="multiple" 
@@ -294,7 +292,7 @@ export function FilterBar({
                   </div>
                 </TabsContent>
                 
-                <TabsContent value="priority" className="mt-2 space-y-3">
+                <TabsContent value="priority" className="mt-2 space-y-3 bg-white">
                   <h5 className="text-sm font-medium mb-2">Priority Level</h5>
                   <ToggleGroup 
                     type="multiple" 
@@ -348,7 +346,7 @@ export function FilterBar({
                   </div>
                 </TabsContent>
                 
-                <TabsContent value="tags" className="mt-2 space-y-3">
+                <TabsContent value="tags" className="mt-2 space-y-3 bg-white">
                   <h5 className="text-sm font-medium mb-2">Tags</h5>
                   
                   {filters.tags && filters.tags.length > 0 && (
@@ -378,7 +376,7 @@ export function FilterBar({
                     </div>
                   )}
                   
-                  <div className="h-40 overflow-y-auto">
+                  <div className="h-40 overflow-y-auto bg-white">
                     <div className="grid grid-cols-2 gap-2">
                       {allTags.map(tag => (
                         <Button
@@ -404,7 +402,6 @@ export function FilterBar({
           </PopoverContent>
         </Popover>
         
-        {/* Display active filters as badges */}
         {hasActiveFilters && (
           <div className="flex flex-wrap gap-1 items-center">
             {filters.status && (

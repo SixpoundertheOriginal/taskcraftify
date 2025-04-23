@@ -22,7 +22,8 @@ export function TaskList() {
         count={todoTasks.length}
         status={TaskStatus.TODO}
         isEmpty={todoTasks.length === 0}
-        emptyState={<p className="text-sm text-muted-foreground py-4 text-center">No tasks to do</p>}
+        emptyState={<p className="text-sm text-muted-foreground py-4 text-center bg-white">No tasks to do</p>}
+        className="bg-white rounded-md p-3 shadow-sm"
       >
         {todoTasks.map(task => (
           <TaskCard key={task.id} task={task} />
@@ -34,7 +35,8 @@ export function TaskList() {
         count={inProgressTasks.length}
         status={TaskStatus.IN_PROGRESS}
         isEmpty={inProgressTasks.length === 0}
-        emptyState={<p className="text-sm text-muted-foreground py-4 text-center">No tasks in progress</p>}
+        emptyState={<p className="text-sm text-muted-foreground py-4 text-center bg-white">No tasks in progress</p>}
+        className="bg-white rounded-md p-3 shadow-sm"
       >
         {inProgressTasks.map(task => (
           <TaskCard key={task.id} task={task} />
@@ -46,7 +48,8 @@ export function TaskList() {
         count={doneTasks.length}
         status={TaskStatus.DONE}
         isEmpty={doneTasks.length === 0}
-        emptyState={<p className="text-sm text-muted-foreground py-4 text-center">No completed tasks</p>}
+        emptyState={<p className="text-sm text-muted-foreground py-4 text-center bg-white">No completed tasks</p>}
+        className="bg-white rounded-md p-3 shadow-sm"
       >
         {doneTasks.map(task => (
           <TaskCard key={task.id} task={task} />
@@ -58,7 +61,8 @@ export function TaskList() {
         count={backlogTasks.length}
         status={TaskStatus.BACKLOG}
         isEmpty={backlogTasks.length === 0}
-        emptyState={<p className="text-sm text-muted-foreground py-4 text-center">Backlog is empty</p>}
+        emptyState={<p className="text-sm text-muted-foreground py-4 text-center bg-white">Backlog is empty</p>}
+        className="bg-white rounded-md p-3 shadow-sm"
       >
         {backlogTasks.map(task => (
           <TaskCard key={task.id} task={task} />

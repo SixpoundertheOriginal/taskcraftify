@@ -6,8 +6,8 @@
   :root {
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
-    --card: 235 14% 16%;  /* Make card background dark always */
-    --card-foreground: 0 0% 98%;
+    --card: 0 0% 100%; /* Fixed - changed to 100% white instead of dark color */
+    --card-foreground: 240 10% 3.9%; /* Fixed - changed to match foreground */
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
     --primary: 246 80% 60%;
@@ -52,3 +52,39 @@
     --gradient-overlay: linear-gradient(180deg,rgba(34,31,38,0.95) 0%,rgba(64,62,67,0.85) 100%);
   }
 }
+
+/* Fix for transparency issues across the app */
+.bg-popover, 
+.bg-dropdown, 
+.bg-menu, 
+.bg-tooltip {
+  background-color: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+[data-radix-popper-content-wrapper] {
+  z-index: 50 !important; /* Ensure popovers are always on top */
+}
+
+/* Fix specific dialog and popover content */
+.popover-content, 
+.dialog-content, 
+.dropdown-menu-content {
+  background-color: white !important;
+  border-radius: var(--radius) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Fix for any transparency in tabs */
+[data-state="active"] {
+  background-color: white !important;
+}
+
+/* Ensure backgrounds on dropdowns and tabs */
+.tabs-content, 
+.dropdown-content {
+  background-color: white !important;
+}
+

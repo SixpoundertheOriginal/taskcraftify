@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -174,7 +173,7 @@ export function FilterSidebar({
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-full p-2">
+                <PopoverContent className="w-full p-2 bg-background border shadow-md">
                   <div className="space-y-2">
                     <Input
                       placeholder="Search or add tags"
@@ -183,7 +182,7 @@ export function FilterSidebar({
                       onKeyDown={handleTagInputKeyDown}
                     />
                     {filteredTags.length > 0 ? (
-                      <div className="max-h-[200px] overflow-y-auto py-1">
+                      <div className="max-h-[200px] overflow-y-auto py-1 bg-background">
                         {filteredTags.map(tag => (
                           <div 
                             key={tag} 
