@@ -1,43 +1,18 @@
 
 import { useState, useRef, useEffect } from 'react';
-import { format } from 'date-fns';
-import { 
-  Check,
-  Calendar, 
-  CheckCircle2, 
-  ChevronDown, 
-  ChevronRight, 
-  Tag,
-  Clock,
-  Flag,
-  Circle,
-  CheckCircle,
-  CircleDashed,
-  AlertCircle
-} from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu';
-import { Task, TaskStatus, TaskPriority } from '@/types/task';
-import { countCompletedSubtasks } from '@/types/task';
+import { Task, TaskStatus } from '@/types/task';
 import { useTaskStore } from '@/store';
 import { useProjectStore } from '@/store';
 import { TaskForm } from '@/components/tasks/TaskForm';
-import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { toast } from '@/hooks/use-toast';
 import { StatusCheckbox } from "./StatusCheckbox";
 import { TaskCardHeader } from "./TaskCardHeader";
 import { TaskCardDetails } from "./TaskCardDetails";
 import { TaskCardActions } from "./TaskCardActions";
+import { TaskCardAnimation } from "./TaskCardAnimation";
+import { handleStatusClick } from "./TaskStatusHandler";
 
 const EXIT_ANIMATION_DURATION = 3000;
 
@@ -64,7 +39,6 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     setNodeRef,
     transform,
     transition,
-    isDragging
   } = useSortable({
     id: task.id,
     data: {
@@ -78,21 +52,17 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     transition
   };
 
-  const { completed, total } = countCompletedSubtasks(task);
-  
   const finishExiting = () => {
     console.log(`Animation ended for task ${task.id}, status: ${task.status}, isExiting: ${isExiting}`);
     if (isExiting) {
       setIsExiting(false);
       setIsRemoved(true);
       
-      // Update the task in the store with _isRemoved flag
       updateTask({ 
         id: task.id, 
         _isRemoved: true 
       });
       
-      // Refresh task counts to update the counters
       refreshTaskCounts();
       
       console.log(`Task ${task.id} animation complete, marked as removed`);
@@ -111,7 +81,6 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
         setIsExiting(false);
         setIsRemoved(false);
         
-        // If task is restored from completed, update the _isRemoved flag
         if (initialTask._isRemoved) {
           updateTask({ id: task.id, _isRemoved: false });
           refreshTaskCounts();
@@ -132,113 +101,6 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
       }
     };
   }, []);
-
-  const handleStatusClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (task.status === TaskStatus.ARCHIVED) return;
-
-    const currentTime = new Date().getTime();
-    const isDoubleClick = currentTime - lastClickTime < 350;
-    setLastClickTime(currentTime);
-
-    if ((isDoubleClick || isExiting) && task.status === TaskStatus.DONE) {
-      if (completeTimeoutRef.current) {
-        clearTimeout(completeTimeoutRef.current);
-        completeTimeoutRef.current = null;
-      }
-      
-      console.log(`Undoing completion for task ${task.id}`);
-      setTask(prevTask => ({ ...prevTask, status: TaskStatus.TODO }));
-      setIsExiting(false);
-      setIsRemoved(false);
-
-      updateTask({ id: task.id, status: TaskStatus.TODO, _isRemoved: false })
-        .then(() => {
-          refreshTaskCounts();
-          toast({
-            title: "Task restored",
-            description: `"${task.title}" moved back to todo.`,
-            variant: "default"
-          });
-        })
-        .catch(() => {
-          setTask(prevTask => ({ ...prevTask, status: TaskStatus.DONE }));
-          setIsExiting(false);
-          setIsRemoved(false);
-          toast({
-            title: "Restore failed",
-            description: "Failed to restore task. Please try again.",
-            variant: "destructive"
-          });
-        });
-      return;
-    }
-
-    if (task.status !== TaskStatus.DONE) {
-      console.log(`Marking task ${task.id} as done`);
-      
-      setTask(prevTask => ({
-        ...prevTask,
-        status: TaskStatus.DONE
-      }));
-      setIsExiting(true);
-      setIsRemoved(false);
-
-      completeTimeoutRef.current = setTimeout(() => {
-        console.log(`Timeout completed for task ${task.id}, sending API update`);
-        updateTask({ id: task.id, status: TaskStatus.DONE, _isRemoved: true })
-          .then(() => {
-            refreshTaskCounts();
-            toast({
-              title: "Task completed",
-              description: `"${task.title}" has been marked as done.`,
-              variant: "default"
-            });
-            completeTimeoutRef.current = null;
-          })
-          .catch(() => {
-            setTask(prevTask => ({ ...prevTask, status: TaskStatus.TODO }));
-            setIsExiting(false);
-            setIsRemoved(false);
-            completeTimeoutRef.current = null;
-            toast({
-              title: "Status update failed",
-              description: "Failed to update task status. Please try again.",
-              variant: "destructive"
-            });
-          });
-      }, EXIT_ANIMATION_DURATION);
-      return;
-    }
-
-    if (task.status === TaskStatus.DONE && !completeTimeoutRef.current) {
-      console.log(`Reopening already-done task ${task.id}`);
-      setIsRemoved(false);
-      setTask(prevTask => ({
-        ...prevTask,
-        status: TaskStatus.TODO
-      }));
-      updateTask({ id: task.id, status: TaskStatus.TODO, _isRemoved: false })
-        .then(() => {
-          refreshTaskCounts();
-          toast({
-            title: "Task reopened",
-            description: `"${task.title}" has been marked as to do.`,
-            variant: "default"
-          });
-        })
-        .catch(() => {
-          setTask(prevTask => ({ ...prevTask, status: TaskStatus.DONE }));
-          setIsRemoved(true);
-          toast({
-            title: "Status update failed", 
-            description: "Failed to update task status. Please try again.",
-            variant: "destructive"
-          });
-        });
-      return;
-    }
-  };
 
   const projectName = task.projectId 
     ? projects.find(p => p.id === task.projectId)?.name || 'Unknown Project'
@@ -289,7 +151,24 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
             isRemoved={isRemoved}
             isArchived={task.status === TaskStatus.ARCHIVED}
             completeTimeoutRef={completeTimeoutRef}
-            onStatusClick={handleStatusClick}
+            onStatusClick={(e) => {
+              e.stopPropagation();
+              handleStatusClick({
+                taskId: task.id,
+                taskTitle: task.title,
+                currentStatus: task.status,
+                isExiting,
+                isRemoved,
+                lastClickTime,
+                completeTimeoutRef,
+                updateTask,
+                refreshTaskCounts,
+                setTask,
+                setIsExiting,
+                setIsRemoved,
+                setLastClickTime
+              });
+            }}
           />
           <div className="flex-1 min-w-0">
             <TaskCardHeader
@@ -321,27 +200,12 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
         onOpenChange={setIsTaskFormOpen}
         initialTask={task}
       />
-      <style>
-        {`
-        @keyframes fade-slide-out {
-          0% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-          80% {
-            opacity: 0.8;
-            transform: translateY(0.25rem);
-          }
-          100% {
-            opacity: 0;
-            transform: translateY(0.5rem);
-          }
-        }
-        .animate-fade-slide-out {
-          animation: fade-slide-out ${EXIT_ANIMATION_DURATION}ms cubic-bezier(0.4,0,0.2,1);
-        }
-        `}
-      </style>
+      
+      <TaskCardAnimation 
+        isExiting={isExiting}
+        finishExiting={finishExiting}
+        EXIT_ANIMATION_DURATION={EXIT_ANIMATION_DURATION}
+      />
     </>
   );
 }
