@@ -41,7 +41,7 @@ export function TaskCardDetails({
               <Flag className={cn("h-4 w-4", colorMap[task.priority])} />
             </div>
           </TooltipTrigger>
-          <TooltipContent side="top" className="text-xs">
+          <TooltipContent side="top" className="text-xs bg-white">
             {priorityLabel} Priority
           </TooltipContent>
         </Tooltip>
@@ -61,7 +61,7 @@ export function TaskCardDetails({
       {description && (
         <div
           className={cn(
-            "text-sm text-muted-foreground mt-1 break-words truncate",
+            "text-sm text-muted-foreground mt-1 break-words truncate bg-white",
             task.status === TaskStatus.DONE && "line-through opacity-70",
             !isExpanded && "hidden"
           )}
@@ -76,7 +76,7 @@ export function TaskCardDetails({
         </div>
       )}
       {isExpanded && !compact && (
-        <div className="px-3 pb-3 pt-1 flex flex-wrap gap-1.5 items-center">
+        <div className="px-3 pb-3 pt-1 flex flex-wrap gap-1.5 items-center bg-white">
           {task.dueDate && (
             <div className={cn(
               "flex items-center text-xs rounded-full px-2 py-0.5 font-medium",

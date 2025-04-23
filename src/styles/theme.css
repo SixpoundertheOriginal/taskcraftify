@@ -1,5 +1,4 @@
 
-
 // Removed all dark mode and only kept light mode variables
 
 @layer base {
@@ -88,3 +87,24 @@
   background-color: white !important;
 }
 
+/* NEW - Fix for expanded preview cards transparency */
+[data-radix-accordion-content],
+[data-radix-collapsible-content],
+[data-radix-tabs-content] {
+  background-color: white !important;
+  border-radius: 0.375rem;
+}
+
+/* NEW - Ensure proper backgrounds for expanded content */
+.expanded-content,
+.preview-card,
+.details-panel {
+  background-color: white !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* NEW - Fix for any expanded preview panels */
+[role="tabpanel"],
+[role="region"] {
+  background-color: white !important;
+}

@@ -112,7 +112,7 @@ export function FilePreview({ file, className, maxHeight = 200 }: FilePreviewPro
   
   if (isLoading) {
     return (
-      <div className={cn("flex items-center justify-center p-4", className)} style={{ maxHeight }}>
+      <div className={cn("flex items-center justify-center p-4 bg-white", className)} style={{ maxHeight }}>
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
@@ -120,7 +120,7 @@ export function FilePreview({ file, className, maxHeight = 200 }: FilePreviewPro
   
   if (error) {
     return (
-      <div className={cn("text-sm text-destructive p-2", className)} style={{ maxHeight }}>
+      <div className={cn("text-sm text-destructive p-2 bg-white", className)} style={{ maxHeight }}>
         {error}
       </div>
     );
@@ -129,7 +129,7 @@ export function FilePreview({ file, className, maxHeight = 200 }: FilePreviewPro
   // Image preview
   if (fileTypeDetected === 'image') {
     return (
-      <div className={cn("overflow-hidden rounded-md", className)} style={{ maxHeight }}>
+      <div className={cn("overflow-hidden rounded-md bg-white", className)} style={{ maxHeight }}>
         <img 
           src={previewUrl || ''} 
           alt="File preview" 
@@ -144,10 +144,10 @@ export function FilePreview({ file, className, maxHeight = 200 }: FilePreviewPro
   // PDF preview
   if (fileTypeDetected === 'pdf') {
     return (
-      <div className={cn("overflow-hidden rounded-md border", className)} style={{ maxHeight }}>
+      <div className={cn("overflow-hidden rounded-md border bg-white", className)} style={{ maxHeight }}>
         <Document
           file={previewUrl || ''}
-          error={<p className="p-4 text-sm text-destructive">Failed to load PDF</p>}
+          error={<p className="p-4 text-sm text-destructive bg-white">Failed to load PDF</p>}
           loading={<Loader2 className="h-8 w-8 animate-spin m-4" />}
         >
           <Page 
@@ -164,7 +164,7 @@ export function FilePreview({ file, className, maxHeight = 200 }: FilePreviewPro
   // CSV preview
   if (csvData) {
     return (
-      <div className={cn("overflow-auto border rounded-md", className)} style={{ maxHeight }}>
+      <div className={cn("overflow-auto border rounded-md bg-white", className)} style={{ maxHeight }}>
         <table className="min-w-full text-xs">
           <thead className="bg-muted">
             {csvData.length > 0 && (
@@ -196,7 +196,7 @@ export function FilePreview({ file, className, maxHeight = 200 }: FilePreviewPro
           </tbody>
         </table>
         {csvData.length > 5 && (
-          <div className="px-2 py-1 text-xs text-muted-foreground border-t">
+          <div className="px-2 py-1 text-xs text-muted-foreground border-t bg-white">
             Showing first 5 of {csvData.length} rows
           </div>
         )}
@@ -206,7 +206,7 @@ export function FilePreview({ file, className, maxHeight = 200 }: FilePreviewPro
   
   // No preview available
   return (
-    <div className={cn("flex items-center justify-center p-4 text-muted-foreground text-sm border rounded-md", className)} style={{ maxHeight }}>
+    <div className={cn("flex items-center justify-center p-4 text-muted-foreground text-sm border rounded-md bg-white", className)} style={{ maxHeight }}>
       No preview available
     </div>
   );
