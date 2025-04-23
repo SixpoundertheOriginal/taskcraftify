@@ -1,6 +1,6 @@
 
 import { ReactNode } from 'react';
-import { Task } from '@/types/task';
+import { Task, TaskStatus } from '@/types/task';
 import { cn } from '@/lib/utils';
 
 interface TaskGroupProps {
@@ -10,6 +10,7 @@ interface TaskGroupProps {
   children: ReactNode;
   isEmpty?: boolean;
   emptyState?: ReactNode;
+  status?: TaskStatus; // Add the status property to the interface
 }
 
 export function TaskGroup({
@@ -18,7 +19,8 @@ export function TaskGroup({
   className,
   children,
   isEmpty = false,
-  emptyState
+  emptyState,
+  status // Add it to the function parameters
 }: TaskGroupProps) {
   return (
     <div className={cn("space-y-2", className)}>
