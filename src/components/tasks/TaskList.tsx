@@ -16,10 +16,11 @@ export function TaskList() {
   const backlogTasks = filteredTasks.filter(task => task.status === TaskStatus.BACKLOG);
   
   return (
-    <div className="space-y-8 mb-8">
+    <div className="space-y-8 mb-8 px-1">
       <TaskGroup 
         title="To Do" 
         count={todoTasks.length}
+        status={TaskStatus.TODO}
         isEmpty={todoTasks.length === 0}
         emptyState={<p className="text-sm text-muted-foreground py-4 text-center">No tasks to do</p>}
       >
@@ -31,6 +32,7 @@ export function TaskList() {
       <TaskGroup 
         title="In Progress" 
         count={inProgressTasks.length}
+        status={TaskStatus.IN_PROGRESS}
         isEmpty={inProgressTasks.length === 0}
         emptyState={<p className="text-sm text-muted-foreground py-4 text-center">No tasks in progress</p>}
       >
@@ -42,6 +44,7 @@ export function TaskList() {
       <TaskGroup 
         title="Done" 
         count={doneTasks.length}
+        status={TaskStatus.DONE}
         isEmpty={doneTasks.length === 0}
         emptyState={<p className="text-sm text-muted-foreground py-4 text-center">No completed tasks</p>}
       >
@@ -53,6 +56,7 @@ export function TaskList() {
       <TaskGroup 
         title="Backlog" 
         count={backlogTasks.length}
+        status={TaskStatus.BACKLOG}
         isEmpty={backlogTasks.length === 0}
         emptyState={<p className="text-sm text-muted-foreground py-4 text-center">Backlog is empty</p>}
       >

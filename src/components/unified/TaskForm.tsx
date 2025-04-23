@@ -237,10 +237,10 @@ export function UnifiedTaskForm({
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent 
-        className="sm:max-w-[600px] max-h-[90vh] overflow-hidden flex flex-col bg-white" 
+        className="sm:max-w-[600px] max-h-[90vh] overflow-hidden flex flex-col bg-white shadow-xl rounded-lg" 
       >
-        <DialogHeader>
-          <DialogTitle>{initialTask ? 'Edit Task' : 'Create New Task'}</DialogTitle>
+        <DialogHeader className="border-b pb-4">
+          <DialogTitle className="text-xl">{initialTask ? 'Edit Task' : 'Create New Task'}</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit(onSubmit)} className="flex-1 overflow-hidden flex flex-col">
@@ -541,11 +541,11 @@ export function UnifiedTaskForm({
             </div>
           )}
           
-          <DialogFooter className="mt-4">
+          <DialogFooter className="mt-4 border-t pt-4">
             <DialogClose asChild>
               <Button type="button" variant="outline">Cancel</Button>
             </DialogClose>
-            <Button type="submit" disabled={isLoading || isSubmitting}>
+            <Button type="submit" disabled={isLoading || isSubmitting} className="ml-2">
               {(isLoading || isSubmitting) ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
