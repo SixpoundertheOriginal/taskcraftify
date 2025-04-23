@@ -7,7 +7,7 @@ export interface FilterSlice {
   filters: TaskFilters;
   setFilters: (filters: TaskFilters) => void;
   clearFilters: () => void;
-  getFilteredTasks: () => Task[];
+  getFilteredTasks: (tasks: Task[]) => Task[];
   getTasksByStatus: (status: TaskStatus) => Task[];
 }
 
@@ -24,8 +24,8 @@ export const createFilterSlice: StateCreator<TaskStore, [], [], FilterSlice> = (
     set({ filters: {} });
   },
   
-  getFilteredTasks: () => {
-    const { tasks, filters } = get();
+  getFilteredTasks: (tasks: Task[]) => {
+    const { filters } = get();
     
     // Debug log to see what we're starting with
     console.log(`Filtering ${tasks.length} tasks with filters:`, filters);

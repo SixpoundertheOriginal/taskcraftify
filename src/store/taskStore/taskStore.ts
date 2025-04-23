@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { Task, TaskStatus, TaskPriority } from '@/types/task';
@@ -24,7 +25,8 @@ import {
 } from 'date-fns';
 
 export type TaskStore = TaskSlice & FilterSlice & SubscriptionSlice & StatsSlice & AttachmentSlice & {
-  filteredTasks: Task[];
+  // Change filteredTasks from a property to a method
+  getFilteredTasks: () => Task[];
   setTaskStatus: (taskId: string, status: string) => Promise<void>;
   toggleSubtaskCompletion: (subtaskId: string, completed: boolean) => Promise<void>;
   diagnosticDatabaseQuery?: () => Promise<any>;
@@ -56,13 +58,15 @@ export const useTaskStore = create<TaskStore>()(
         ...statsSlice,
         ...attachmentSlice,
         
-        filteredTasks() {
+        // Rename to getFilteredTasks to match the interface
+        getFilteredTasks: () => {
           console.log("[TaskStore] Computing filteredTasks, tasks count:", taskSlice.tasks.length);
           // Filter out tasks that are marked as visually removed
           const tasks = taskSlice.tasks.filter(task => !task._isRemoved);
           return filterSlice.getFilteredTasks(tasks);
         },
         
+        // Use statsSlice.refreshTaskCounts with no arguments
         refreshTaskCounts: () => statsSlice.refreshTaskCounts(),
         
         setTaskStatus: async (taskId: string, status: string): Promise<void> => {
