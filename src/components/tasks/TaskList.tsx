@@ -6,7 +6,8 @@ import { TaskStatus } from '@/types/task';
 import { TaskCard } from './TaskCard';
 
 export function TaskList() {
-  const { filteredTasks } = useTaskStore();
+  const taskStore = useTaskStore();
+  const filteredTasks = taskStore.getFilteredTasks();
 
   // Group tasks by status
   const todoTasks = filteredTasks.filter(task => task.status === TaskStatus.TODO);
