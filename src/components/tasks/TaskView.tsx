@@ -29,6 +29,7 @@ import { KanbanBoard } from './KanbanBoard';
 import { ViewToggle, ViewMode } from './ViewToggle';
 import { TaskGroups } from './TaskGroups';
 import { FilterIndicator } from './FilterIndicator';
+import { toast } from '@/hooks/use-toast';
 
 export function TaskView() {
   const { 
@@ -45,12 +46,13 @@ export function TaskView() {
     refreshTaskCounts
   } = useTaskStore();
   
-  const { selectedProjectId, projects } = useProjectStore();
+  const { selectedProjectId, projects, fetchProjects } = useProjectStore();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<string>('my-tasks');
   const [activeViewMode, setActiveViewMode] = useState<ViewMode>('list');
   const [isInitialized, setIsInitialized] = useState(false);
+  const [initialFetchComplete, setInitialFetchComplete] = useState(false);
   
   useEffect(() => {
     if (isInitialized) return;
@@ -58,12 +60,31 @@ export function TaskView() {
     console.log("TaskView: Initial setup - fetching tasks and setting up subscription");
     setIsInitialized(true);
     
-    fetchTasks().then(() => {
-      console.log("TaskView: Initial task fetch complete");
-      refreshTaskCounts();
-    }).catch(err => {
-      console.error("TaskView: Error fetching tasks:", err);
+    fetchProjects().catch(err => {
+      console.error("Error fetching projects:", err);
     });
+    
+    fetchTasks()
+      .then(() => {
+        console.log("TaskView: Initial task fetch complete");
+        refreshTaskCounts();
+        setInitialFetchComplete(true);
+        
+        const allTasks = tasks.length;
+        const visibleTasks = getFilteredTasks().length;
+        
+        if (allTasks > 0 && visibleTasks === 0 && Object.keys(filters).length > 0) {
+          toast({
+            title: "Tasks are being filtered",
+            description: `You have ${allTasks} tasks, but none match your current filters.`,
+            variant: "default"
+          });
+        }
+      })
+      .catch(err => {
+        console.error("TaskView: Error fetching tasks:", err);
+        setInitialFetchComplete(true);
+      });
     
     const unsubscribe = setupTaskSubscription();
     
@@ -71,7 +92,21 @@ export function TaskView() {
       console.log("TaskView: Unsubscribing from task updates");
       unsubscribe();
     };
-  }, [fetchTasks, setupTaskSubscription, refreshTaskCounts, isInitialized]);
+  }, [fetchTasks, fetchProjects, setupTaskSubscription, refreshTaskCounts, isInitialized, tasks.length, getFilteredTasks, filters]);
+  
+  useEffect(() => {
+    if (initialFetchComplete) {
+      const allTasks = tasks.length;
+      const filteredCount = getFilteredTasks().length;
+      
+      console.log(`TaskView: Have ${allTasks} total tasks, ${filteredCount} after filtering`);
+      console.log("Current filters:", filters);
+      
+      if (allTasks > 0 && filteredCount === 0 && Object.keys(filters).length > 0) {
+        console.log("TaskView: Warning - All tasks are being filtered out!");
+      }
+    }
+  }, [tasks.length, getFilteredTasks, filters, initialFetchComplete]);
   
   useEffect(() => {
     if (activeTab === 'my-tasks' && Object.keys(filters).length === 0) {
@@ -83,7 +118,7 @@ export function TaskView() {
     if (filters.searchQuery) {
       setSearchQuery(filters.searchQuery);
     }
-  }, [filters, setFilters]);
+  }, [filters, setFilters, activeTab]);
   
   const filteredTasks = useMemo(() => {
     return getFilteredTasks();
@@ -130,6 +165,7 @@ export function TaskView() {
   };
   
   const clearAllFilters = () => {
+    console.log("Clearing all filters");
     setFilters({});
     setSearchQuery('');
   };
@@ -160,6 +196,11 @@ export function TaskView() {
     setFilters(restFilters);
   };
   
+  const clearProjectFilter = () => {
+    const { projectId, ...restFilters } = filters;
+    setFilters(restFilters);
+  };
+  
   const allTags = useMemo(() => {
     const tagSet = new Set<string>();
     tasks.forEach(task => {
@@ -182,11 +223,11 @@ export function TaskView() {
   else if (activeTab === 'completed') listHeader = `Completed (${filteredTasks.length})`;
   else if (activeTab === 'focus') listHeader = `My Focus`;
 
-  if (isLoading && tasks.length === 0) {
+  if (isLoading && !initialFetchComplete && tasks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-60">
         <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-        <p className="text-muted-foreground">Loading tasks...</p>
+        <p className="text-muted-foreground">Loading your tasks...</p>
       </div>
     );
   }
@@ -196,6 +237,65 @@ export function TaskView() {
       <div className="bg-destructive/10 border border-destructive text-destructive rounded-md p-4">
         <h3 className="font-medium mb-1">Error loading tasks</h3>
         <p className="text-sm">{typeof error === 'string' ? error : 'There was an error loading your tasks'}</p>
+        <div className="mt-3">
+          <Button 
+            variant="outline"
+            size="sm"
+            onClick={() => fetchTasks()}
+          >
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  
+  if (tasks.length > 0 && filteredTasks.length === 0 && hasActiveFilters) {
+    return (
+      <div className="space-y-5 animate-fade-in">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold">{listHeader}</h1>
+            {isLoading && (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="w-full sm:w-auto">
+              <ProjectSelector 
+                buttonClassName="w-full sm:w-auto bg-background text-sm font-medium" 
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <FilterIndicator 
+                filters={filters}
+                onClearStatusFilter={clearStatusFilter}
+                onClearPriorityFilter={clearPriorityFilter}
+                onClearDateFilters={clearDateFilters}
+                onClearSearchFilter={clearSearchFilter}
+                onClearTagsFilter={clearTagsFilter}
+                onClearAllFilters={clearAllFilters}
+                allTags={allTags}
+              />
+              <ViewToggle
+                activeView={activeViewMode}
+                onViewChange={handleViewModeChange}
+              />
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex flex-col items-center justify-center py-10 text-center bg-background border rounded-lg">
+          <FilterX className="h-12 w-12 text-muted-foreground/50 mb-4" />
+          <h3 className="text-lg font-medium">No tasks match your filters</h3>
+          <p className="text-muted-foreground mb-6 max-w-md">
+            You have {tasks.length} tasks, but none match your current filters.
+            Try changing your filters or clear them to see all tasks.
+          </p>
+          <Button onClick={clearAllFilters} variant="default">
+            Clear All Filters
+          </Button>
+        </div>
       </div>
     );
   }
@@ -327,6 +427,17 @@ export function TaskView() {
                 </div>
               </TaskGroup>
             </>
+          ) : tasks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center bg-background border rounded-lg">
+              <CheckCircle className="h-16 w-16 text-muted-foreground/20 mb-4" />
+              <h3 className="text-xl font-medium">No tasks found</h3>
+              <p className="text-muted-foreground max-w-md mt-1 mb-6">
+                You don't have any tasks yet. Create your first task to get started.
+              </p>
+              <Button>
+                Create Task
+              </Button>
+            </div>
           ) : (
             <div className="flex justify-center items-center p-10">
               <CheckCircle className="h-10 w-10 text-green-400 mr-3" />
@@ -336,7 +447,18 @@ export function TaskView() {
         </TabsContent>
         
         <TabsContent value="all-tasks" className="mt-0">
-          {activeViewMode === 'list' ? (
+          {tasks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center bg-background border rounded-lg">
+              <CheckCircle className="h-16 w-16 text-muted-foreground/20 mb-4" />
+              <h3 className="text-xl font-medium">No tasks found</h3>
+              <p className="text-muted-foreground max-w-md mt-1 mb-6">
+                You don't have any tasks yet. Create your first task to get started.
+              </p>
+              <Button>
+                Create Task
+              </Button>
+            </div>
+          ) : activeViewMode === 'list' ? (
             <TaskGroup 
               title="All Tasks" 
               count={filteredTasks.length}
@@ -348,6 +470,16 @@ export function TaskView() {
                   <p className="text-sm text-muted-foreground mt-1">
                     {hasActiveFilters ? 'Try different filters' : 'Create your first task to get started'}
                   </p>
+                  {hasActiveFilters && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-4"
+                      onClick={clearAllFilters}
+                    >
+                      Clear All Filters
+                    </Button>
+                  )}
                 </div>
               }
             >

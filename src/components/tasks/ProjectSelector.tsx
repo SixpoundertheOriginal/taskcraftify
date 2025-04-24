@@ -1,6 +1,7 @@
+
+import React, { useState } from 'react';
 import { useProjectStore } from '@/store';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
 import { 
   Database, 
   FolderInput, 
@@ -31,8 +32,12 @@ export function ProjectSelector({
   triggerClassName 
 }: ProjectSelectorProps) {
   const { selectedProjectId, projects = [], selectProject } = useProjectStore();
-  const { fetchTasksByProject } = useTaskStore();
+  const { fetchTasksByProject, setFilters, filters } = useTaskStore();
   
+  // To prevent initialization issues, ensure projects is an array
+  const safeProjects = Array.isArray(projects) ? projects : [];
+  
+  // Use the passed projectId if provided, otherwise use the global selected project
   const effectiveProjectId = projectId !== undefined ? projectId : selectedProjectId;
   
   const [open, setOpen] = useState(false);
@@ -47,6 +52,19 @@ export function ProjectSelector({
     // Update the global state if no specific onProjectSelect handler is provided
     if (!onProjectSelect) {
       selectProject(id);
+      
+      // Update filters based on project selection
+      const newFilters = { ...filters };
+      
+      if (id === null) {
+        // Remove project filter when "All Projects" is selected
+        const { projectId, ...restFilters } = newFilters;
+        setFilters(restFilters);
+      } else {
+        // Set project filter when specific project or "No Project" is selected
+        newFilters.projectId = id === 'none' ? 'none' : id;
+        setFilters(newFilters);
+      }
       
       // If a project is selected, fetch its tasks
       if (id) {
@@ -66,7 +84,7 @@ export function ProjectSelector({
   };
   
   const project = effectiveProjectId && effectiveProjectId !== 'none'
-    ? projects.find((p) => p.id === effectiveProjectId)
+    ? safeProjects.find((p) => p.id === effectiveProjectId)
     : null;
   
   let displayName = 'All Projects';
@@ -109,7 +127,7 @@ export function ProjectSelector({
             No Project
           </DropdownMenuItem>
           
-          {projects.length > 0 && projects.map(project => (
+          {safeProjects.length > 0 && safeProjects.map(project => (
             <DropdownMenuItem
               key={project.id || `project-${Math.random()}`}
               onClick={() => handleSelectProject(project.id)}

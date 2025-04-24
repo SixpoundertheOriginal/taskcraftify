@@ -58,12 +58,22 @@ export const useTaskStore = create<TaskStore>()(
         ...statsSlice,
         ...attachmentSlice,
         
-        // Rename to getFilteredTasks to match the interface
+        // Improved getFilteredTasks to handle edge cases
         getFilteredTasks: () => {
           console.log("[TaskStore] Computing filteredTasks, tasks count:", taskSlice.tasks.length);
+          
+          // Safety check for tasks array
+          if (!Array.isArray(taskSlice.tasks)) {
+            console.error("[TaskStore] Tasks is not an array:", taskSlice.tasks);
+            return [];
+          }
+          
           // Filter out tasks that are marked as visually removed
-          const tasks = taskSlice.tasks.filter(task => !task._isRemoved);
-          return filterSlice.getFilteredTasks(tasks);
+          const visibleTasks = taskSlice.tasks.filter(task => !task._isRemoved);
+          console.log(`[TaskStore] After removing _isRemoved tasks: ${visibleTasks.length} tasks remain`);
+          
+          // Use the filter slice to get filtered tasks
+          return filterSlice.getFilteredTasks(visibleTasks);
         },
         
         // Use statsSlice.refreshTaskCounts with no arguments

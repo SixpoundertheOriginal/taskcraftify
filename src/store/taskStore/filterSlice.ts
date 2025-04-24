@@ -28,11 +28,11 @@ export const createFilterSlice: StateCreator<TaskStore, [], [], FilterSlice> = (
     const { filters } = get();
     
     // Debug log to see what we're starting with
-    console.log(`Filtering ${tasks.length} tasks with filters:`, filters);
+    console.log(`[FilterSlice] Filtering ${tasks.length} tasks with filters:`, filters);
     
     // If there are no filters, return all tasks
     if (!filters || Object.keys(filters).length === 0) {
-      console.log('No filters applied, returning all tasks');
+      console.log('[FilterSlice] No filters applied, returning all tasks');
       return tasks;
     }
     
@@ -53,10 +53,13 @@ export const createFilterSlice: StateCreator<TaskStore, [], [], FilterSlice> = (
       // Project filter
       if (filters.projectId !== undefined) {
         if (filters.projectId === 'none') {
+          // "No Project" selected - only show tasks with no project
           if (task.projectId) return false;
-        } else if (filters.projectId && task.projectId !== filters.projectId) {
-          return false;
+        } else if (filters.projectId) {
+          // Specific project selected
+          if (task.projectId !== filters.projectId) return false;
         }
+        // When projectId is null, we're showing "All Projects" - no filtering
       }
       
       // Status filter
@@ -104,7 +107,7 @@ export const createFilterSlice: StateCreator<TaskStore, [], [], FilterSlice> = (
     });
     
     // Debug log to see the result of filtering
-    console.log(`Filtering result: ${filteredTasks.length} tasks matched the criteria`);
+    console.log(`[FilterSlice] Filtering result: ${filteredTasks.length} tasks matched the criteria`);
     
     return filteredTasks;
   },
