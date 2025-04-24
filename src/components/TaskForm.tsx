@@ -1,6 +1,7 @@
 
 import { UnifiedTaskForm } from '@/components/unified/TaskForm';
 import { TaskStatus } from '@/types/task';
+import { ProjectSelector } from '@/components/tasks/ProjectSelector';
 
 interface TaskFormProps {
   open: boolean;

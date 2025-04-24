@@ -395,6 +395,7 @@ export type Database = {
           exercise_name: string
           id: string
           reps: number
+          rest_time: number | null
           set_number: number
           weight: number
           workout_id: string
@@ -405,6 +406,7 @@ export type Database = {
           exercise_name: string
           id?: string
           reps: number
+          rest_time?: number | null
           set_number: number
           weight: number
           workout_id: string
@@ -415,6 +417,7 @@ export type Database = {
           exercise_name?: string
           id?: string
           reps?: number
+          rest_time?: number | null
           set_number?: number
           weight?: number
           workout_id?: string
@@ -1420,6 +1423,10 @@ export type Database = {
       increment_template_usage: {
         Args: { template_id: string }
         Returns: undefined
+      }
+      save_workout_transaction: {
+        Args: { p_workout_data: Json; p_exercise_sets: Json }
+        Returns: Json
       }
     }
     Enums: {

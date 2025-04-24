@@ -346,7 +346,8 @@ export function UnifiedTaskForm({
                   <label htmlFor="project" className="text-sm font-medium">Project</label>
                   <ProjectSelector 
                     projectId={projectId} 
-                    onProjectSelect={handleProjectSelect} 
+                    onProjectSelect={handleProjectSelect}
+                    buttonClassName="w-full"
                   />
                 </div>
                 
@@ -486,7 +487,8 @@ export function UnifiedTaskForm({
                 <label htmlFor="project" className="text-sm font-medium">Project</label>
                 <ProjectSelector 
                   projectId={projectId} 
-                  onProjectSelect={handleProjectSelect} 
+                  onProjectSelect={handleProjectSelect}
+                  buttonClassName="w-full"
                 />
               </div>
               

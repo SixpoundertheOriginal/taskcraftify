@@ -1,4 +1,3 @@
-
 import { useProjectStore } from '@/store';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -18,8 +17,8 @@ import { useTaskStore } from '@/store';
 
 interface ProjectSelectorProps {
   className?: string;
-  projectId?: string; // Added to fix TypeScript error
-  onProjectSelect?: (id: string | undefined) => void; // Added to fix TypeScript error
+  projectId?: string;
+  onProjectSelect?: (id: string | undefined) => void;
   buttonClassName?: string;
   triggerClassName?: string;
 }
@@ -31,11 +30,9 @@ export function ProjectSelector({
   buttonClassName, 
   triggerClassName 
 }: ProjectSelectorProps) {
-  // Get the globally selected project from the store
   const { selectedProjectId, projects = [], selectProject } = useProjectStore();
   const { fetchTasksByProject } = useTaskStore();
   
-  // If projectId prop is provided, use it instead of the globally selected project
   const effectiveProjectId = projectId !== undefined ? projectId : selectedProjectId;
   
   const [open, setOpen] = useState(false);
@@ -68,12 +65,10 @@ export function ProjectSelector({
     setOpen(false);
   };
   
-  // Find the currently selected project
   const project = effectiveProjectId && effectiveProjectId !== 'none'
     ? projects.find((p) => p.id === effectiveProjectId)
     : null;
   
-  // Determine the name to display
   let displayName = 'All Projects';
   if (effectiveProjectId === 'none') {
     displayName = 'No Project';
@@ -81,9 +76,7 @@ export function ProjectSelector({
     displayName = project.name || 'Unnamed Project';
   }
   
-  // Decide which rendering style to use based on provided props
   if (buttonClassName !== undefined || triggerClassName !== undefined) {
-    // Use the dropdown menu style
     return (
       <DropdownMenu open={open} onOpenChange={handleOpenChange}>
         <DropdownMenuTrigger asChild>
@@ -133,7 +126,6 @@ export function ProjectSelector({
       </DropdownMenu>
     );
   } else {
-    // Use the simple display style
     return (
       <div
         className={cn(
