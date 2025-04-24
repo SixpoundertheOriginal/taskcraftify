@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -88,6 +87,8 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
         
         if (completeTimeoutRef.current) {
           clearTimeout(completeTimeoutRef.current);
+          // Since we can't directly modify completeTimeoutRef.current,
+          // we need to create a new ref with setTimeout
           completeTimeoutRef.current = null;
         }
       }
@@ -98,6 +99,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     return () => {
       if (completeTimeoutRef.current) {
         clearTimeout(completeTimeoutRef.current);
+        // No need to set to null in cleanup function
       }
     };
   }, []);
