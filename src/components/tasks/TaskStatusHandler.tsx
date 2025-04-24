@@ -41,9 +41,11 @@ export function handleStatusClick({
   setLastClickTime(currentTime);
 
   if ((isDoubleClick || isExiting) && currentStatus === TaskStatus.DONE) {
+    // Instead of directly assigning to completeTimeoutRef.current, we need to clear the timeout
+    // but we can't reset the ref directly since it's read-only
     if (completeTimeoutRef.current) {
       clearTimeout(completeTimeoutRef.current);
-      completeTimeoutRef.current = null;
+      // We don't modify completeTimeoutRef.current directly
     }
     
     console.log(`Undoing completion for task ${taskId}`);
