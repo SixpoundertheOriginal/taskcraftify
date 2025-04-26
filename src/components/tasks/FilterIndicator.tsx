@@ -147,10 +147,33 @@ export function FilterIndicator({
                     return null;
                   }
                   
-                  // Handle date filters as one entry - this is where the error is
-                  // Fixed comparison to use proper string comparison instead of type comparison
-                  if ((key === 'dueDateFrom' && filters.dueDateTo) || 
-                      (key === 'dueDateTo' && filters.dueDateFrom && key !== 'dueDateFrom')) {
+                  // Handle date filters as one entry - fixing the type comparison issue
+                  if (key === 'dueDateFrom' && filters.dueDateTo) {
+                    // This is the first date field and we also have the second one
+                    // Show just one entry for the date range
+                    return (
+                      <div 
+                        key="dateRange" 
+                        className="flex items-center justify-between gap-2 p-2 bg-muted/50 rounded-lg"
+                      >
+                        <span className="text-sm truncate max-w-[200px]">
+                          Date Range
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 rounded-full"
+                          onClick={onClearDateFilters}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                          <span className="sr-only">Clear date filters</span>
+                        </Button>
+                      </div>
+                    );
+                  }
+                  
+                  if (key === 'dueDateTo' && filters.dueDateFrom) {
+                    // Skip the second date field if we already have the first one
                     return null;
                   }
                   
