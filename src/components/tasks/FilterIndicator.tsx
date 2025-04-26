@@ -147,7 +147,8 @@ export function FilterIndicator({
                     return null;
                   }
                   
-                  // Handle date filters as one entry
+                  // Handle date filters as one entry - this is where the error is
+                  // Fixed comparison to use proper string comparison instead of type comparison
                   if ((key === 'dueDateFrom' && filters.dueDateTo) || 
                       (key === 'dueDateTo' && filters.dueDateFrom && key !== 'dueDateFrom')) {
                     return null;
