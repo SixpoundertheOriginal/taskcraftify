@@ -1,5 +1,5 @@
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
@@ -52,7 +52,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     transition
   };
 
-  const finishExiting = () => {
+  const finishExiting = useCallback(() => {
     console.log(`Animation ended for task ${task.id}, status: ${task.status}, isExiting: ${isExiting}`);
     if (isExiting) {
       setIsExiting(false);
@@ -67,9 +67,8 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
       
       console.log(`Task ${task.id} animation complete, marked as removed`);
     }
-  };
+  }, [task.id, task.status, isExiting, updateTask, refreshTaskCounts]);
 
-  // Fix the dependency array to include all dependencies
   useEffect(() => {
     if (initialTask.id === task.id) {
       setTask(initialTask);
@@ -99,6 +98,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     return () => {
       if (completeTimeoutRef.current) {
         clearTimeout(completeTimeoutRef.current);
+        completeTimeoutRef.current = null;
       }
     };
   }, []);

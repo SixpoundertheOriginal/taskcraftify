@@ -44,7 +44,7 @@ export function handleStatusClick({
     // Clear the timeout if it exists
     if (completeTimeoutRef.current) {
       clearTimeout(completeTimeoutRef.current);
-      // We set the ref to null in the TaskCard component
+      completeTimeoutRef.current = null;
     }
     
     console.log(`Undoing completion for task ${taskId}`);
