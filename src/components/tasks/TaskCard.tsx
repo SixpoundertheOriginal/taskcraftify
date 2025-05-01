@@ -31,7 +31,6 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
   const [isExiting, setIsExiting] = useState(false);
   const [isRemoved, setIsRemoved] = useState(false);
   const [lastClickTime, setLastClickTime] = useState(0);
-  // Use MutableRefObject type for completeTimeoutRef
   const completeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const {
@@ -53,9 +52,10 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     transition
   };
 
+  // Memoize the finishExiting callback to prevent it from changing on every render
   const finishExiting = useCallback(() => {
-    console.log(`Animation ended for task ${task.id}, status: ${task.status}, isExiting: ${isExiting}`);
     if (isExiting) {
+      console.log(`Animation ended for task ${task.id}, marking as removed`);
       setIsExiting(false);
       setIsRemoved(true);
       
@@ -65,36 +65,44 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
       });
       
       refreshTaskCounts();
-      
-      console.log(`Task ${task.id} animation complete, marked as removed`);
     }
-  }, [task.id, task.status, isExiting, updateTask, refreshTaskCounts]);
+  }, [task.id, isExiting, updateTask, refreshTaskCounts]);
 
+  // Handle initialTask updates
   useEffect(() => {
     if (initialTask.id === task.id) {
       setTask(initialTask);
-      
-      if (initialTask.status === TaskStatus.DONE) {
-        if (!isExiting && !isRemoved && !completeTimeoutRef.current) {
-          setIsExiting(true);
-        }
-      } else {
+    }
+  }, [initialTask, task.id]);
+
+  // Handle task status changes
+  useEffect(() => {
+    // Only run this effect when task status changes
+    if (task.status === TaskStatus.DONE) {
+      if (!isExiting && !isRemoved && !completeTimeoutRef.current) {
+        setIsExiting(true);
+      }
+    } else {
+      // For non-DONE tasks, ensure we're not in exiting or removed state
+      if (isExiting || isRemoved) {
         setIsExiting(false);
         setIsRemoved(false);
         
-        if (initialTask._isRemoved) {
+        if (task._isRemoved) {
           updateTask({ id: task.id, _isRemoved: false });
           refreshTaskCounts();
         }
-        
-        if (completeTimeoutRef.current) {
-          clearTimeout(completeTimeoutRef.current);
-          completeTimeoutRef.current = null;
-        }
+      }
+      
+      // Clear any completion timeout
+      if (completeTimeoutRef.current) {
+        clearTimeout(completeTimeoutRef.current);
+        completeTimeoutRef.current = null;
       }
     }
-  }, [initialTask, task.id, isExiting, isRemoved, updateTask, refreshTaskCounts]);
-  
+  }, [task.status, isExiting, isRemoved, task.id, updateTask, refreshTaskCounts, task._isRemoved]);
+
+  // Cleanup effect
   useEffect(() => {
     return () => {
       if (completeTimeoutRef.current) {
@@ -117,14 +125,10 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     setIsTaskFormOpen(true);
   };
 
-  const shouldHideTask = task.status === TaskStatus.DONE && isRemoved;
-  
-  if (shouldHideTask) {
-    console.log(`Task ${task.id} is hidden because it's done and removed`);
+  // If task is done and removed, don't render it
+  if (task.status === TaskStatus.DONE && isRemoved) {
     return null;
   }
-
-  console.log(`Rendering task ${task.id}, status: ${task.status}, isRemoved: ${isRemoved}, isExiting: ${isExiting}`);
   
   return (
     <>
@@ -143,7 +147,6 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
         )}
         onClick={handleTaskClick}
         tabIndex={0}
-        onAnimationEnd={finishExiting}
         aria-disabled={isExiting ? true : undefined}
       >
         <div className="flex items-start gap-2 p-2">

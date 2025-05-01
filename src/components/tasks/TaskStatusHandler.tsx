@@ -34,12 +34,15 @@ export function handleStatusClick({
   setIsRemoved,
   setLastClickTime
 }: TaskStatusHandlerProps) {
+  // Don't handle clicks for archived tasks
   if (currentStatus === TaskStatus.ARCHIVED) return;
 
+  // Track double-clicks
   const currentTime = new Date().getTime();
   const isDoubleClick = currentTime - lastClickTime < 350;
   setLastClickTime(currentTime);
 
+  // Handle double-click or existing animation to undo completion
   if ((isDoubleClick || isExiting) && currentStatus === TaskStatus.DONE) {
     // Clear the timeout if it exists
     if (completeTimeoutRef.current) {
@@ -48,10 +51,12 @@ export function handleStatusClick({
     }
     
     console.log(`Undoing completion for task ${taskId}`);
+    // Update local state
     setTask((prevTask: any) => ({ ...prevTask, status: TaskStatus.TODO }));
     setIsExiting(false);
     setIsRemoved(false);
 
+    // Update in backend
     updateTask({ id: taskId, status: TaskStatus.TODO, _isRemoved: false })
       .then(() => {
         refreshTaskCounts();
@@ -62,6 +67,7 @@ export function handleStatusClick({
         });
       })
       .catch(() => {
+        // Revert on error
         setTask((prevTask: any) => ({ ...prevTask, status: TaskStatus.DONE }));
         setIsExiting(false);
         setIsRemoved(false);
@@ -74,19 +80,21 @@ export function handleStatusClick({
     return;
   }
 
+  // Mark a task as done
   if (currentStatus !== TaskStatus.DONE) {
     console.log(`Marking task ${taskId} as done`);
     
+    // Update local state
     setTask((prevTask: any) => ({
       ...prevTask,
       status: TaskStatus.DONE
     }));
     setIsExiting(true);
     setIsRemoved(false);
-
     return;
   }
 
+  // Reopen an already-done task
   if (currentStatus === TaskStatus.DONE && !completeTimeoutRef.current) {
     console.log(`Reopening already-done task ${taskId}`);
     setIsRemoved(false);
@@ -94,6 +102,7 @@ export function handleStatusClick({
       ...prevTask,
       status: TaskStatus.TODO
     }));
+    
     updateTask({ id: taskId, status: TaskStatus.TODO, _isRemoved: false })
       .then(() => {
         refreshTaskCounts();
@@ -104,6 +113,7 @@ export function handleStatusClick({
         });
       })
       .catch(() => {
+        // Revert on error
         setTask((prevTask: any) => ({ ...prevTask, status: TaskStatus.DONE }));
         setIsRemoved(true);
         toast({

@@ -14,6 +14,7 @@ export interface StatusCheckboxProps {
   onStatusClick: (e: React.MouseEvent) => void;
 }
 
+// Use memo with a custom equality function to prevent unnecessary re-renders
 export const StatusCheckbox = memo(function StatusCheckbox({
   isDone,
   isExiting,
@@ -22,6 +23,12 @@ export const StatusCheckbox = memo(function StatusCheckbox({
   completeTimeoutRef,
   onStatusClick
 }: StatusCheckboxProps) {
+  const tooltipText = isDone && completeTimeoutRef.current 
+    ? "Double click to undo completion" 
+    : isDone 
+      ? "Click to mark as not done" 
+      : "Click to mark as done";
+
   return (
     <TooltipProvider>
       <Tooltip>
@@ -36,7 +43,7 @@ export const StatusCheckbox = memo(function StatusCheckbox({
                 : "bg-background border-gray-300 dark:border-gray-600 text-[#8E9196] hover:border-[#9b87f5] hover:bg-purple-50 dark:hover:bg-purple-900/20",
               isArchived && "opacity-40 cursor-not-allowed"
             )}
-            aria-label={isDone ? (completeTimeoutRef.current ? "Double click to undo" : "Mark as not done") : "Mark as done"}
+            aria-label={tooltipText}
             disabled={isArchived}
             tabIndex={0}
             type="button"
@@ -53,13 +60,16 @@ export const StatusCheckbox = memo(function StatusCheckbox({
           </button>
         </TooltipTrigger>
         <TooltipContent side="right">
-          {isDone && completeTimeoutRef.current
-            ? "Double click to undo completion"
-            : isDone
-              ? "Click to mark as not done"
-              : "Click to mark as done"}
+          {tooltipText}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
+}, (prevProps, nextProps) => {
+  // Custom comparison function to prevent unnecessary re-renders
+  return prevProps.isDone === nextProps.isDone &&
+    prevProps.isExiting === nextProps.isExiting &&
+    prevProps.isRemoved === nextProps.isRemoved &&
+    prevProps.isArchived === nextProps.isArchived &&
+    prevProps.onStatusClick === nextProps.onStatusClick;
 });
