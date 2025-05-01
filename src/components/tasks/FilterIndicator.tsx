@@ -7,7 +7,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { TaskFilters } from '@/types/task';
+import { TaskFilters, TaskStatus } from '@/types/task';
 import { cn } from '@/lib/utils';
 import { ActiveFiltersDisplay } from './ActiveFiltersDisplay';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -39,8 +39,8 @@ export function FilterIndicator({
     if (key === 'status' && 
         Array.isArray(filters.status) && 
         filters.status.length === 2 && 
-        filters.status.includes('TODO') && 
-        filters.status.includes('IN_PROGRESS')) {
+        filters.status.includes(TaskStatus.TODO) && 
+        filters.status.includes(TaskStatus.IN_PROGRESS)) {
       return count;
     }
     
@@ -154,8 +154,8 @@ export function FilterIndicator({
                   if (key === 'status' && 
                       Array.isArray(filters.status) && 
                       filters.status.length === 2 && 
-                      filters.status.includes('TODO') && 
-                      filters.status.includes('IN_PROGRESS')) {
+                      filters.status.includes(TaskStatus.TODO) && 
+                      filters.status.includes(TaskStatus.IN_PROGRESS)) {
                     return null;
                   }
                   

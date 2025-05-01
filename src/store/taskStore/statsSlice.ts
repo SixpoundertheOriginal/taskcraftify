@@ -23,11 +23,11 @@ export const createStatsSlice: StateCreator<
     total: 0,
     byProject: {},
     byStatus: {
-      TODO: 0,
-      IN_PROGRESS: 0,
-      DONE: 0,
-      ARCHIVED: 0,
-      BACKLOG: 0
+      [TaskStatus.TODO]: 0,
+      [TaskStatus.IN_PROGRESS]: 0,
+      [TaskStatus.DONE]: 0,
+      [TaskStatus.ARCHIVED]: 0,
+      [TaskStatus.BACKLOG]: 0
     }
   },
   
