@@ -25,9 +25,9 @@ export function TaskCardAnimation({
     if (isExiting) {
       // Set the new timeout and store it in the ref
       timeoutIdRef.current = setTimeout(() => {
-        finishExiting();
-        // Clear the ref after the callback executes
+        // Clear the ref before executing callback to prevent issues
         timeoutIdRef.current = null;
+        finishExiting();
       }, EXIT_ANIMATION_DURATION);
     }
     

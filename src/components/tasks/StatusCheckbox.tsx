@@ -35,6 +35,7 @@ export const StatusCheckbox = memo(function StatusCheckbox({
       <Tooltip>
         <TooltipTrigger asChild>
           <button
+            type="button"
             onClick={(e) => {
               // Prevent event propagation
               e.stopPropagation();
@@ -51,7 +52,6 @@ export const StatusCheckbox = memo(function StatusCheckbox({
             aria-label={tooltipText}
             disabled={isArchived}
             tabIndex={0}
-            type="button"
           >
             {isDone ? (
               <Check className="h-4 w-4" strokeWidth={3} />

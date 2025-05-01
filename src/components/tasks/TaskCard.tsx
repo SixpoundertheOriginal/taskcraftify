@@ -54,9 +54,8 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
 
   // Memoize the finishExiting callback to prevent it from changing on every render
   const finishExiting = useCallback(() => {
-    if (isExiting) {
+    if (isExiting && !isRemoved) {
       console.log(`Animation ended for task ${task.id}, marking as removed`);
-      setIsExiting(false);
       setIsRemoved(true);
       
       updateTask({ 
@@ -66,7 +65,7 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
         refreshTaskCounts();
       });
     }
-  }, [task.id, isExiting, updateTask, refreshTaskCounts]);
+  }, [task.id, isExiting, isRemoved, updateTask, refreshTaskCounts]);
 
   // Handle initialTask updates separately from state updates
   useEffect(() => {
@@ -78,7 +77,7 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
 
   // Handle task status changes with clear conditions to prevent loops
   useEffect(() => {
-    // Only transition to exiting state once
+    // Only transition to exiting state once and only if not already removed
     if (task.status === TaskStatus.DONE && !isExiting && !isRemoved && !completeTimeoutRef.current) {
       setIsExiting(true);
     } 
@@ -141,7 +140,7 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
       setLastClickTime
     });
   }, [task.id, task.title, task.status, isExiting, isRemoved, lastClickTime, 
-      updateTask, refreshTaskCounts, setTask, setIsExiting, setIsRemoved, setLastClickTime]);
+      updateTask, refreshTaskCounts]);
   
   // If task is done and removed, don't render it
   if (task.status === TaskStatus.DONE && isRemoved) {
@@ -207,11 +206,13 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
         initialTask={task}
       />
       
-      <TaskCardAnimation 
-        isExiting={isExiting}
-        finishExiting={finishExiting}
-        EXIT_ANIMATION_DURATION={EXIT_ANIMATION_DURATION}
-      />
+      {isExiting && (
+        <TaskCardAnimation 
+          isExiting={isExiting}
+          finishExiting={finishExiting}
+          EXIT_ANIMATION_DURATION={EXIT_ANIMATION_DURATION}
+        />
+      )}
     </>
   );
 }
