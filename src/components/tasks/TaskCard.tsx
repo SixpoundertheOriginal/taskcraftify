@@ -69,6 +69,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     }
   };
 
+  // Fix the dependency array to include all dependencies
   useEffect(() => {
     if (initialTask.id === task.id) {
       setTask(initialTask);

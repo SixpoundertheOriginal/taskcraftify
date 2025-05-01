@@ -1,7 +1,7 @@
-
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
+import './styles/animations.css'
 
 // Ensure we have a root element to mount the app
 const rootElement = document.getElementById("root");

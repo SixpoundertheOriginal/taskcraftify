@@ -3,6 +3,7 @@ import { Check } from 'lucide-react';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { TaskStatus } from '@/types/task';
+import { memo } from 'react';
 
 export interface StatusCheckboxProps {
   isDone: boolean;
@@ -13,7 +14,7 @@ export interface StatusCheckboxProps {
   onStatusClick: (e: React.MouseEvent) => void;
 }
 
-export function StatusCheckbox({
+export const StatusCheckbox = memo(function StatusCheckbox({
   isDone,
   isExiting,
   isRemoved,
@@ -61,4 +62,4 @@ export function StatusCheckbox({
       </Tooltip>
     </TooltipProvider>
   );
-}
+});
