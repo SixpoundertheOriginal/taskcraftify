@@ -1,7 +1,7 @@
 
 import { TaskStatus } from '@/types/task';
 import { toast } from '@/hooks/use-toast';
-import { RefObject } from 'react';
+import { MutableRefObject } from 'react';
 
 interface TaskStatusHandlerProps {
   taskId: string;
@@ -10,7 +10,7 @@ interface TaskStatusHandlerProps {
   isExiting: boolean;
   isRemoved: boolean;
   lastClickTime: number;
-  completeTimeoutRef: RefObject<NodeJS.Timeout | null>;
+  completeTimeoutRef: MutableRefObject<NodeJS.Timeout | null>;
   updateTask: (data: { id: string; status: TaskStatus; _isRemoved?: boolean }) => Promise<any>;
   refreshTaskCounts: () => void;
   setTask: (task: any) => void;

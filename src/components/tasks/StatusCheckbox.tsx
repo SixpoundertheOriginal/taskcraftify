@@ -3,14 +3,14 @@ import { Check } from 'lucide-react';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { TaskStatus } from '@/types/task';
-import { memo } from 'react';
+import { memo, MutableRefObject } from 'react';
 
 export interface StatusCheckboxProps {
   isDone: boolean;
   isExiting: boolean;
   isRemoved: boolean;
   isArchived: boolean;
-  completeTimeoutRef: React.MutableRefObject<NodeJS.Timeout | null>;
+  completeTimeoutRef: MutableRefObject<NodeJS.Timeout | null>;
   onStatusClick: (e: React.MouseEvent) => void;
 }
 

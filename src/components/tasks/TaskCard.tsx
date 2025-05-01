@@ -31,6 +31,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
   const [isExiting, setIsExiting] = useState(false);
   const [isRemoved, setIsRemoved] = useState(false);
   const [lastClickTime, setLastClickTime] = useState(0);
+  // Use MutableRefObject type for completeTimeoutRef
   const completeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const {
