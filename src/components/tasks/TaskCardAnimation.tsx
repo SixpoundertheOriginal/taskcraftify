@@ -1,5 +1,5 @@
 
-import { RefObject } from 'react';
+import { useEffect } from 'react';
 
 interface TaskCardAnimationProps {
   isExiting: boolean;
@@ -7,28 +7,26 @@ interface TaskCardAnimationProps {
   EXIT_ANIMATION_DURATION: number;
 }
 
-export function TaskCardAnimation({ isExiting, finishExiting, EXIT_ANIMATION_DURATION }: TaskCardAnimationProps) {
-  return (
-    <style>
-      {`
-      @keyframes fade-slide-out {
-        0% {
-          opacity: 1;
-          transform: translateY(0);
-        }
-        80% {
-          opacity: 0.8;
-          transform: translateY(0.25rem);
-        }
-        100% {
-          opacity: 0;
-          transform: translateY(0.5rem);
-        }
+export function TaskCardAnimation({ 
+  isExiting, 
+  finishExiting,
+  EXIT_ANIMATION_DURATION 
+}: TaskCardAnimationProps) {
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout | null = null;
+    
+    if (isExiting) {
+      timeoutId = setTimeout(() => {
+        finishExiting();
+      }, EXIT_ANIMATION_DURATION);
+    }
+    
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
       }
-      .animate-fade-slide-out {
-        animation: fade-slide-out ${EXIT_ANIMATION_DURATION}ms cubic-bezier(0.4,0,0.2,1);
-      }
-      `}
-    </style>
-  );
+    };
+  }, [isExiting, finishExiting, EXIT_ANIMATION_DURATION]);
+  
+  return null;
 }

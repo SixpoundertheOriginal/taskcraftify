@@ -11,6 +11,7 @@ export function TaskList() {
   
   // Refresh task counts when the component mounts or tasks change
   useEffect(() => {
+    console.log("[TaskList] Refreshing task counts");
     taskStore.refreshTaskCounts();
   }, [taskStore, taskStore.tasks]);
 
