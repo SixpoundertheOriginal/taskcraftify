@@ -69,8 +69,6 @@ export function handleStatusClick({
       .catch(() => {
         // Revert on error
         setTask((prevTask: any) => ({ ...prevTask, status: TaskStatus.DONE }));
-        setIsExiting(false);
-        setIsRemoved(false);
         toast({
           title: "Restore failed",
           description: "Failed to restore task. Please try again.",
@@ -89,15 +87,20 @@ export function handleStatusClick({
       ...prevTask,
       status: TaskStatus.DONE
     }));
-    setIsExiting(true);
-    setIsRemoved(false);
+    
+    // Only trigger animation if not already exiting
+    if (!isExiting) {
+      setIsExiting(true);
+    }
+    
     return;
   }
 
   // Reopen an already-done task
   if (currentStatus === TaskStatus.DONE && !completeTimeoutRef.current) {
     console.log(`Reopening already-done task ${taskId}`);
-    setIsRemoved(false);
+    
+    // Update local state
     setTask((prevTask: any) => ({
       ...prevTask,
       status: TaskStatus.TODO
@@ -115,7 +118,6 @@ export function handleStatusClick({
       .catch(() => {
         // Revert on error
         setTask((prevTask: any) => ({ ...prevTask, status: TaskStatus.DONE }));
-        setIsRemoved(true);
         toast({
           title: "Status update failed", 
           description: "Failed to update task status. Please try again.",

@@ -23,6 +23,7 @@ export const StatusCheckbox = memo(function StatusCheckbox({
   completeTimeoutRef,
   onStatusClick
 }: StatusCheckboxProps) {
+  // Define tooltip text based on task state
   const tooltipText = isDone && completeTimeoutRef.current 
     ? "Double click to undo completion" 
     : isDone 
@@ -34,7 +35,11 @@ export const StatusCheckbox = memo(function StatusCheckbox({
       <Tooltip>
         <TooltipTrigger asChild>
           <button
-            onClick={onStatusClick}
+            onClick={(e) => {
+              // Prevent event propagation
+              e.stopPropagation();
+              onStatusClick(e);
+            }}
             className={cn(
               "flex items-center justify-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-1",
               "h-6 w-6 min-w-[1.5rem] min-h-[1.5rem] border-2 shadow-sm",
@@ -70,6 +75,6 @@ export const StatusCheckbox = memo(function StatusCheckbox({
   return prevProps.isDone === nextProps.isDone &&
     prevProps.isExiting === nextProps.isExiting &&
     prevProps.isRemoved === nextProps.isRemoved &&
-    prevProps.isArchived === nextProps.isArchived &&
-    prevProps.onStatusClick === nextProps.onStatusClick;
+    prevProps.isArchived === nextProps.isArchived;
+    // Note: We intentionally don't compare onStatusClick here to avoid over-optimization
 });

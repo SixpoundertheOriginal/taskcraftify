@@ -1,5 +1,5 @@
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface TaskCardAnimationProps {
   isExiting: boolean;
@@ -12,20 +12,30 @@ export function TaskCardAnimation({
   finishExiting,
   EXIT_ANIMATION_DURATION 
 }: TaskCardAnimationProps) {
+  // Use a ref to track if the timeout is already set to avoid creating multiple timeouts
+  const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
+  
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout | null = null;
+    // Clear any existing timeout first
+    if (timeoutIdRef.current) {
+      clearTimeout(timeoutIdRef.current);
+      timeoutIdRef.current = null;
+    }
     
     if (isExiting) {
-      // Use a local variable for the timeout to avoid React ref issues
-      timeoutId = setTimeout(() => {
+      // Set the new timeout and store it in the ref
+      timeoutIdRef.current = setTimeout(() => {
         finishExiting();
+        // Clear the ref after the callback executes
+        timeoutIdRef.current = null;
       }, EXIT_ANIMATION_DURATION);
     }
     
-    // Clean up the timeout to prevent memory leaks
+    // Clean up the timeout on unmount or when dependencies change
     return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+        timeoutIdRef.current = null;
       }
     };
   }, [isExiting, finishExiting, EXIT_ANIMATION_DURATION]);

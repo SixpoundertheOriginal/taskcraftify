@@ -1,5 +1,5 @@
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
@@ -22,7 +22,7 @@ export interface TaskCardProps {
   className?: string;
 }
 
-export function TaskCard({ task: initialTask, compact = false, className }: TaskCardProps) {
+function TaskCardComponent({ task: initialTask, compact = false, className }: TaskCardProps) {
   const { updateTask, deleteTask, refreshTaskCounts } = useTaskStore();
   const { projects } = useProjectStore();
   const [isExpanded, setIsExpanded] = useState(true);
@@ -62,47 +62,46 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
       updateTask({ 
         id: task.id, 
         _isRemoved: true 
+      }).then(() => {
+        refreshTaskCounts();
       });
-      
-      refreshTaskCounts();
     }
   }, [task.id, isExiting, updateTask, refreshTaskCounts]);
 
-  // Handle initialTask updates
+  // Handle initialTask updates separately from state updates
   useEffect(() => {
-    if (initialTask.id === task.id) {
+    if (initialTask.id === task.id && 
+        JSON.stringify(initialTask) !== JSON.stringify(task)) {
       setTask(initialTask);
     }
   }, [initialTask, task.id]);
 
-  // Handle task status changes
+  // Handle task status changes with clear conditions to prevent loops
   useEffect(() => {
-    // Only run this effect when task status changes
-    if (task.status === TaskStatus.DONE) {
-      if (!isExiting && !isRemoved && !completeTimeoutRef.current) {
-        setIsExiting(true);
-      }
-    } else {
-      // For non-DONE tasks, ensure we're not in exiting or removed state
-      if (isExiting || isRemoved) {
-        setIsExiting(false);
-        setIsRemoved(false);
-        
-        if (task._isRemoved) {
-          updateTask({ id: task.id, _isRemoved: false });
-          refreshTaskCounts();
-        }
+    // Only transition to exiting state once
+    if (task.status === TaskStatus.DONE && !isExiting && !isRemoved && !completeTimeoutRef.current) {
+      setIsExiting(true);
+    } 
+    // Reset states when task is no longer DONE
+    else if (task.status !== TaskStatus.DONE && (isExiting || isRemoved)) {
+      setIsExiting(false);
+      setIsRemoved(false);
+      
+      // Only update in the database if needed
+      if (task._isRemoved) {
+        updateTask({ id: task.id, _isRemoved: false })
+          .then(() => refreshTaskCounts());
       }
       
-      // Clear any completion timeout
+      // Always clean up timeout
       if (completeTimeoutRef.current) {
         clearTimeout(completeTimeoutRef.current);
         completeTimeoutRef.current = null;
       }
     }
-  }, [task.status, isExiting, isRemoved, task.id, updateTask, refreshTaskCounts, task._isRemoved]);
+  }, [task.status, isExiting, isRemoved, task.id, task._isRemoved, updateTask, refreshTaskCounts]);
 
-  // Cleanup effect
+  // Dedicated cleanup effect
   useEffect(() => {
     return () => {
       if (completeTimeoutRef.current) {
@@ -116,15 +115,34 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     ? projects.find(p => p.id === task.projectId)?.name || 'Unknown Project'
     : null;
 
-  const toggleExpanded = (e: React.MouseEvent) => {
+  const toggleExpanded = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsExpanded(!isExpanded);
-  };
+    setIsExpanded(prev => !prev);
+  }, []);
 
-  const handleTaskClick = () => {
+  const handleTaskClick = useCallback(() => {
     setIsTaskFormOpen(true);
-  };
+  }, []);
 
+  const handleStatusClickCallback = useCallback((e: React.MouseEvent) => {
+    handleStatusClick({
+      taskId: task.id,
+      taskTitle: task.title,
+      currentStatus: task.status,
+      isExiting,
+      isRemoved,
+      lastClickTime,
+      completeTimeoutRef,
+      updateTask,
+      refreshTaskCounts,
+      setTask,
+      setIsExiting,
+      setIsRemoved,
+      setLastClickTime
+    });
+  }, [task.id, task.title, task.status, isExiting, isRemoved, lastClickTime, 
+      updateTask, refreshTaskCounts, setTask, setIsExiting, setIsRemoved, setLastClickTime]);
+  
   // If task is done and removed, don't render it
   if (task.status === TaskStatus.DONE && isRemoved) {
     return null;
@@ -156,24 +174,7 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
             isRemoved={isRemoved}
             isArchived={task.status === TaskStatus.ARCHIVED}
             completeTimeoutRef={completeTimeoutRef}
-            onStatusClick={(e) => {
-              e.stopPropagation();
-              handleStatusClick({
-                taskId: task.id,
-                taskTitle: task.title,
-                currentStatus: task.status,
-                isExiting,
-                isRemoved,
-                lastClickTime,
-                completeTimeoutRef,
-                updateTask,
-                refreshTaskCounts,
-                setTask,
-                setIsExiting,
-                setIsRemoved,
-                setLastClickTime
-              });
-            }}
+            onStatusClick={handleStatusClickCallback}
           />
           <div className="flex-1 min-w-0">
             <TaskCardHeader
@@ -214,3 +215,6 @@ export function TaskCard({ task: initialTask, compact = false, className }: Task
     </>
   );
 }
+
+// Apply memoization to prevent unnecessary re-renders
+export const TaskCard = memo(TaskCardComponent);
