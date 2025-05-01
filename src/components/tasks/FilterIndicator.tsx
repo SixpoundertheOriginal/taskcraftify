@@ -147,7 +147,7 @@ export function FilterIndicator({
                     return null;
                   }
                   
-                  // Handle date filters as one entry - fixing the type comparison issue
+                  // Handle date filters as one entry - fixing the type comparison issue correctly
                   if (key === 'dueDateFrom' && filters.dueDateTo) {
                     // This is the first date field and we also have the second one
                     // Show just one entry for the date range

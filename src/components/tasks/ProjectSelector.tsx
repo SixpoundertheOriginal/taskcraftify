@@ -32,7 +32,7 @@ export function ProjectSelector({
   triggerClassName 
 }: ProjectSelectorProps) {
   const { selectedProjectId, projects = [], selectProject } = useProjectStore();
-  const { fetchTasksByProject, setFilters, filters } = useTaskStore();
+  const { fetchTasksByProject, setFilters, filters, fetchTasks } = useTaskStore();
   
   // To prevent initialization issues, ensure projects is an array
   const safeProjects = Array.isArray(projects) ? projects : [];
@@ -60,20 +60,16 @@ export function ProjectSelector({
         // Remove project filter when "All Projects" is selected
         const { projectId, ...restFilters } = newFilters;
         setFilters(restFilters);
+        
+        // Fetch all tasks when "All Projects" is selected
+        await fetchTasks();
       } else {
         // Set project filter when specific project or "No Project" is selected
         newFilters.projectId = id === 'none' ? 'none' : id;
         setFilters(newFilters);
-      }
-      
-      // If a project is selected, fetch its tasks
-      if (id) {
+        
+        // Fetch tasks for the selected project
         await fetchTasksByProject(id);
-      }
-      
-      // If "No Project" is selected, fetch tasks with no project
-      if (id === 'none') {
-        await fetchTasksByProject('none');
       }
     } else {
       // Call the provided handler with the selected project id

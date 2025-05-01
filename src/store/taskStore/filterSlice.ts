@@ -62,14 +62,14 @@ export const createFilterSlice: StateCreator<TaskStore, [], [], FilterSlice> = (
         // When projectId is null, we're showing "All Projects" - no filtering
       }
       
-      // Status filter
+      // Status filter - fixed to handle empty arrays and null values properly
       if (filters.status && filters.status.length > 0) {
-        if (!filters.status.includes(task.status)) return false;
+        if (!task.status || !filters.status.includes(task.status)) return false;
       }
       
       // Priority filter
       if (filters.priority && filters.priority.length > 0) {
-        if (!filters.priority.includes(task.priority)) return false;
+        if (!task.priority || !filters.priority.includes(task.priority)) return false;
       }
       
       // Tags filter
@@ -113,6 +113,9 @@ export const createFilterSlice: StateCreator<TaskStore, [], [], FilterSlice> = (
   },
   
   getTasksByStatus: (status: TaskStatus) => {
-    return get().tasks.filter(task => task.status === status);
+    const allTasks = get().tasks;
+    // Add extra debug to help identify issues
+    console.log(`[FilterSlice] Getting tasks by status ${status}, total tasks available: ${allTasks.length}`);
+    return allTasks.filter(task => task.status === status);
   },
 });
