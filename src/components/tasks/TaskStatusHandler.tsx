@@ -53,8 +53,14 @@ export function handleStatusClick({
     console.log(`Undoing completion for task ${taskId}`);
     // Update local state
     setTask((prevTask: any) => ({ ...prevTask, status: TaskStatus.TODO }));
-    setIsExiting(false);
-    setIsRemoved(false);
+    
+    if (isExiting) {
+      setIsExiting(false);
+    }
+    
+    if (isRemoved) {
+      setIsRemoved(false);
+    }
 
     // Update in backend
     updateTask({ id: taskId, status: TaskStatus.TODO, _isRemoved: false })
@@ -82,7 +88,7 @@ export function handleStatusClick({
   if (currentStatus !== TaskStatus.DONE) {
     console.log(`Marking task ${taskId} as done`);
     
-    // Update local state
+    // Update local state first
     setTask((prevTask: any) => ({
       ...prevTask,
       status: TaskStatus.DONE

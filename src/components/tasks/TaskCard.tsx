@@ -54,10 +54,16 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
 
   // Memoize the finishExiting callback to prevent it from changing on every render
   const finishExiting = useCallback(() => {
+    // Only mark as removed if currently exiting and not already removed
+    console.log(`Animation finished for task ${task.id}, currently exiting: ${isExiting}, already removed: ${isRemoved}`);
+    
     if (isExiting && !isRemoved) {
       console.log(`Animation ended for task ${task.id}, marking as removed`);
+      
+      // Update the state first
       setIsRemoved(true);
       
+      // Then update the backend
       updateTask({ 
         id: task.id, 
         _isRemoved: true 
@@ -69,30 +75,38 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
 
   // Handle initialTask updates separately from state updates
   useEffect(() => {
+    // Only update task state if the ID matches and content is different
     if (initialTask.id === task.id && 
         JSON.stringify(initialTask) !== JSON.stringify(task)) {
       setTask(initialTask);
     }
   }, [initialTask, task.id]);
 
-  // Handle task status changes with clear conditions to prevent loops
+  // Safely manage task status changes
   useEffect(() => {
-    // Only transition to exiting state once and only if not already removed
+    // Only handle status change effects if needed - avoid unnecessary state updates
     if (task.status === TaskStatus.DONE && !isExiting && !isRemoved && !completeTimeoutRef.current) {
+      console.log(`Task ${task.id} marked as done, setting isExiting=true`);
       setIsExiting(true);
     } 
-    // Reset states when task is no longer DONE
     else if (task.status !== TaskStatus.DONE && (isExiting || isRemoved)) {
-      setIsExiting(false);
-      setIsRemoved(false);
+      console.log(`Task ${task.id} no longer done, resetting animation states`);
       
-      // Only update in the database if needed
-      if (task._isRemoved) {
-        updateTask({ id: task.id, _isRemoved: false })
-          .then(() => refreshTaskCounts());
+      if (isExiting) {
+        setIsExiting(false);
       }
       
-      // Always clean up timeout
+      if (isRemoved) {
+        setIsRemoved(false);
+        
+        // Only update in the database if needed
+        if (task._isRemoved) {
+          updateTask({ id: task.id, _isRemoved: false })
+            .then(() => refreshTaskCounts());
+        }
+      }
+      
+      // Clean up timeout
       if (completeTimeoutRef.current) {
         clearTimeout(completeTimeoutRef.current);
         completeTimeoutRef.current = null;
@@ -206,6 +220,7 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
         initialTask={task}
       />
       
+      {/* Only render the animation component when actually exiting */}
       {isExiting && (
         <TaskCardAnimation 
           isExiting={isExiting}
