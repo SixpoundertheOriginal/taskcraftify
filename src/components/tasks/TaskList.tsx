@@ -1,5 +1,5 @@
 
-import { memo } from 'react';
+import { memo, useEffect } from 'react';
 import { useTaskStore } from '@/store';
 import { TaskGroup } from './TaskGroup';
 import { TaskStatus } from '@/types/task';
@@ -8,6 +8,11 @@ import { TaskCard } from './TaskCard';
 export function TaskList() {
   const taskStore = useTaskStore();
   const filteredTasks = taskStore.getFilteredTasks();
+  
+  // Refresh task counts when the component mounts or tasks change
+  useEffect(() => {
+    taskStore.refreshTaskCounts();
+  }, [taskStore.tasks]);
 
   // Group tasks by status
   const todoTasks = filteredTasks.filter(task => task.status === TaskStatus.TODO);

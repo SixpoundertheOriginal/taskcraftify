@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { format } from 'date-fns';
 import { useTaskStore } from '@/store';
 import { useAuth } from '@/auth/AuthContext';
@@ -8,6 +8,11 @@ import { Sun, Moon, Cloud, Clock } from 'lucide-react';
 export function PersonalizedGreeting() {
   const { user } = useAuth();
   const taskStore = useTaskStore();
+  
+  // Refresh task counts when the component mounts
+  useEffect(() => {
+    taskStore.refreshTaskCounts();
+  }, []);
   
   // Get current time to personalize greeting
   const currentHour = new Date().getHours();
@@ -28,7 +33,7 @@ export function PersonalizedGreeting() {
     TimeIcon = Moon;
   }
   
-  // Get task statistics
+  // Get task statistics - ensure we fetch the latest data
   const tasksDueToday = taskStore.getTasksDueToday();
   const overdueTasks = taskStore.getOverdueTasks();
   const averageCompletionRate = taskStore.getAverageDailyCompletionRate();

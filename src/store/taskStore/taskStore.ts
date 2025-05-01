@@ -91,6 +91,9 @@ export const useTaskStore = create<TaskStore>()(
               id: taskId,
               status: taskStatus
             });
+            
+            // Refresh task counts after updating task status
+            statsSlice.refreshTaskCounts();
           } catch (error) {
             console.error("[TaskStore] Error setting task status:", error);
             throw error;
@@ -142,6 +145,9 @@ export const useTaskStore = create<TaskStore>()(
                 }
               });
               
+              // Refresh task counts after fetching task
+              statsSlice.refreshTaskCounts();
+              
               return updatedTask;
             }
             
@@ -162,6 +168,7 @@ export const useTaskStore = create<TaskStore>()(
           });
           
           taskSlice.tasks.forEach(task => {
+            if (task._isRemoved) return; // Skip removed tasks
             counts[task.status] = (counts[task.status] || 0) + 1;
           });
           
@@ -169,7 +176,9 @@ export const useTaskStore = create<TaskStore>()(
         },
         
         getAverageDailyCompletionRate: () => {
-          const completedTasks = taskSlice.tasks.filter(task => task.status === TaskStatus.DONE);
+          const completedTasks = taskSlice.tasks.filter(task => 
+            !task._isRemoved && task.status === TaskStatus.DONE
+          );
           if (completedTasks.length === 0) return 0;
           
           const oldestCompletionDate = completedTasks.reduce((oldest, task) => {
@@ -185,20 +194,25 @@ export const useTaskStore = create<TaskStore>()(
         
         getTasksDueToday: () => {
           return taskSlice.tasks.filter(task => 
+            !task._isRemoved && 
             task.status !== TaskStatus.DONE && 
             task.status !== TaskStatus.ARCHIVED && 
             task.dueDate && 
-            isToday(task.dueDate)
+            isToday(new Date(task.dueDate))
           );
         },
         
         getOverdueTasks: () => {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
           return taskSlice.tasks.filter(task => 
+            !task._isRemoved && 
             task.status !== TaskStatus.DONE && 
             task.status !== TaskStatus.ARCHIVED && 
             task.dueDate && 
-            isPast(task.dueDate) && 
-            !isToday(task.dueDate)
+            isPast(new Date(task.dueDate)) && 
+            !isToday(new Date(task.dueDate))
           );
         }
       };

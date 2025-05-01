@@ -172,8 +172,9 @@ export function FilterIndicator({
                     );
                   }
                   
+                  // Skip the second date field if we already have the first one
+                  // Safe comparison of string literal types using string equality
                   if (key === 'dueDateTo' && filters.dueDateFrom) {
-                    // Skip the second date field if we already have the first one
                     return null;
                   }
                   

@@ -74,7 +74,7 @@ export const createFilterSlice: StateCreator<TaskStore, [], [], FilterSlice> = (
       
       // Tags filter
       if (filters.tags && filters.tags.length > 0) {
-        if (!task.tags || !filters.tags.some(tag => task.tags?.includes(tag))) {
+        if (!task.tags || !task.tags.some(tag => filters.tags?.includes(tag))) {
           return false;
         }
       }

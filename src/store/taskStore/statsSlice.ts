@@ -32,13 +32,13 @@ export const createStatsSlice: StateCreator<
   },
   
   refreshTaskCounts: async () => {
-    console.log("Refreshing task counts");
+    console.log("[StatsSlice] Refreshing task counts");
     
     try {
       // Calculate counts based on current tasks in the store, filtering out removed tasks
       const tasks = get().tasks.filter(task => !task._isRemoved);
       
-      console.log(`Calculating counts for ${tasks.length} visible tasks in store`);
+      console.log(`[StatsSlice] Calculating counts for ${tasks.length} visible tasks in store`);
       
       const byProject: Record<string, number> = {};
       const byStatus: Record<string, number> = {};
@@ -57,7 +57,7 @@ export const createStatsSlice: StateCreator<
         byStatus[task.status] = (byStatus[task.status] || 0) + 1;
       });
       
-      console.log("Task counts calculated:", {
+      console.log("[StatsSlice] Task counts calculated:", {
         total: tasks.length,
         byProject,
         byStatus
@@ -71,7 +71,7 @@ export const createStatsSlice: StateCreator<
         }
       });
     } catch (error) {
-      console.error("Error refreshing task counts:", error);
+      console.error("[StatsSlice] Error refreshing task counts:", error);
     }
   }
 });
