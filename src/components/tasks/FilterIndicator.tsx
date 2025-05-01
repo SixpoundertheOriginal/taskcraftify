@@ -33,16 +33,27 @@ export function FilterIndicator({
   onClearAllFilters,
   allTags
 }: FilterIndicatorProps) {
-  // Count active filters with better handling
+  // Count active filters with improved handling
   const activeFiltersCount = Object.keys(filters).reduce((count, key) => {
+    // Skip status filter if it's the default one (TODO, IN_PROGRESS)
+    if (key === 'status' && 
+        Array.isArray(filters.status) && 
+        filters.status.length === 2 && 
+        filters.status.includes('TODO') && 
+        filters.status.includes('IN_PROGRESS')) {
+      return count;
+    }
+    
     // Only count search query if it's not empty
     if (key === 'searchQuery') {
       return filters.searchQuery && filters.searchQuery.trim() !== '' ? count + 1 : count;
     }
+    
     // Count tags as a single filter
     if (key === 'tags') {
       return filters.tags && filters.tags.length > 0 ? count + 1 : count;
     }
+    
     // Count date range as a single filter
     if (key === 'dueDateFrom' || key === 'dueDateTo') {
       // Already counted this filter if we've seen the other date field
@@ -52,11 +63,13 @@ export function FilterIndicator({
       }
       return (filters.dueDateFrom || filters.dueDateTo) ? count + 1 : count;
     }
+    
     // For arrays, only count if they have items
     if (Array.isArray(filters[key as keyof TaskFilters])) {
       const arr = filters[key as keyof TaskFilters] as any[];
       return arr.length > 0 ? count + 1 : count;
     }
+    
     // Default handling for other filter types
     return filters[key as keyof TaskFilters] ? count + 1 : count;
   }, 0);
@@ -137,6 +150,15 @@ export function FilterIndicator({
             <ScrollArea className="max-h-[300px]">
               <div className="space-y-2">
                 {Object.keys(filters).map(key => {
+                  // Skip default status filter (TODO and IN_PROGRESS)
+                  if (key === 'status' && 
+                      Array.isArray(filters.status) && 
+                      filters.status.length === 2 && 
+                      filters.status.includes('TODO') && 
+                      filters.status.includes('IN_PROGRESS')) {
+                    return null;
+                  }
+                  
                   // Skip empty search queries
                   if (key === 'searchQuery' && (!filters.searchQuery || filters.searchQuery.trim() === '')) {
                     return null;
@@ -147,7 +169,7 @@ export function FilterIndicator({
                     return null;
                   }
                   
-                  // Handle date filters as one entry - fixing the type comparison issue correctly
+                  // Handle date filters as one entry
                   if (key === 'dueDateFrom' && filters.dueDateTo) {
                     // This is the first date field and we also have the second one
                     // Show just one entry for the date range
@@ -173,7 +195,6 @@ export function FilterIndicator({
                   }
                   
                   // Skip the second date field if we already have the first one
-                  // Safe comparison of string literal types using string equality
                   if (key === 'dueDateTo' && filters.dueDateFrom) {
                     return null;
                   }

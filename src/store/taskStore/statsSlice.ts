@@ -53,8 +53,13 @@ export const createStatsSlice: StateCreator<
         const projectId = task.projectId || 'none';
         byProject[projectId] = (byProject[projectId] || 0) + 1;
         
-        // Count by status
-        byStatus[task.status] = (byStatus[task.status] || 0) + 1;
+        // Count by status (ensure task.status is valid)
+        if (task.status) {
+          byStatus[task.status] = (byStatus[task.status] || 0) + 1;
+        } else {
+          // Default to TODO status if for some reason task.status is missing
+          byStatus[TaskStatus.TODO] = (byStatus[TaskStatus.TODO] || 0) + 1;
+        }
       });
       
       console.log("[StatsSlice] Task counts calculated:", {

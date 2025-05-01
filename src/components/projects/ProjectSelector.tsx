@@ -27,7 +27,7 @@ export function ProjectSelector({
 }: ProjectSelectorProps) {
   // Ensure projects is never undefined
   const { projects = [], selectedProjectId, selectProject } = useProjectStore();
-  const { fetchTasksByProject } = useTaskStore();
+  const { fetchTasksByProject, filters, setFilters, fetchTasks } = useTaskStore();
   
   // Ensure projects is an array
   const safeProjects = Array.isArray(projects) ? projects : [];
@@ -42,14 +42,27 @@ export function ProjectSelector({
     console.log("ProjectSelector - Project selected:", id);
     selectProject(id);
     
-    // If a project is selected, fetch its tasks
-    if (id) {
-      await fetchTasksByProject(id);
-    }
+    // Update filters based on project selection
+    const newFilters = { ...filters };
     
-    // If "No Project" is selected, fetch tasks with no project
-    if (id === 'none') {
-      await fetchTasksByProject('none');
+    if (id === null) {
+      // Remove project filter when "All Projects" is selected
+      if (newFilters.projectId) {
+        const { projectId, ...restFilters } = newFilters;
+        setFilters(restFilters);
+      }
+      
+      // Fetch all tasks when "All Projects" is selected
+      console.log("ProjectSelector - Fetching all tasks after selecting 'All Projects'");
+      await fetchTasks();
+    } else {
+      // Set project filter when specific project or "No Project" is selected
+      newFilters.projectId = id === 'none' ? 'none' : id;
+      setFilters(newFilters);
+      
+      // Fetch tasks for the selected project
+      console.log(`ProjectSelector - Fetching tasks for project: ${id}`);
+      await fetchTasksByProject(id);
     }
     
     setOpen(false);
@@ -67,6 +80,12 @@ export function ProjectSelector({
       currentProjectText = project.name || "Unnamed Project";
     }
   }
+  
+  console.log("ProjectSelector - Current state:", {
+    selectedProjectId,
+    projectsCount: safeProjects.length,
+    currentText: currentProjectText
+  });
   
   return (
     <DropdownMenu open={open} onOpenChange={handleOpenChange}>

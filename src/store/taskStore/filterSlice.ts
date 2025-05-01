@@ -64,7 +64,10 @@ export const createFilterSlice: StateCreator<TaskStore, [], [], FilterSlice> = (
       
       // Status filter - fixed to handle empty arrays and null values properly
       if (filters.status && filters.status.length > 0) {
-        if (!task.status || !filters.status.includes(task.status)) return false;
+        // Make sure task.status isn't undefined or null before checking inclusion
+        if (!task.status || !filters.status.includes(task.status)) {
+          return false;
+        }
       }
       
       // Priority filter
@@ -82,8 +85,8 @@ export const createFilterSlice: StateCreator<TaskStore, [], [], FilterSlice> = (
       // Search query
       if (filters.searchQuery && filters.searchQuery.trim() !== '') {
         const query = filters.searchQuery.toLowerCase();
-        const matchesTitle = task.title.toLowerCase().includes(query);
-        const matchesDescription = task.description?.toLowerCase().includes(query) || false;
+        const matchesTitle = (task.title || '').toLowerCase().includes(query);
+        const matchesDescription = (task.description || '').toLowerCase().includes(query);
         
         if (!matchesTitle && !matchesDescription) return false;
       }
@@ -116,6 +119,6 @@ export const createFilterSlice: StateCreator<TaskStore, [], [], FilterSlice> = (
     const allTasks = get().tasks;
     // Add extra debug to help identify issues
     console.log(`[FilterSlice] Getting tasks by status ${status}, total tasks available: ${allTasks.length}`);
-    return allTasks.filter(task => task.status === status);
+    return allTasks.filter(task => task.status === status && !task._isRemoved);
   },
 });

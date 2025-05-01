@@ -73,7 +73,9 @@ export function TaskView() {
         const allTasks = tasks.length;
         const visibleTasks = getFilteredTasks().length;
         
-        if (allTasks > 0 && visibleTasks === 0 && Object.keys(filters).length > 0) {
+        // Don't show the no-tasks-visible warning immediately after initialization
+        // Let the user see their data first, then they can apply filters
+        if (allTasks > 0 && visibleTasks === 0 && Object.keys(filters).length > 1) {
           toast({
             title: "Tasks are being filtered",
             description: `You have ${allTasks} tasks, but none match your current filters.`,
@@ -109,16 +111,18 @@ export function TaskView() {
   }, [tasks.length, getFilteredTasks, filters, initialFetchComplete]);
   
   useEffect(() => {
+    // Only apply default filters if there are no filters set and we're on the my-tasks tab
     if (activeTab === 'my-tasks' && Object.keys(filters).length === 0) {
+      console.log("Setting default filters for My Tasks tab");
       setFilters({ 
         status: [TaskStatus.TODO, TaskStatus.IN_PROGRESS] 
       });
     }
     
-    if (filters.searchQuery) {
+    if (filters.searchQuery && searchQuery !== filters.searchQuery) {
       setSearchQuery(filters.searchQuery);
     }
-  }, [filters, setFilters, activeTab]);
+  }, [activeTab, filters.searchQuery]);
   
   const filteredTasks = useMemo(() => {
     return getFilteredTasks();
@@ -135,19 +139,21 @@ export function TaskView() {
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     
-    const newFilters = { ...filters };
-    
+    // Let's make this behavior more intuitive
     if (tab === 'my-tasks') {
-      newFilters.status = [TaskStatus.TODO, TaskStatus.IN_PROGRESS];
-      setFilters(newFilters);
+      // Only set default filters if there are no filters currently set
+      if (Object.keys(filters).length === 0) {
+        setFilters({ status: [TaskStatus.TODO, TaskStatus.IN_PROGRESS] });
+      }
     } 
     else if (tab === 'all-tasks') {
-      delete newFilters.status;
-      setFilters(newFilters);
+      // For "All Tasks", remove status filters but keep other filters
+      const { status, ...restFilters } = filters;
+      setFilters(restFilters);
     } 
     else if (tab === 'completed') {
-      newFilters.status = [TaskStatus.DONE];
-      setFilters(newFilters);
+      // For "Completed", set status to DONE
+      setFilters({...filters, status: [TaskStatus.DONE]});
     } 
     else if (tab === 'focus') {
       // My focus view has its own filtering logic

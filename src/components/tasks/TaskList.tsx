@@ -12,13 +12,26 @@ export function TaskList() {
   // Refresh task counts when the component mounts or tasks change
   useEffect(() => {
     taskStore.refreshTaskCounts();
-  }, [taskStore.tasks]);
+  }, [taskStore, taskStore.tasks]);
+
+  // Debug logs to help diagnose issues
+  console.log("[TaskList] Current task count:", taskStore.tasks.length);
+  console.log("[TaskList] Filtered tasks:", filteredTasks.length);
+  console.log("[TaskList] Current filters:", taskStore.filters);
 
   // Group tasks by status
   const todoTasks = filteredTasks.filter(task => task.status === TaskStatus.TODO);
   const inProgressTasks = filteredTasks.filter(task => task.status === TaskStatus.IN_PROGRESS);
   const doneTasks = filteredTasks.filter(task => task.status === TaskStatus.DONE);
   const backlogTasks = filteredTasks.filter(task => task.status === TaskStatus.BACKLOG);
+  
+  // Additional debug logs for task counts by status
+  console.log("[TaskList] Tasks by status:", {
+    todo: todoTasks.length,
+    inProgress: inProgressTasks.length,
+    done: doneTasks.length,
+    backlog: backlogTasks.length
+  });
   
   return (
     <div className="space-y-8 mb-8 px-1">

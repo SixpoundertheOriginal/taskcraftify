@@ -11,8 +11,9 @@ export function PersonalizedGreeting() {
   
   // Refresh task counts when the component mounts
   useEffect(() => {
+    console.log("[PersonalizedGreeting] Refreshing task counts");
     taskStore.refreshTaskCounts();
-  }, []);
+  }, [taskStore]);
   
   // Get current time to personalize greeting
   const currentHour = new Date().getHours();
@@ -33,10 +34,16 @@ export function PersonalizedGreeting() {
     TimeIcon = Moon;
   }
   
-  // Get task statistics - ensure we fetch the latest data
+  // Get task statistics - force a calculation to ensure fresh data
   const tasksDueToday = taskStore.getTasksDueToday();
   const overdueTasks = taskStore.getOverdueTasks();
   const averageCompletionRate = taskStore.getAverageDailyCompletionRate();
+  
+  console.log("[PersonalizedGreeting] Task counts:", {
+    dueToday: tasksDueToday.length,
+    overdue: overdueTasks.length,
+    averageRate: averageCompletionRate
+  });
   
   // Get username
   const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'there';

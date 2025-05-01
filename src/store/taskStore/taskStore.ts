@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { Task, TaskStatus, TaskPriority } from '@/types/task';
@@ -73,7 +72,9 @@ export const useTaskStore = create<TaskStore>()(
           console.log(`[TaskStore] After removing _isRemoved tasks: ${visibleTasks.length} tasks remain`);
           
           // Use the filter slice to get filtered tasks
-          return filterSlice.getFilteredTasks(visibleTasks);
+          const result = filterSlice.getFilteredTasks(visibleTasks);
+          console.log(`[TaskStore] Final filtered tasks count: ${result.length}`);
+          return result;
         },
         
         // Use statsSlice.refreshTaskCounts with no arguments
@@ -193,27 +194,64 @@ export const useTaskStore = create<TaskStore>()(
         },
         
         getTasksDueToday: () => {
-          return taskSlice.tasks.filter(task => 
-            !task._isRemoved && 
-            task.status !== TaskStatus.DONE && 
-            task.status !== TaskStatus.ARCHIVED && 
-            task.dueDate && 
-            isToday(new Date(task.dueDate))
-          );
-        },
-        
-        getOverdueTasks: () => {
+          console.log("[TaskStore] Getting tasks due today");
           const today = new Date();
           today.setHours(0, 0, 0, 0);
           
-          return taskSlice.tasks.filter(task => 
-            !task._isRemoved && 
-            task.status !== TaskStatus.DONE && 
-            task.status !== TaskStatus.ARCHIVED && 
-            task.dueDate && 
-            isPast(new Date(task.dueDate)) && 
-            !isToday(new Date(task.dueDate))
-          );
+          const tomorrow = new Date(today);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          
+          return taskSlice.tasks.filter(task => {
+            // Skip removed tasks
+            if (task._isRemoved) return false;
+            
+            // Skip completed or archived tasks
+            if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) return false;
+            
+            // Skip tasks without due dates
+            if (!task.dueDate) return false;
+            
+            try {
+              // Parse date safely
+              const dueDate = new Date(task.dueDate);
+              
+              // Check if due date is today
+              const isTaskDueToday = dueDate >= today && dueDate < tomorrow;
+              
+              return isTaskDueToday;
+            } catch (e) {
+              console.error("Error parsing due date:", e);
+              return false;
+            }
+          });
+        },
+        
+        getOverdueTasks: () => {
+          console.log("[TaskStore] Getting overdue tasks");
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          return taskSlice.tasks.filter(task => {
+            // Skip removed tasks
+            if (task._isRemoved) return false;
+            
+            // Skip completed or archived tasks
+            if (task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) return false;
+            
+            // Skip tasks without due dates
+            if (!task.dueDate) return false;
+            
+            try {
+              // Parse date safely
+              const dueDate = new Date(task.dueDate);
+              
+              // Check if due date is in the past (before today)
+              return dueDate < today;
+            } catch (e) {
+              console.error("Error parsing due date:", e);
+              return false;
+            }
+          });
         }
       };
     },
