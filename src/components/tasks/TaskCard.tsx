@@ -123,6 +123,7 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
     setIsTaskFormOpen(true);
   }, []);
 
+  // Memoized handler for status changes to prevent recreation on each render
   const handleStatusClickCallback = useCallback((e: React.MouseEvent) => {
     handleStatusClick({
       taskId: task.id,
@@ -139,8 +140,7 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
       setIsRemoved,
       setLastClickTime
     });
-  }, [task.id, task.title, task.status, isExiting, isRemoved, lastClickTime, 
-      updateTask, refreshTaskCounts]);
+  }, [task.id, task.title, task.status, isExiting, isRemoved, lastClickTime, updateTask, refreshTaskCounts]);
   
   // If task is done and removed, don't render it
   if (task.status === TaskStatus.DONE && isRemoved) {

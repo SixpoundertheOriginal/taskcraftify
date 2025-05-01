@@ -11,7 +11,7 @@ interface TaskStatusHandlerProps {
   isRemoved: boolean;
   lastClickTime: number;
   completeTimeoutRef: MutableRefObject<NodeJS.Timeout | null>;
-  updateTask: (data: { id: string; status: TaskStatus; _isRemoved?: boolean }) => Promise<any>;
+  updateTask: (data: { id: string; status?: TaskStatus; _isRemoved?: boolean }) => Promise<any>;
   refreshTaskCounts: () => void;
   setTask: (task: any) => void;
   setIsExiting: (value: boolean) => void;
@@ -88,11 +88,25 @@ export function handleStatusClick({
       status: TaskStatus.DONE
     }));
     
-    // Only trigger animation if not already exiting
-    if (!isExiting) {
-      setIsExiting(true);
-    }
-    
+    // Update in backend and only trigger animation after successful update
+    updateTask({ id: taskId, status: TaskStatus.DONE })
+      .then(() => {
+        refreshTaskCounts();
+        // Only trigger animation if not already exiting
+        if (!isExiting) {
+          setIsExiting(true);
+        }
+      })
+      .catch(() => {
+        // Revert on error
+        setTask((prevTask: any) => ({ ...prevTask, status: currentStatus }));
+        toast({
+          title: "Status update failed", 
+          description: "Failed to mark task as done. Please try again.",
+          variant: "destructive"
+        });
+      });
+      
     return;
   }
 

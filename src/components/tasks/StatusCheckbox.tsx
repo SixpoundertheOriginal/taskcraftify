@@ -76,5 +76,4 @@ export const StatusCheckbox = memo(function StatusCheckbox({
     prevProps.isExiting === nextProps.isExiting &&
     prevProps.isRemoved === nextProps.isRemoved &&
     prevProps.isArchived === nextProps.isArchived;
-    // Note: We intentionally don't compare onStatusClick here to avoid over-optimization
 });

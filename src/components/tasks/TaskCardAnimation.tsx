@@ -23,6 +23,7 @@ export function TaskCardAnimation({
     }
     
     if (isExiting) {
+      console.log(`Setting animation timeout for ${EXIT_ANIMATION_DURATION}ms`);
       // Set the new timeout and store it in the ref
       timeoutIdRef.current = setTimeout(() => {
         // Clear the ref before executing callback to prevent issues
@@ -38,7 +39,8 @@ export function TaskCardAnimation({
         timeoutIdRef.current = null;
       }
     };
-  }, [isExiting, finishExiting, EXIT_ANIMATION_DURATION]);
+  // Only run when isExiting changes or component unmounts
+  }, [isExiting, EXIT_ANIMATION_DURATION]);
   
   // Return null as this is a behavior component, not a UI component
   return null;
