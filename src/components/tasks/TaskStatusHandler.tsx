@@ -50,10 +50,16 @@ export function handleStatusClick({
       completeTimeoutRef.current = null;
     }
     
-    console.log(`Undoing completion for task ${taskId}`);
-    // Update local state
-    setTask((prevTask: any) => ({ ...prevTask, status: TaskStatus.TODO }));
+    console.log(`TaskStatusHandler: Undoing completion for task ${taskId}`);
     
+    // Update local state (make a functional update to avoid stale state)
+    setTask((prevTask: any) => {
+      // Prevent unnecessary updates if the status is already changed
+      if (prevTask.status === TaskStatus.TODO) return prevTask;
+      return { ...prevTask, status: TaskStatus.TODO };
+    });
+    
+    // Only update these states if they're not already set correctly
     if (isExiting) {
       setIsExiting(false);
     }
@@ -86,13 +92,14 @@ export function handleStatusClick({
 
   // Mark a task as done
   if (currentStatus !== TaskStatus.DONE) {
-    console.log(`Marking task ${taskId} as done`);
+    console.log(`TaskStatusHandler: Marking task ${taskId} as done`);
     
-    // Update local state first
-    setTask((prevTask: any) => ({
-      ...prevTask,
-      status: TaskStatus.DONE
-    }));
+    // Update local state first (use functional update to avoid stale state)
+    setTask((prevTask: any) => {
+      // Prevent unnecessary updates if the status is already changed
+      if (prevTask.status === TaskStatus.DONE) return prevTask;
+      return { ...prevTask, status: TaskStatus.DONE };
+    });
     
     // Update in backend and only trigger animation after successful update
     updateTask({ id: taskId, status: TaskStatus.DONE })
@@ -118,13 +125,14 @@ export function handleStatusClick({
 
   // Reopen an already-done task
   if (currentStatus === TaskStatus.DONE && !completeTimeoutRef.current) {
-    console.log(`Reopening already-done task ${taskId}`);
+    console.log(`TaskStatusHandler: Reopening already-done task ${taskId}`);
     
-    // Update local state
-    setTask((prevTask: any) => ({
-      ...prevTask,
-      status: TaskStatus.TODO
-    }));
+    // Update local state with functional update
+    setTask((prevTask: any) => {
+      // Prevent unnecessary updates if the status is already changed
+      if (prevTask.status === TaskStatus.TODO) return prevTask;
+      return { ...prevTask, status: TaskStatus.TODO };
+    });
     
     updateTask({ id: taskId, status: TaskStatus.TODO, _isRemoved: false })
       .then(() => {

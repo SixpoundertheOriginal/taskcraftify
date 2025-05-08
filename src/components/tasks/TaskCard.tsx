@@ -33,6 +33,9 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
   const [lastClickTime, setLastClickTime] = useState(0);
   const completeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Track if we're in the middle of an animation transition
+  const isTransitioningRef = useRef(false);
+  
   const {
     attributes,
     listeners,
@@ -54,11 +57,11 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
 
   // Memoize the finishExiting callback to prevent it from changing on every render
   const finishExiting = useCallback(() => {
-    // Only mark as removed if currently exiting and not already removed
-    console.log(`Animation finished for task ${task.id}, currently exiting: ${isExiting}, already removed: ${isRemoved}`);
+    console.log(`TaskCard: finishExiting called for task ${task.id}, isExiting=${isExiting}, isRemoved=${isRemoved}`);
     
+    // Only mark as removed if currently exiting and not already removed
     if (isExiting && !isRemoved) {
-      console.log(`Animation ended for task ${task.id}, marking as removed`);
+      console.log(`TaskCard: Marking task ${task.id} as removed`);
       
       // Update the state first
       setIsRemoved(true);
@@ -82,15 +85,27 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
     }
   }, [initialTask, task.id]);
 
-  // Safely manage task status changes
+  // Safely manage task status changes - with guards to prevent infinite loops
   useEffect(() => {
-    // Only handle status change effects if needed - avoid unnecessary state updates
+    // Skip if we're already transitioning to avoid loop
+    if (isTransitioningRef.current) {
+      return;
+    }
+
+    // Only handle status change effects if needed
     if (task.status === TaskStatus.DONE && !isExiting && !isRemoved && !completeTimeoutRef.current) {
-      console.log(`Task ${task.id} marked as done, setting isExiting=true`);
+      console.log(`TaskCard: Task ${task.id} marked as done, setting isExiting=true`);
+      isTransitioningRef.current = true;
       setIsExiting(true);
+      // Reset the transition flag after the state update
+      setTimeout(() => {
+        isTransitioningRef.current = false;
+      }, 0);
     } 
     else if (task.status !== TaskStatus.DONE && (isExiting || isRemoved)) {
-      console.log(`Task ${task.id} no longer done, resetting animation states`);
+      console.log(`TaskCard: Task ${task.id} no longer done, resetting animation states`);
+      
+      isTransitioningRef.current = true;
       
       if (isExiting) {
         setIsExiting(false);
@@ -111,6 +126,11 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
         clearTimeout(completeTimeoutRef.current);
         completeTimeoutRef.current = null;
       }
+      
+      // Reset the transition flag after the state updates
+      setTimeout(() => {
+        isTransitioningRef.current = false;
+      }, 0);
     }
   }, [task.status, isExiting, isRemoved, task.id, task._isRemoved, updateTask, refreshTaskCounts]);
 

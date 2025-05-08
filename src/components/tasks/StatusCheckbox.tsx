@@ -39,6 +39,7 @@ export const StatusCheckbox = memo(function StatusCheckbox({
             onClick={(e) => {
               // Prevent event propagation
               e.stopPropagation();
+              e.preventDefault();
               onStatusClick(e);
             }}
             className={cn(

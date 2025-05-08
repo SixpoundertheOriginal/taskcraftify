@@ -15,6 +15,6 @@
 }
 
 .animate-fade-slide-out {
-  animation: fade-slide-out 3000ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: fade-slide-out 3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   pointer-events: none;
 }
