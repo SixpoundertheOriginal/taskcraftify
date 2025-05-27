@@ -1,5 +1,5 @@
 
-import { useState, useRef, useEffect, useCallback, memo, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
@@ -21,7 +21,7 @@ export interface TaskCardProps {
   className?: string;
 }
 
-function TaskCardComponent({ task: initialTask, compact = false, className }: TaskCardProps) {
+function TaskCardComponent({ task, compact = false, className }: TaskCardProps) {
   const { updateTask, deleteTask, refreshTaskCounts } = useTaskStore();
   const { projects } = useProjectStore();
   const [isExpanded, setIsExpanded] = useState(true);
@@ -32,39 +32,20 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
   const completeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Use a stable reference to the task to prevent sortable re-initialization
-  const taskRef = useRef(initialTask);
-  const [localTaskUpdates, setLocalTaskUpdates] = useState<Partial<Task>>({});
-  
-  // Update the ref when the task prop changes
-  useEffect(() => {
-    taskRef.current = initialTask;
-    // Clear local updates when parent task changes
-    setLocalTaskUpdates({});
-  }, [initialTask]);
-  
-  // Merge task with local updates for rendering
-  const currentTask = useMemo(() => ({
-    ...taskRef.current,
-    ...localTaskUpdates
-  }), [localTaskUpdates]);
-  
-  // Stable sortable configuration
-  const sortableConfig = useMemo(() => ({
-    id: initialTask.id,
-    data: {
-      type: 'task',
-      taskId: initialTask.id
-    }
-  }), [initialTask.id]);
-  
+  // Use stable sortable configuration - only depends on task.id which should not change
   const {
     attributes,
     listeners,
     setNodeRef,
     transform,
     transition,
-  } = useSortable(sortableConfig);
+  } = useSortable({
+    id: task.id,
+    data: {
+      type: 'task',
+      taskId: task.id
+    }
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -73,7 +54,7 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
 
   // Stable finishExiting callback
   const finishExiting = useCallback(() => {
-    console.log(`TaskCard: finishExiting called for task ${currentTask.id}`);
+    console.log(`TaskCard: finishExiting called for task ${task.id}`);
     
     if (animationTimeoutRef.current) {
       clearTimeout(animationTimeoutRef.current);
@@ -83,7 +64,7 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
     setIsRemoved(true);
     
     updateTask({ 
-      id: currentTask.id, 
+      id: task.id, 
       _isRemoved: true 
     }).then(() => {
       refreshTaskCounts();
@@ -91,12 +72,12 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
       console.error('Failed to mark task as removed:', error);
       setIsRemoved(false);
     });
-  }, [currentTask.id, updateTask, refreshTaskCounts]);
+  }, [task.id, updateTask, refreshTaskCounts]);
 
-  // Animation effect
+  // Animation effect - simplified dependencies
   useEffect(() => {
-    if (currentTask.status === TaskStatus.DONE && !isExiting && !isRemoved) {
-      console.log(`TaskCard: Starting exit animation for task ${currentTask.id}`);
+    if (task.status === TaskStatus.DONE && !isExiting && !isRemoved) {
+      console.log(`TaskCard: Starting exit animation for task ${task.id}`);
       setIsExiting(true);
       
       if (!animationTimeoutRef.current) {
@@ -104,8 +85,8 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
       }
     }
     
-    if (currentTask.status !== TaskStatus.DONE && isExiting) {
-      console.log(`TaskCard: Stopping animation for task ${currentTask.id}`);
+    if (task.status !== TaskStatus.DONE && isExiting) {
+      console.log(`TaskCard: Stopping animation for task ${task.id}`);
       setIsExiting(false);
       setIsRemoved(false);
       
@@ -118,7 +99,7 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
         completeTimeoutRef.current = null;
       }
     }
-  }, [currentTask.status, isExiting, isRemoved, finishExiting]);
+  }, [task.status, task.id, isExiting, isRemoved, finishExiting]);
 
   // Cleanup effect
   useEffect(() => {
@@ -134,11 +115,9 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
     };
   }, []);
 
-  const projectName = useMemo(() => {
-    return currentTask.projectId 
-      ? projects.find(p => p.id === currentTask.projectId)?.name || 'Unknown Project'
-      : null;
-  }, [currentTask.projectId, projects]);
+  const projectName = task.projectId 
+    ? projects.find(p => p.id === task.projectId)?.name || 'Unknown Project'
+    : null;
 
   const toggleExpanded = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -149,28 +128,23 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
     setIsTaskFormOpen(true);
   }, []);
 
-  // Updated setTask function to work with local updates
+  // Simplified setTask function that updates the task directly
   const setTask = useCallback((updateOrFunction: Partial<Task> | ((prev: Task) => Task)) => {
     if (typeof updateOrFunction === 'function') {
-      const updatedTask = updateOrFunction(currentTask);
-      setLocalTaskUpdates(prev => ({
-        ...prev,
-        ...updatedTask
-      }));
+      const updatedTask = updateOrFunction(task);
+      // We don't need local state anymore, just update directly
+      console.log('TaskCard: setTask function update', updatedTask);
     } else {
-      setLocalTaskUpdates(prev => ({
-        ...prev,
-        ...updateOrFunction
-      }));
+      console.log('TaskCard: setTask partial update', updateOrFunction);
     }
-  }, [currentTask]);
+  }, [task]);
 
   // Status click handler
   const handleStatusClickCallback = useCallback((e: React.MouseEvent) => {
     handleStatusClick({
-      taskId: currentTask.id,
-      taskTitle: currentTask.title,
-      currentStatus: currentTask.status,
+      taskId: task.id,
+      taskTitle: task.title,
+      currentStatus: task.status,
       isExiting,
       isRemoved,
       lastClickTime,
@@ -182,10 +156,10 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
       setIsRemoved,
       setLastClickTime
     });
-  }, [currentTask.id, currentTask.title, currentTask.status, lastClickTime, isExiting, isRemoved, updateTask, refreshTaskCounts, setTask]);
+  }, [task.id, task.title, task.status, lastClickTime, isExiting, isRemoved, updateTask, refreshTaskCounts, setTask]);
   
   // Don't render if task is done and removed
-  if (currentTask.status === TaskStatus.DONE && isRemoved) {
+  if (task.status === TaskStatus.DONE && isRemoved) {
     return null;
   }
   
@@ -210,28 +184,28 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
       >
         <div className="flex items-start gap-2 p-2">
           <StatusCheckbox
-            isDone={currentTask.status === TaskStatus.DONE}
+            isDone={task.status === TaskStatus.DONE}
             isExiting={isExiting}
             isRemoved={isRemoved}
-            isArchived={currentTask.status === TaskStatus.ARCHIVED}
+            isArchived={task.status === TaskStatus.ARCHIVED}
             completeTimeoutRef={completeTimeoutRef}
             onStatusClick={handleStatusClickCallback}
           />
           <div className="flex-1 min-w-0">
             <TaskCardHeader
-              title={currentTask.title}
-              isDone={currentTask.status === TaskStatus.DONE}
+              title={task.title}
+              isDone={task.status === TaskStatus.DONE}
               isExpanded={isExpanded}
               onToggleExpanded={toggleExpanded}
             />
             <TaskCardDetails
-              task={currentTask}
+              task={task}
               projectName={projectName}
               isExpanded={isExpanded}
               compact={compact}
             />
             <TaskCardActions
-              task={currentTask}
+              task={task}
               setTask={setTask}
               setIsExiting={setIsExiting}
               setIsRemoved={setIsRemoved}
@@ -245,7 +219,7 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
       <TaskForm 
         open={isTaskFormOpen}
         onOpenChange={setIsTaskFormOpen}
-        initialTask={currentTask}
+        initialTask={task}
       />
     </>
   );
