@@ -33,15 +33,14 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
   const completeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Stabilize the sortable data to prevent infinite re-renders
+  // Create a stable ID that never changes to prevent useSortable re-initialization
+  const stableTaskId = useMemo(() => initialTask.id, [initialTask.id]);
+  
+  // Completely stable sortable data that only depends on the initial task ID
   const sortableData = useMemo(() => ({
     type: 'task',
-    task: {
-      id: task.id,
-      status: task.status,
-      title: task.title
-    }
-  }), [task.id, task.status, task.title]);
+    taskId: stableTaskId
+  }), [stableTaskId]);
   
   const {
     attributes,
@@ -50,7 +49,7 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
     transform,
     transition,
   } = useSortable({
-    id: task.id,
+    id: stableTaskId,
     data: sortableData
   });
 
@@ -59,22 +58,23 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
     transition
   };
 
-  // Task update effect with proper dependency management
+  // Task update effect - only sync when props change, not when local state changes
   useEffect(() => {
     if (initialTask.id === task.id) {
-      const hasEssentialChanges = (
+      // Only update if there are actual changes from the parent
+      const hasChanges = (
         initialTask.status !== task.status || 
         initialTask.title !== task.title || 
         initialTask.description !== task.description ||
         initialTask.updatedAt !== task.updatedAt
       );
       
-      if (hasEssentialChanges) {
-        console.log(`TaskCard: Updating local task state for ${task.id}`);
+      if (hasChanges) {
+        console.log(`TaskCard: Syncing task state for ${task.id}`);
         setTask(initialTask);
       }
     }
-  }, [initialTask, task.id, task.status]);
+  }, [initialTask.id, initialTask.status, initialTask.title, initialTask.description, initialTask.updatedAt]);
 
   // Stable finishExiting callback
   const finishExiting = useCallback(() => {
@@ -98,16 +98,18 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
     });
   }, [task.id, updateTask, refreshTaskCounts]);
 
-  // Animation effect with stabilized dependencies
+  // Animation effect - simplified to prevent loops
   useEffect(() => {
-    if (task.status === TaskStatus.DONE && !isExiting && !isRemoved && !animationTimeoutRef.current) {
+    if (task.status === TaskStatus.DONE && !isExiting && !isRemoved) {
       console.log(`TaskCard: Starting exit animation for task ${task.id}`);
       setIsExiting(true);
       
-      animationTimeoutRef.current = setTimeout(finishExiting, EXIT_ANIMATION_DURATION);
+      if (!animationTimeoutRef.current) {
+        animationTimeoutRef.current = setTimeout(finishExiting, EXIT_ANIMATION_DURATION);
+      }
     }
     
-    if (task.status !== TaskStatus.DONE && (isExiting || animationTimeoutRef.current)) {
+    if (task.status !== TaskStatus.DONE && isExiting) {
       console.log(`TaskCard: Stopping animation for task ${task.id}`);
       setIsExiting(false);
       setIsRemoved(false);
@@ -121,7 +123,7 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
         completeTimeoutRef.current = null;
       }
     }
-  }, [task.status, task.id, isExiting, isRemoved, finishExiting]);
+  }, [task.status, isExiting, isRemoved, finishExiting]);
 
   // Cleanup effect
   useEffect(() => {
