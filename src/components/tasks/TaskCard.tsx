@@ -32,13 +32,7 @@ function TaskCardComponent({ task, compact = false, className }: TaskCardProps) 
   const completeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Stabilize the sortable data object to prevent infinite re-renders
-  const sortableData = useMemo(() => ({
-    type: 'task' as const,
-    taskId: task.id
-  }), [task.id]);
-
-  // Use stable sortable configuration
+  // Completely stable sortable configuration - only depends on task.id
   const {
     attributes,
     listeners,
@@ -47,7 +41,7 @@ function TaskCardComponent({ task, compact = false, className }: TaskCardProps) 
     transition,
   } = useSortable({
     id: task.id,
-    data: sortableData
+    // Remove the data object entirely to prevent instability
   });
 
   const style = {
@@ -55,7 +49,7 @@ function TaskCardComponent({ task, compact = false, className }: TaskCardProps) 
     transition
   };
 
-  // Stable finishExiting callback
+  // Stable finishExiting callback - only recreated when task.id changes
   const finishExiting = useCallback(() => {
     console.log(`TaskCard: finishExiting called for task ${task.id}`);
     
@@ -77,7 +71,7 @@ function TaskCardComponent({ task, compact = false, className }: TaskCardProps) 
     });
   }, [task.id, updateTask, refreshTaskCounts]);
 
-  // Simplified animation effect
+  // Simplified animation effect - only depend on essential values
   useEffect(() => {
     if (task.status === TaskStatus.DONE && !isExiting && !isRemoved) {
       console.log(`TaskCard: Starting exit animation for task ${task.id}`);
@@ -118,10 +112,14 @@ function TaskCardComponent({ task, compact = false, className }: TaskCardProps) 
     };
   }, []);
 
-  const projectName = task.projectId 
-    ? projects.find(p => p.id === task.projectId)?.name || 'Unknown Project'
-    : null;
+  // Memoize project name calculation
+  const projectName = useMemo(() => {
+    return task.projectId 
+      ? projects.find(p => p.id === task.projectId)?.name || 'Unknown Project'
+      : null;
+  }, [task.projectId, projects]);
 
+  // Stable event handlers
   const toggleExpanded = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     setIsExpanded(prev => !prev);
@@ -136,7 +134,7 @@ function TaskCardComponent({ task, compact = false, className }: TaskCardProps) 
     // No-op - we're using the task from props directly
   }, []);
 
-  // Status click handler
+  // Status click handler - stabilized with fewer dependencies
   const handleStatusClickCallback = useCallback((e: React.MouseEvent) => {
     handleStatusClick({
       taskId: task.id,
@@ -222,13 +220,11 @@ function TaskCardComponent({ task, compact = false, className }: TaskCardProps) 
   );
 }
 
-// Simplified memo comparison - only check essential properties that would require a re-render
+// Further simplified memo comparison - focus only on what truly matters for rendering
 export const TaskCard = memo(TaskCardComponent, (prevProps, nextProps) => {
-  // Only re-render if the task ID changes (which should never happen) or essential properties change
+  // Only check if task reference has changed or core display properties
   return (
-    prevProps.task.id === nextProps.task.id &&
-    prevProps.task.status === nextProps.task.status &&
-    prevProps.task.title === nextProps.task.title &&
+    prevProps.task === nextProps.task &&
     prevProps.compact === nextProps.compact &&
     prevProps.className === nextProps.className
   );
