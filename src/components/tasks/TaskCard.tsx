@@ -1,5 +1,5 @@
 
-import { useState, useRef, useEffect, useCallback, memo } from 'react';
+import { useState, useRef, useEffect, useCallback, memo, useMemo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
@@ -32,7 +32,13 @@ function TaskCardComponent({ task, compact = false, className }: TaskCardProps) 
   const completeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Use stable sortable configuration - only depends on task.id which should not change
+  // Stabilize the sortable data object to prevent infinite re-renders
+  const sortableData = useMemo(() => ({
+    type: 'task' as const,
+    taskId: task.id
+  }), [task.id]);
+
+  // Use stable sortable configuration
   const {
     attributes,
     listeners,
@@ -41,10 +47,7 @@ function TaskCardComponent({ task, compact = false, className }: TaskCardProps) 
     transition,
   } = useSortable({
     id: task.id,
-    data: {
-      type: 'task',
-      taskId: task.id
-    }
+    data: sortableData
   });
 
   const style = {
@@ -74,7 +77,7 @@ function TaskCardComponent({ task, compact = false, className }: TaskCardProps) 
     });
   }, [task.id, updateTask, refreshTaskCounts]);
 
-  // Animation effect - simplified dependencies
+  // Simplified animation effect
   useEffect(() => {
     if (task.status === TaskStatus.DONE && !isExiting && !isRemoved) {
       console.log(`TaskCard: Starting exit animation for task ${task.id}`);
@@ -128,16 +131,10 @@ function TaskCardComponent({ task, compact = false, className }: TaskCardProps) 
     setIsTaskFormOpen(true);
   }, []);
 
-  // Simplified setTask function that updates the task directly
-  const setTask = useCallback((updateOrFunction: Partial<Task> | ((prev: Task) => Task)) => {
-    if (typeof updateOrFunction === 'function') {
-      const updatedTask = updateOrFunction(task);
-      // We don't need local state anymore, just update directly
-      console.log('TaskCard: setTask function update', updatedTask);
-    } else {
-      console.log('TaskCard: setTask partial update', updateOrFunction);
-    }
-  }, [task]);
+  // Simplified setTask function - just a no-op since we don't need local state
+  const setTask = useCallback(() => {
+    // No-op - we're using the task from props directly
+  }, []);
 
   // Status click handler
   const handleStatusClickCallback = useCallback((e: React.MouseEvent) => {
