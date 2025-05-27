@@ -52,27 +52,27 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
     transition
   };
 
-  // Update local task state when props change (only essential fields)
+  // Simplified task update effect - only update when essential fields change
   useEffect(() => {
-    if (initialTask.id === task.id) {
-      const hasChanged = (
+    const hasEssentialChanges = (
+      initialTask.id === task.id && (
         initialTask.status !== task.status || 
         initialTask.title !== task.title || 
         initialTask.description !== task.description ||
         initialTask.updatedAt !== task.updatedAt
-      );
-      
-      if (hasChanged) {
-        setTask(initialTask);
-      }
+      )
+    );
+    
+    if (hasEssentialChanges) {
+      console.log(`TaskCard: Updating local task state for ${task.id}`);
+      setTask(initialTask);
     }
   }, [initialTask.id, initialTask.status, initialTask.title, initialTask.description, initialTask.updatedAt, task.id, task.status]);
 
-  // Stable finishExiting callback - minimal dependencies
+  // Stable finishExiting callback with minimal dependencies
   const finishExiting = useCallback(() => {
     console.log(`TaskCard: finishExiting called for task ${task.id}`);
     
-    // Clear any existing animation timeout
     if (animationTimeoutRef.current) {
       clearTimeout(animationTimeoutRef.current);
       animationTimeoutRef.current = null;
@@ -89,23 +89,20 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
       console.error('Failed to mark task as removed:', error);
       setIsRemoved(false);
     });
-  }, [task.id]); // Only depend on task.id
+  }, [task.id, updateTask, refreshTaskCounts]);
 
-  // Simplified animation logic - separate from status changes
+  // Simplified animation effect
   useEffect(() => {
-    // Only start animation if task just became done and not already animating
     if (task.status === TaskStatus.DONE && !isExiting && !isRemoved && !animationTimeoutRef.current) {
       console.log(`TaskCard: Starting exit animation for task ${task.id}`);
       setIsExiting(true);
       
-      // Set up the animation timeout
       animationTimeoutRef.current = setTimeout(() => {
         console.log(`TaskCard: Animation completed for task ${task.id}`);
         finishExiting();
       }, EXIT_ANIMATION_DURATION);
     }
     
-    // Stop animation if task is no longer done
     if (task.status !== TaskStatus.DONE && (isExiting || animationTimeoutRef.current)) {
       console.log(`TaskCard: Stopping animation for task ${task.id}`);
       setIsExiting(false);
@@ -149,7 +146,7 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
     setIsTaskFormOpen(true);
   }, []);
 
-  // Stable status click handler
+  // Stable status click handler with minimal dependencies
   const handleStatusClickCallback = useCallback((e: React.MouseEvent) => {
     handleStatusClick({
       taskId: task.id,
