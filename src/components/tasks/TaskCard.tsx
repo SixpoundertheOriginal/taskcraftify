@@ -222,12 +222,14 @@ function TaskCardComponent({ task, compact = false, className }: TaskCardProps) 
   );
 }
 
+// Simplified memo comparison - only check essential properties that would require a re-render
 export const TaskCard = memo(TaskCardComponent, (prevProps, nextProps) => {
-  // Only re-render if essential task properties change
-  return prevProps.task.id === nextProps.task.id &&
+  // Only re-render if the task ID changes (which should never happen) or essential properties change
+  return (
+    prevProps.task.id === nextProps.task.id &&
     prevProps.task.status === nextProps.task.status &&
     prevProps.task.title === nextProps.task.title &&
-    prevProps.task.updatedAt === nextProps.task.updatedAt &&
     prevProps.compact === nextProps.compact &&
-    prevProps.className === nextProps.className;
+    prevProps.className === nextProps.className
+  );
 });
