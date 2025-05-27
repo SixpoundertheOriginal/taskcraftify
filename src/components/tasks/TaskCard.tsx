@@ -1,5 +1,5 @@
 
-import { useState, useRef, useEffect, useCallback, memo } from 'react';
+import { useState, useRef, useEffect, useCallback, memo, useMemo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
@@ -33,6 +33,16 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
   const completeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Stabilize the sortable data to prevent infinite re-renders
+  const sortableData = useMemo(() => ({
+    type: 'task',
+    task: {
+      id: task.id,
+      status: task.status,
+      title: task.title
+    }
+  }), [task.id, task.status, task.title]);
+  
   const {
     attributes,
     listeners,
@@ -41,10 +51,7 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
     transition,
   } = useSortable({
     id: task.id,
-    data: {
-      type: 'task',
-      task
-    }
+    data: sortableData
   });
 
   const style = {
@@ -52,24 +59,24 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
     transition
   };
 
-  // Simplified task update effect - only update when essential fields change
+  // Task update effect with proper dependency management
   useEffect(() => {
-    const hasEssentialChanges = (
-      initialTask.id === task.id && (
+    if (initialTask.id === task.id) {
+      const hasEssentialChanges = (
         initialTask.status !== task.status || 
         initialTask.title !== task.title || 
         initialTask.description !== task.description ||
         initialTask.updatedAt !== task.updatedAt
-      )
-    );
-    
-    if (hasEssentialChanges) {
-      console.log(`TaskCard: Updating local task state for ${task.id}`);
-      setTask(initialTask);
+      );
+      
+      if (hasEssentialChanges) {
+        console.log(`TaskCard: Updating local task state for ${task.id}`);
+        setTask(initialTask);
+      }
     }
-  }, [initialTask.id, initialTask.status, initialTask.title, initialTask.description, initialTask.updatedAt, task.id, task.status]);
+  }, [initialTask, task.id, task.status]);
 
-  // Stable finishExiting callback with minimal dependencies
+  // Stable finishExiting callback
   const finishExiting = useCallback(() => {
     console.log(`TaskCard: finishExiting called for task ${task.id}`);
     
@@ -91,16 +98,13 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
     });
   }, [task.id, updateTask, refreshTaskCounts]);
 
-  // Simplified animation effect
+  // Animation effect with stabilized dependencies
   useEffect(() => {
     if (task.status === TaskStatus.DONE && !isExiting && !isRemoved && !animationTimeoutRef.current) {
       console.log(`TaskCard: Starting exit animation for task ${task.id}`);
       setIsExiting(true);
       
-      animationTimeoutRef.current = setTimeout(() => {
-        console.log(`TaskCard: Animation completed for task ${task.id}`);
-        finishExiting();
-      }, EXIT_ANIMATION_DURATION);
+      animationTimeoutRef.current = setTimeout(finishExiting, EXIT_ANIMATION_DURATION);
     }
     
     if (task.status !== TaskStatus.DONE && (isExiting || animationTimeoutRef.current)) {
@@ -133,9 +137,11 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
     };
   }, []);
 
-  const projectName = task.projectId 
-    ? projects.find(p => p.id === task.projectId)?.name || 'Unknown Project'
-    : null;
+  const projectName = useMemo(() => {
+    return task.projectId 
+      ? projects.find(p => p.id === task.projectId)?.name || 'Unknown Project'
+      : null;
+  }, [task.projectId, projects]);
 
   const toggleExpanded = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -146,7 +152,7 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
     setIsTaskFormOpen(true);
   }, []);
 
-  // Stable status click handler with minimal dependencies
+  // Stable status click handler
   const handleStatusClickCallback = useCallback((e: React.MouseEvent) => {
     handleStatusClick({
       taskId: task.id,
