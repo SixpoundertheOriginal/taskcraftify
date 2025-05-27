@@ -11,7 +11,6 @@ import { StatusCheckbox } from "./StatusCheckbox";
 import { TaskCardHeader } from "./TaskCardHeader";
 import { TaskCardDetails } from "./TaskCardDetails";
 import { TaskCardActions } from "./TaskCardActions";
-import { TaskCardAnimation } from "./TaskCardAnimation";
 import { handleStatusClick } from "./TaskStatusHandler";
 
 const EXIT_ANIMATION_DURATION = 3000;
@@ -32,6 +31,7 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
   const [isRemoved, setIsRemoved] = useState(false);
   const [lastClickTime, setLastClickTime] = useState(0);
   const completeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const {
     attributes,
@@ -52,9 +52,31 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
     transition
   };
 
-  // Stable finishExiting callback - only depends on task.id
+  // Update local task state when props change (only essential fields)
+  useEffect(() => {
+    if (initialTask.id === task.id) {
+      const hasChanged = (
+        initialTask.status !== task.status || 
+        initialTask.title !== task.title || 
+        initialTask.description !== task.description ||
+        initialTask.updatedAt !== task.updatedAt
+      );
+      
+      if (hasChanged) {
+        setTask(initialTask);
+      }
+    }
+  }, [initialTask.id, initialTask.status, initialTask.title, initialTask.description, initialTask.updatedAt, task.id, task.status]);
+
+  // Stable finishExiting callback - minimal dependencies
   const finishExiting = useCallback(() => {
     console.log(`TaskCard: finishExiting called for task ${task.id}`);
+    
+    // Clear any existing animation timeout
+    if (animationTimeoutRef.current) {
+      clearTimeout(animationTimeoutRef.current);
+      animationTimeoutRef.current = null;
+    }
     
     setIsRemoved(true);
     
@@ -67,34 +89,38 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
       console.error('Failed to mark task as removed:', error);
       setIsRemoved(false);
     });
-  }, [task.id, updateTask, refreshTaskCounts]);
+  }, [task.id]); // Only depend on task.id
 
-  // Update local task state when props change
+  // Simplified animation logic - separate from status changes
   useEffect(() => {
-    if (initialTask.id === task.id && 
-        (initialTask.status !== task.status || 
-         initialTask.title !== task.title || 
-         initialTask.description !== task.description)) {
-      setTask(initialTask);
-    }
-  }, [initialTask.id, initialTask.status, initialTask.title, initialTask.description, task.id, task.status]);
-
-  // Handle animation logic separately with minimal dependencies
-  useEffect(() => {
-    if (task.status === TaskStatus.DONE && !isExiting && !isRemoved) {
-      console.log(`TaskCard: Task ${task.id} marked as done, starting animation`);
+    // Only start animation if task just became done and not already animating
+    if (task.status === TaskStatus.DONE && !isExiting && !isRemoved && !animationTimeoutRef.current) {
+      console.log(`TaskCard: Starting exit animation for task ${task.id}`);
       setIsExiting(true);
-    } else if (task.status !== TaskStatus.DONE && isExiting) {
-      console.log(`TaskCard: Task ${task.id} no longer done, stopping animation`);
+      
+      // Set up the animation timeout
+      animationTimeoutRef.current = setTimeout(() => {
+        console.log(`TaskCard: Animation completed for task ${task.id}`);
+        finishExiting();
+      }, EXIT_ANIMATION_DURATION);
+    }
+    
+    // Stop animation if task is no longer done
+    if (task.status !== TaskStatus.DONE && (isExiting || animationTimeoutRef.current)) {
+      console.log(`TaskCard: Stopping animation for task ${task.id}`);
       setIsExiting(false);
       setIsRemoved(false);
       
+      if (animationTimeoutRef.current) {
+        clearTimeout(animationTimeoutRef.current);
+        animationTimeoutRef.current = null;
+      }
       if (completeTimeoutRef.current) {
         clearTimeout(completeTimeoutRef.current);
         completeTimeoutRef.current = null;
       }
     }
-  }, [task.status, task.id]); // Minimal dependencies
+  }, [task.status, task.id, isExiting, isRemoved, finishExiting]);
 
   // Cleanup effect
   useEffect(() => {
@@ -102,6 +128,10 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
       if (completeTimeoutRef.current) {
         clearTimeout(completeTimeoutRef.current);
         completeTimeoutRef.current = null;
+      }
+      if (animationTimeoutRef.current) {
+        clearTimeout(animationTimeoutRef.current);
+        animationTimeoutRef.current = null;
       }
     };
   }, []);
@@ -119,7 +149,7 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
     setIsTaskFormOpen(true);
   }, []);
 
-  // Stable status click handler with minimal dependencies
+  // Stable status click handler
   const handleStatusClickCallback = useCallback((e: React.MouseEvent) => {
     handleStatusClick({
       taskId: task.id,
@@ -201,17 +231,16 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
         onOpenChange={setIsTaskFormOpen}
         initialTask={task}
       />
-      
-      {/* Conditionally render animation component with stable props */}
-      {isExiting && !isRemoved && (
-        <TaskCardAnimation 
-          isExiting={true}
-          finishExiting={finishExiting}
-          EXIT_ANIMATION_DURATION={EXIT_ANIMATION_DURATION}
-        />
-      )}
     </>
   );
 }
 
-export const TaskCard = memo(TaskCardComponent);
+export const TaskCard = memo(TaskCardComponent, (prevProps, nextProps) => {
+  // Only re-render if essential task properties change
+  return prevProps.task.id === nextProps.task.id &&
+    prevProps.task.status === nextProps.task.status &&
+    prevProps.task.title === nextProps.task.title &&
+    prevProps.task.updatedAt === nextProps.task.updatedAt &&
+    prevProps.compact === nextProps.compact &&
+    prevProps.className === nextProps.className;
+});
