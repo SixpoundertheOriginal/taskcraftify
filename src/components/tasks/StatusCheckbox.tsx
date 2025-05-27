@@ -15,17 +15,12 @@ export interface StatusCheckboxProps {
 
 export const StatusCheckbox = memo(function StatusCheckbox({
   isDone,
-  isExiting,
-  isRemoved,
   isArchived,
-  completeTimeoutRef,
   onStatusClick
 }: StatusCheckboxProps) {
-  const tooltipText = isDone && completeTimeoutRef.current 
-    ? "Double click to undo completion" 
-    : isDone 
-      ? "Click to mark as not done" 
-      : "Click to mark as done";
+  const tooltipText = isDone 
+    ? "Click to mark as not done" 
+    : "Click to mark as done";
 
   return (
     <TooltipProvider>
@@ -64,7 +59,7 @@ export const StatusCheckbox = memo(function StatusCheckbox({
     </TooltipProvider>
   );
 }, (prevProps, nextProps) => {
-  // More restrictive comparison to prevent unnecessary re-renders
+  // Only re-render if essential props change
   return prevProps.isDone === nextProps.isDone &&
     prevProps.isArchived === nextProps.isArchived;
 });

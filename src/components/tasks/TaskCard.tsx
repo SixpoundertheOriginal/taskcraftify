@@ -52,46 +52,40 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
     transition
   };
 
-  // Stable finishExiting callback that doesn't change unless absolutely necessary
+  // Stable finishExiting callback - only depends on task.id
   const finishExiting = useCallback(() => {
     console.log(`TaskCard: finishExiting called for task ${task.id}`);
     
-    if (!isRemoved) {
-      console.log(`TaskCard: Marking task ${task.id} as removed`);
-      setIsRemoved(true);
-      
-      updateTask({ 
-        id: task.id, 
-        _isRemoved: true 
-      }).then(() => {
-        refreshTaskCounts();
-      }).catch((error) => {
-        console.error('Failed to mark task as removed:', error);
-        setIsRemoved(false);
-      });
-    }
-  }, [task.id, isRemoved, updateTask, refreshTaskCounts]);
+    setIsRemoved(true);
+    
+    updateTask({ 
+      id: task.id, 
+      _isRemoved: true 
+    }).then(() => {
+      refreshTaskCounts();
+    }).catch((error) => {
+      console.error('Failed to mark task as removed:', error);
+      setIsRemoved(false);
+    });
+  }, [task.id, updateTask, refreshTaskCounts]);
 
-  // Update task when initialTask changes (but avoid infinite loops)
+  // Update local task state when props change
   useEffect(() => {
-    if (initialTask.id === task.id) {
-      const hasChanged = JSON.stringify(initialTask) !== JSON.stringify(task);
-      if (hasChanged) {
-        setTask(initialTask);
-      }
+    if (initialTask.id === task.id && 
+        (initialTask.status !== task.status || 
+         initialTask.title !== task.title || 
+         initialTask.description !== task.description)) {
+      setTask(initialTask);
     }
-  }, [initialTask.id, initialTask.status, initialTask.title, initialTask.description]);
+  }, [initialTask.id, initialTask.status, initialTask.title, initialTask.description, task.id, task.status]);
 
-  // Handle task status effects with better guards
+  // Handle animation logic separately with minimal dependencies
   useEffect(() => {
-    // Only trigger animation for newly completed tasks
     if (task.status === TaskStatus.DONE && !isExiting && !isRemoved) {
       console.log(`TaskCard: Task ${task.id} marked as done, starting animation`);
       setIsExiting(true);
-    }
-    // Reset animation states when task is no longer done
-    else if (task.status !== TaskStatus.DONE && (isExiting || isRemoved)) {
-      console.log(`TaskCard: Task ${task.id} no longer done, resetting states`);
+    } else if (task.status !== TaskStatus.DONE && isExiting) {
+      console.log(`TaskCard: Task ${task.id} no longer done, stopping animation`);
       setIsExiting(false);
       setIsRemoved(false);
       
@@ -100,7 +94,7 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
         completeTimeoutRef.current = null;
       }
     }
-  }, [task.status, task.id]); // Removed isExiting and isRemoved from deps to prevent loops
+  }, [task.status, task.id]); // Minimal dependencies
 
   // Cleanup effect
   useEffect(() => {
@@ -125,7 +119,7 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
     setIsTaskFormOpen(true);
   }, []);
 
-  // Stable status click handler
+  // Stable status click handler with minimal dependencies
   const handleStatusClickCallback = useCallback((e: React.MouseEvent) => {
     handleStatusClick({
       taskId: task.id,
@@ -142,7 +136,7 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
       setIsRemoved,
       setLastClickTime
     });
-  }, [task.id, task.title, task.status, lastClickTime]); // Removed isExiting and isRemoved from deps
+  }, [task.id, task.title, task.status, lastClickTime, isExiting, isRemoved, updateTask, refreshTaskCounts]);
   
   // Don't render if task is done and removed
   if (task.status === TaskStatus.DONE && isRemoved) {
@@ -208,10 +202,10 @@ function TaskCardComponent({ task: initialTask, compact = false, className }: Ta
         initialTask={task}
       />
       
-      {/* Only render animation component when needed */}
+      {/* Conditionally render animation component with stable props */}
       {isExiting && !isRemoved && (
         <TaskCardAnimation 
-          isExiting={isExiting}
+          isExiting={true}
           finishExiting={finishExiting}
           EXIT_ANIMATION_DURATION={EXIT_ANIMATION_DURATION}
         />
