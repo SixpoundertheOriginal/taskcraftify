@@ -2,7 +2,6 @@
 import { Check } from 'lucide-react';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import { TaskStatus } from '@/types/task';
 import { memo, MutableRefObject } from 'react';
 
 export interface StatusCheckboxProps {
@@ -14,7 +13,6 @@ export interface StatusCheckboxProps {
   onStatusClick: (e: React.MouseEvent) => void;
 }
 
-// Use memo with a custom equality function to prevent unnecessary re-renders
 export const StatusCheckbox = memo(function StatusCheckbox({
   isDone,
   isExiting,
@@ -23,7 +21,6 @@ export const StatusCheckbox = memo(function StatusCheckbox({
   completeTimeoutRef,
   onStatusClick
 }: StatusCheckboxProps) {
-  // Define tooltip text based on task state
   const tooltipText = isDone && completeTimeoutRef.current 
     ? "Double click to undo completion" 
     : isDone 
@@ -36,12 +33,7 @@ export const StatusCheckbox = memo(function StatusCheckbox({
         <TooltipTrigger asChild>
           <button
             type="button"
-            onClick={(e) => {
-              // Prevent event propagation
-              e.stopPropagation();
-              e.preventDefault();
-              onStatusClick(e);
-            }}
+            onClick={onStatusClick}
             className={cn(
               "flex items-center justify-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-1",
               "h-6 w-6 min-w-[1.5rem] min-h-[1.5rem] border-2 shadow-sm",
@@ -72,9 +64,7 @@ export const StatusCheckbox = memo(function StatusCheckbox({
     </TooltipProvider>
   );
 }, (prevProps, nextProps) => {
-  // Custom comparison function to prevent unnecessary re-renders
+  // More restrictive comparison to prevent unnecessary re-renders
   return prevProps.isDone === nextProps.isDone &&
-    prevProps.isExiting === nextProps.isExiting &&
-    prevProps.isRemoved === nextProps.isRemoved &&
     prevProps.isArchived === nextProps.isArchived;
 });

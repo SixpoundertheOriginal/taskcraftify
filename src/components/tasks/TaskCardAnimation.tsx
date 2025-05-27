@@ -12,33 +12,26 @@ export function TaskCardAnimation({
   finishExiting,
   EXIT_ANIMATION_DURATION 
 }: TaskCardAnimationProps) {
-  // Use a ref to track if the timeout is already set
-  const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
+  const hasSetupTimeoutRef = useRef(false);
   
   useEffect(() => {
-    // Only set up timeout if isExiting is true and we don't already have one
-    if (isExiting && !timeoutIdRef.current) {
+    // Only set up timeout once when component mounts and isExiting is true
+    if (isExiting && !hasSetupTimeoutRef.current) {
       console.log(`TaskCardAnimation: Setting animation timeout for ${EXIT_ANIMATION_DURATION}ms`);
+      hasSetupTimeoutRef.current = true;
       
-      // Set the new timeout and store it in the ref
-      timeoutIdRef.current = setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         console.log(`TaskCardAnimation: Animation timeout completed`);
-        // Clear the ref before executing callback
-        timeoutIdRef.current = null;
         finishExiting();
       }, EXIT_ANIMATION_DURATION);
       
-      // Clean up the timeout on unmount or when dependencies change
+      // Cleanup function
       return () => {
-        if (timeoutIdRef.current) {
-          console.log(`TaskCardAnimation: Cleaning up animation timeout`);
-          clearTimeout(timeoutIdRef.current);
-          timeoutIdRef.current = null;
-        }
+        console.log(`TaskCardAnimation: Cleaning up animation timeout`);
+        clearTimeout(timeoutId);
       };
     }
-  }, [isExiting, EXIT_ANIMATION_DURATION, finishExiting]);
+  }, []); // Empty dependency array - only run on mount
   
-  // Return null as this is a behavior component, not a UI component
   return null;
 }

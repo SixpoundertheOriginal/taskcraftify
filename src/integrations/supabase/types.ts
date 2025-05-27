@@ -434,6 +434,7 @@ export type Database = {
       }
       exercises: {
         Row: {
+          base_exercise_id: string | null
           created_at: string
           created_by: string | null
           description: string
@@ -451,9 +452,12 @@ export type Database = {
           secondary_muscle_groups: string[]
           tips: string[] | null
           updated_at: string
+          variation_type: string | null
+          variation_value: string | null
           variations: string[] | null
         }
         Insert: {
+          base_exercise_id?: string | null
           created_at?: string
           created_by?: string | null
           description: string
@@ -471,9 +475,12 @@ export type Database = {
           secondary_muscle_groups: string[]
           tips?: string[] | null
           updated_at?: string
+          variation_type?: string | null
+          variation_value?: string | null
           variations?: string[] | null
         }
         Update: {
+          base_exercise_id?: string | null
           created_at?: string
           created_by?: string | null
           description?: string
@@ -491,9 +498,19 @@ export type Database = {
           secondary_muscle_groups?: string[]
           tips?: string[] | null
           updated_at?: string
+          variation_type?: string | null
+          variation_value?: string | null
           variations?: string[] | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "exercises_base_exercise_id_fkey"
+            columns: ["base_exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       experience_logs: {
         Row: {
